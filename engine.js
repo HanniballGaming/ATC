@@ -2,7 +2,7 @@
 var ATC = globalThis.ATC = {};
 
 'use strict';
-window.ATC = window.ATC || {};
+globalThis.ATC = globalThis.ATC || {};
 ATC.SECTORS = Object.freeze({ ground: 'GROUND', tower: 'TOWER', approach: 'APPROACH', center: 'CENTER' });
 ATC.RUNWAY = '09';
 ATC.GATES = [
