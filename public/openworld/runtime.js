@@ -12,7 +12,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
  if(!origin||!Number.isFinite(origin.lon)||!Number.isFinite(origin.lat))throw Error("WGS84 origin required");
  let model=null,view=null,graph=null,interaction=null,disposed=false,raf=0,last=0,accumulator=0;
  let touch=null,keyboard=null,lookInput={x:0,y:0};
- let indoor=false,entryPoint=null,doorPoint=null,chipPoint=null,office=null,officePieces=[],deskPoint={x:1,z:-1.3},atDesk=false;
+ let indoor=false,entryPoint=null,doorPoint=null,chipPoint=null,office=null,officePieces=[],deskPoint={x:1,z:-1.3},atDesk=false,screenTexture=null,screenCanvas=null,screenContext=null,screenMaterialRef=null;
  const life=root.LDOpenWorldLife.create();
  const walker=root.LDOpenWorldWalker.create();
  const car=root.LDOpenWorldVehicle.create();
@@ -137,7 +137,15 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
   addBox(16,3.5,.2,0,1.75,6,0x8596a2);
   addBox(3,.85,1.2,1,.75,-2,0x2e4052);
   addBox(.7,.6,.7,1,.42,-.7,0x2c3542);
-  addBox(1.2,.8,.12,.6,1.55,-2.3,0x142c41);addBox(1.2,.8,.12,2,1.55,-2.3,0x142c41);
+  screenCanvas=root.document.createElement("canvas");screenCanvas.width=512;screenCanvas.height=320;screenContext=screenCanvas.getContext("2d");
+  screenTexture=new THREE.CanvasTexture(screenCanvas);
+  const screenMaterial=new THREE.MeshBasicMaterial({map:screenTexture});screenMaterialRef=screenMaterial;
+  for(const x of [.35,1.8]){
+   const bezel=addBox(1.48,.99,.13,x,1.58,-2.36,0x08111b);
+   const panel=new THREE.Mesh(new THREE.PlaneGeometry(1.35,.84),screenMaterial);
+   panel.position.set(x,1.58,-2.281);office.add(panel);officePieces.push(panel);
+  }
+  drawScreens();
   addBox(.5,.8,.2,-5.5,1.25,-4.5,0x1e777c);
   addBox(2.1,2.6,.15,0,1.3,5.9,0x624a37);
   chipPoint={x:-5.5,z:-4.5};
@@ -150,10 +158,24 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
   resize();onStatus(status());raf=root.requestAnimationFrame(frame);
   return api;
  }
+ function drawScreens(){
+  if(!screenContext)return;
+  const ctx=screenContext,w=screenCanvas.width,h=screenCanvas.height;
+  ctx.fillStyle="#081a2b";ctx.fillRect(0,0,w,h);
+  ctx.fillStyle="#123b52";ctx.fillRect(0,0,w,43);
+  ctx.fillStyle="#a7e4f0";ctx.font="bold 21px system-ui";ctx.fillText("LEITSTELLE DEUTSCHLAND",16,29);
+  ctx.font="17px system-ui";ctx.fillStyle="#e6f3fc";
+  ctx.fillText("EINSATZLEITSYSTEM  |  FUNK  |  NOTRUF",16,86);
+  ctx.fillStyle="#1c5b70";ctx.fillRect(16,106,480,52);
+  ctx.fillStyle="#fff";ctx.fillText(life.snapshot().onDuty?"DIENST AKTIV":"NICHT EINGESTEMPELT",29,139);
+  ctx.fillStyle="#91d4e6";ctx.fillText("Zum Bedienen am Schreibtisch Platz nehmen",16,210);
+  ctx.fillText("E: Arbeitsplatz öffnen",16,250);
+  screenTexture.needsUpdate=true;
+ }
  function sitDesk(){
   if(!indoor)throw Error("Der Arbeitsplatz befindet sich in der Leitstelle");
   if(!life.snapshot().onDuty)throw Error("Bitte vor dem Dienst an der Stechuhr einstempeln");
-  atDesk=true;onStatus({...status(),message:"Am Disponentenarbeitsplatz – Monitore aktiv"});
+  atDesk=true;drawScreens();onStatus({...status(),message:"Am Disponentenarbeitsplatz – Monitore aktiv"});
  }
  function leaveDesk(){atDesk=false;onStatus({...status(),message:"Vom Arbeitsplatz aufgestanden"});}
  function toggleDoor(){
@@ -167,7 +189,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
   if(!indoor)throw Error("Die Stechuhr befindet sich in der Leitstelle");
   const p=walker.snapshot();if(Math.hypot(p.x-chipPoint.x,p.z-chipPoint.z)>2.5)throw Error("Bitte direkt zur Stechuhr gehen");
   const next=life.snapshot().onDuty?"dienstende":"dienstbeginn";
-  life.action(next);try{life.save()}catch(e){console.warn(e)}
+  life.action(next);drawScreens();try{life.save()}catch(e){console.warn(e)}
   onStatus({...status(),message:next==="dienstbeginn"?"Eingestempelt – Dienst begonnen":"Ausgestempelt – Dienst beendet"});
   return next;
  }
@@ -192,7 +214,8 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
   root.document?.removeEventListener("mousemove",pointerMove);
   if(root.document?.pointerLockElement===renderer.domElement)root.document.exitPointerLock?.();
   keyboard?.dispose();touch?.dispose();view?.dispose();
-  officePieces.forEach(mesh=>{mesh.geometry.dispose();mesh.material.dispose()});
+  officePieces.forEach(mesh=>{mesh.geometry.dispose();if(mesh.material!==screenMaterialRef)mesh.material.dispose()});
+  screenTexture?.dispose();screenMaterialRef?.dispose();
   body.geometry.dispose();body.material.dispose();ground.geometry.dispose();ground.material.dispose();
   renderer.dispose();renderer.domElement.remove();
   if(needsPosition)host.style.position=oldPosition;
