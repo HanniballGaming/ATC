@@ -16,17 +16,20 @@ button{padding:8px;margin:3px;background:#204f71;color:white;border:1px solid #7
 <script src="./vehicle-interaction.js"></script><script src="./walker-core.js"></script>
 <script src="./life-core.js"></script><script src="./road-graph.js"></script>
 <script src="./osm-loader.js"></script><script src="./touch-controls.js"></script>
-<script src="./runtime.js"></script>
+<script src="./runtime.js"></script><script src="./integration-tests.js"></script>
 <script>
 (async()=>{
-const info=document.getElementById("info"),origin={lon:10.8985,lat:48.3705};
+const info=document.getElementById("info");
+const tests=await LDOpenWorldIntegrationTests.run();
+info.textContent="Modultests: "+tests.passed+"/"+tests.total+" bestanden\n"+tests.results.filter(r=>!r.ok).map(r=>r.name+": "+r.error).join("\n");
+const origin={lon:10.8985,lat:48.3705};
 const geojson={type:"FeatureCollection",features:[
  {type:"Feature",properties:{highway:"residential"},geometry:{type:"LineString",coordinates:[[10.8983,48.3705],[10.901,48.3705]]}},
  {type:"Feature",properties:{building:"yes","building:levels":"3"},geometry:{type:"Polygon",coordinates:[[[10.899,48.3708],[10.8993,48.3708],[10.8993,48.3706],[10.899,48.3706],[10.899,48.3708]]]}},
  {type:"Feature",properties:{building:"yes","building:levels":"2"},geometry:{type:"Polygon",coordinates:[[[10.900,48.3708],[10.9002,48.3708],[10.9002,48.3706],[10.900,48.3706],[10.900,48.3708]]]}}
 ]};
 try{
-const game=LDOpenWorldRuntime.create({THREE,host:document.getElementById("world"),geojson,origin,onStatus:s=>{info.textContent=JSON.stringify(s,null,2)}});
+const game=LDOpenWorldRuntime.create({THREE,host:document.getElementById("world"),geojson,origin,onStatus:s=>{info.textContent="Modultests: "+tests.passed+"/"+tests.total+"\n"+JSON.stringify(s,null,2)}});
 await game.start();
 document.getElementById("interact").onclick=()=>game.interact();
 document.getElementById("eat").onclick=()=>{try{game.life.action("essen")}catch(e){alert(e.message)}info.textContent=JSON.stringify(game.status(),null,2)};
