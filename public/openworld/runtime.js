@@ -33,7 +33,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
  const body=new THREE.Mesh(new THREE.BoxGeometry(1.9,1.2,4.5),new THREE.MeshStandardMaterial({color:0x285c88}));
  body.position.y=0.85;vehicleVisual.add(body);scene.add(vehicleVisual);
  let frameInput={forward:0,strafe:0,lookX:0,lookY:0,run:false};
- const status=()=>({indoor,atDesk,nearDesk:indoor&&!interaction?.driving&&Math.hypot(walker.snapshot().x-deskPoint.x,walker.snapshot().z-deskPoint.z)<2.4,nearChip:!!chipPoint&&!interaction?.driving&&Math.hypot(walker.snapshot().x-chipPoint.x,walker.snapshot().z-chipPoint.z)<2.5,walking:walker.snapshot(),vehicle:car.snapshot(),driving:interaction?.driving||false,life:life.snapshot(),loadedTiles:view?.loadedTiles||0});
+ const status=()=>({indoor,atDesk,nearDesk:indoor&&!interaction?.driving&&Math.hypot(walker.snapshot().x-deskPoint.x,walker.snapshot().z-deskPoint.z)<2.4,nearChip:indoor&&!!chipPoint&&!interaction?.driving&&Math.hypot(walker.snapshot().x-chipPoint.x,walker.snapshot().z-chipPoint.z)<2.5,walking:walker.snapshot(),vehicle:car.snapshot(),driving:interaction?.driving||false,life:life.snapshot(),loadedTiles:view?.loadedTiles||0});
  function resize(){
   const width=Math.max(1,host.clientWidth),height=Math.max(1,host.clientHeight);
   camera.aspect=width/height;camera.updateProjectionMatrix();renderer.setSize(width,height,false);
@@ -51,9 +51,9 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
  function interact(){
   if(!interaction)return;
   if(atDesk){leaveDesk();return;}
-  if(indoor&&!interaction.driving&&Math.hypot(walker.snapshot().x-deskPoint.x,walker.snapshot().z-deskPoint.z)<2.4){sitDesk();return;}
-  if(!interaction.driving&&doorPoint){const p=walker.snapshot();if(Math.hypot(p.x-doorPoint.x,p.z-doorPoint.z)<2.6){toggleDoor();return;}}
-  if(indoor&&!interaction.driving&&chipPoint){const p=walker.snapshot();if(Math.hypot(p.x-chipPoint.x,p.z-chipPoint.z)<2.5){stamp();return;}}
+  if(indoor&&!interaction.driving&&Math.hypot(walker.snapshot().x-deskPoint.x,walker.snapshot().z-deskPoint.z)<2.4){try{sitDesk()}catch(e){onStatus({...status(),message:e.message})}return;}
+  if(!interaction.driving&&doorPoint){const p=walker.snapshot();if(Math.hypot(p.x-doorPoint.x,p.z-doorPoint.z)<2.6){try{toggleDoor()}catch(e){onStatus({...status(),message:e.message})}return;}}
+  if(indoor&&!interaction.driving&&chipPoint){const p=walker.snapshot();if(Math.hypot(p.x-chipPoint.x,p.z-chipPoint.z)<2.5){try{stamp()}catch(e){onStatus({...status(),message:e.message})}return;}}
   try{
    if(interaction.driving){
     interaction.exit(p=>!root.LDOpenWorldCollision.collides(p,model,0.4));
@@ -67,7 +67,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
  }
  const interactionPlayer={x:0,z:0,heading:0};
  function fixedStep(dt){
-  if(atDesk)return;
+  if(atDesk){lookInput.x=0;lookInput.y=0;return;}
   const input=readInput();
   if(interaction.driving){
    const previous=car.snapshot();
