@@ -29,6 +29,8 @@ const geojson={type:"FeatureCollection",features:[
  {type:"Feature",properties:{building:"yes","building:levels":"2"},geometry:{type:"Polygon",coordinates:[[[10.900,48.3708],[10.9002,48.3708],[10.9002,48.3706],[10.900,48.3706],[10.900,48.3708]]]}}
 ]};
 try{
+if(tests.passed!==tests.total)throw Error("Modultests fehlgeschlagen: "+JSON.stringify(tests.results.filter(t=>!t.ok)));
+if(typeof THREE==="undefined")throw Error("Three.js konnte nicht geladen werden");
 const game=LDOpenWorldRuntime.create({THREE,host:document.getElementById("world"),geojson,origin,onStatus:s=>{info.textContent="Modultests: "+tests.passed+"/"+tests.total+"\n"+JSON.stringify(s,null,2)}});
 await game.start();
 document.getElementById("interact").onclick=()=>game.interact();
