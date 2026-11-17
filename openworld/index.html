@@ -35,7 +35,7 @@ document.getElementById("interact").onclick=()=>game.interact();
 document.getElementById("eat").onclick=()=>{try{game.life.action("essen")}catch(e){alert(e.message)}info.textContent=JSON.stringify(game.status(),null,2)};
 document.getElementById("sleep").onclick=()=>{try{game.life.action("schlafen")}catch(e){alert(e.message)}info.textContent=JSON.stringify(game.status(),null,2)};
 window.addEventListener("keydown",e=>{if(e.code==="KeyE"&&!e.repeat)game.interact()});
-setInterval(()=>{info.textContent=JSON.stringify(game.status(),null,2)},500);
+setInterval(()=>{if(!info.textContent.startsWith("Fehler:"))info.textContent="Modultests: "+tests.passed+"/"+tests.total+"\n"+JSON.stringify(game.status(),null,2)},500);
 }catch(e){info.textContent="Fehler: "+e.stack;console.error(e)}
 })();
 </script></body></html>
