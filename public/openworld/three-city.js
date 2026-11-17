@@ -1,0 +1,88 @@
+/* LEITSTELLE DEUTSCHLAND: optional Three.js city mesh renderer.
+ * Requires THREE and LDOpenWorldGeo. No automatic DOM changes.
+ * Usage: const view = LDOpenWorldRenderer.create(THREE, scene);
+ *        view.setModel(LDOpenWorldGeo.loadGeoJSON(featureCollection, origin));
+ *        view.update(player.position.x, player.position.z); view.dispose();
+ */
+(function(root){"use strict";
+function create(THREE,scene,options={}){
+ if(!THREE||!scene)throw Error("THREE and scene required");
+ const tileSize=options.tileSize||256, radius=options.radius??2;
+ const roadWidth=options.roadWidth||5, defaultHeight=options.defaultBuildingHeight||9;
+ const roadMat=new THREE.MeshStandardMaterial({color:0x404953,roughness:1,side:THREE.DoubleSide});
+ const wallMat=new THREE.MeshStandardMaterial({color:0xa6a9a4,roughness:0.9});
+ const roofMat=new THREE.MeshStandardMaterial({color:0x555c61,roughness:1});
+ let model=null,tiles=null,active=new Map();
+ function height(props){
+  const raw=Number.parseFloat(props.height);
+  if(Number.isFinite(raw)&&raw>0&&raw<500)return raw;
+  const levels=Number.parseFloat(props["building:levels"]);
+  if(Number.isFinite(levels)&&levels>0&&levels<150)return levels*3;
+  return defaultHeight;
+ }
+ function ringShape(ring){
+  if(ring.length<3)return null;
+  const s=new THREE.Shape();s.moveTo(ring[0].x,-ring[0].z);
+  for(let i=1;i<ring.length;i++)s.lineTo(ring[i].x,-ring[i].z);
+  s.closePath();return s;
+ }
+ function makeBuilding(item){
+  const outer=ringShape(item.rings[0]);if(!outer)return null;
+  for(const hole of item.rings.slice(1)){if(hole.length<3)continue;
+   const path=new THREE.Path();path.moveTo(hole[0].x,-hole[0].z);
+   for(let i=1;i<hole.length;i++)path.lineTo(hole[i].x,-hole[i].z);
+   path.closePath();outer.holes.push(path);
+  }
+  const geom=new THREE.ExtrudeGeometry(outer,{depth:height(item.properties),bevelEnabled:false,steps:1});
+  // Shape lies in XY; extrude local Z into world Y, local Y becomes world -Z.
+  geom.rotateX(-Math.PI/2);
+  const mesh=new THREE.Mesh(geom,[roofMat,wallMat]);mesh.receiveShadow=true;return mesh;
+ }
+ function makeRoad(item){
+  const points=item.points;if(points.length<2)return null;
+  const verts=[],indices=[],half=roadWidth/2;
+  for(let i=0;i<points.length;i++){
+   const a=points[Math.max(0,i-1)],b=points[Math.min(points.length-1,i+1)];
+   const dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz)||1;
+   const nx=-dz/len*half,nz=dx/len*half,p=points[i];
+   verts.push(p.x+nx,0.025,p.z+nz,p.x-nx,0.025,p.z-nz);
+   if(i){const j=i*2;indices.push(j-2,j-1,j,j-1,j+1,j);}
+  }
+  const geom=new THREE.BufferGeometry();
+  geom.setAttribute("position",new THREE.Float32BufferAttribute(verts,3));
+  geom.setIndex(indices);geom.computeVertexNormals();
+  return new THREE.Mesh(geom,roadMat);
+ }
+ const featureMeshes=new Map();
+ function clear(){
+  for(const mesh of featureMeshes.values()){
+   scene.remove(mesh);
+   if(mesh.geometry)mesh.geometry.dispose();
+  }
+  featureMeshes.clear();active.clear();
+ }
+ function setModel(next){clear();model=next;tiles=root.LDOpenWorldGeo.tilesFor(next,tileSize);}
+ function update(x,z){
+  if(!tiles)return;
+  const wanted=root.LDOpenWorldGeo.nearbyTiles(tiles,x,z,radius,tileSize);
+  const visible=new Set();
+  for(const tile of wanted){
+   for(const item of tile.roads)visible.add(item);
+   for(const item of tile.buildings)visible.add(item);
+  }
+  for(const [item,mesh] of featureMeshes){
+   if(!visible.has(item)){scene.remove(mesh);mesh.geometry.dispose();featureMeshes.delete(item);}
+  }
+  for(const item of visible){
+   if(featureMeshes.has(item))continue;
+   const mesh=item.type==="road"?makeRoad(item):makeBuilding(item);
+   if(mesh){scene.add(mesh);featureMeshes.set(item,mesh);}
+  }
+  active.clear();
+  for(const tile of wanted)active.set(tile.key,true);
+ }
+ function dispose(){clear();roadMat.dispose();wallMat.dispose();roofMat.dispose();model=null;tiles=null;}
+ return {setModel,update,dispose,get loadedTiles(){return active.size;}};
+}
+root.LDOpenWorldRenderer=Object.freeze({create});
+})(typeof window!=="undefined"?window:globalThis);
