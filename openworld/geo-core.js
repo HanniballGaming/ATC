@@ -39,8 +39,27 @@
   }
   function tileKey(x,z,size=256){if(!Number.isFinite(size)||size<=0)throw Error("Invalid tile size");return Math.floor(x/size)+":"+Math.floor(z/size);}
   function tilesFor(model,size=256){
+    if(!Number.isFinite(size)||size<=0)throw Error("Invalid tile size");
     const map=new Map();
-    const add=(item,points,kind)=>{const keys=new Set(points.map(p=>tileKey(p.x,p.z,size)));for(const key of keys){if(!map.has(key))map.set(key,{roads:[],buildings:[]});map.get(key)[kind].push(item);}};
+    const add=(item,points,kind)=>{
+      if(!points.length)return;
+      let minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity;
+      for(const p of points){
+        if(!Number.isFinite(p.x)||!Number.isFinite(p.z))continue;
+        minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x);
+        minZ=Math.min(minZ,p.z);maxZ=Math.max(maxZ,p.z);
+      }
+      if(!Number.isFinite(minX))return;
+      const left=Math.floor(minX/size),right=Math.floor(maxX/size);
+      const top=Math.floor(minZ/size),bottom=Math.floor(maxZ/size);
+      // Prevent malicious/invalid geometries from generating millions of tiles.
+      if((right-left+1)*(bottom-top+1)>4096)throw Error("Feature spans too many tiles");
+      for(let x=left;x<=right;x++)for(let z=top;z<=bottom;z++){
+        const key=x+":"+z;
+        if(!map.has(key))map.set(key,{roads:[],buildings:[]});
+        map.get(key)[kind].push(item);
+      }
+    };
     for(const road of model.roads)add(road,road.points,"roads");
     for(const building of model.buildings)add(building,building.rings.flat(),"buildings");
     return map;
