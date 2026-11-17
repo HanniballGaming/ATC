@@ -11,7 +11,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
  for(const key of required)if(!root[key])throw Error("Missing module: "+key);
  if(!origin||!Number.isFinite(origin.lon)||!Number.isFinite(origin.lat))throw Error("WGS84 origin required");
  let model=null,view=null,graph=null,interaction=null,disposed=false,raf=0,last=0,accumulator=0;
- let touch=null,keyboard=null;
+ let touch=null,keyboard=null,lookInput={x:0,y:0};
  const life=root.LDOpenWorldLife.create();
  const walker=root.LDOpenWorldWalker.create();
  const car=root.LDOpenWorldVehicle.create();
@@ -43,7 +43,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
   const t=touch?.read()||{};
   return {forward:Math.max(-1,Math.min(1,(k.forward||0)+(t.forward||0))),
    strafe:Math.max(-1,Math.min(1,(k.strafe||0)+(t.strafe||0))),
-   lookX:t.lookX||0,lookY:t.lookY||0,run:!!(k.run||t.run)};
+   lookX:(t.lookX||0)+lookInput.x,lookY:(t.lookY||0)+lookInput.y,run:!!(k.run||t.run)};
  }
  function interact(){
   if(!interaction)return;
@@ -62,11 +62,17 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
  function fixedStep(dt){
   const input=readInput();
   if(interaction.driving){
+   const previous=car.snapshot();
    interaction.update(dt,{throttle:Math.max(0,input.forward),brake:Math.max(0,-input.forward),steer:input.strafe,handbrake:false});
+   const current=car.snapshot();
+   if(root.LDOpenWorldCollision.collides(current,model,1.1)){
+     car.reset({...previous,speed:0,handbrake:true});
+   }
   }else{
    walker.update(dt,input,model);
    const p=walker.snapshot();interactionPlayer.x=p.x;interactionPlayer.z=p.z;interactionPlayer.heading=p.heading;
   }
+  lookInput.x=0;lookInput.y=0;
   frameInput=input;
  }
  function frame(time){
@@ -99,6 +105,8 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
   else car.reset({x:2,z:2});
   interaction=root.LDOpenWorldInteraction.create({vehicle:car,player:interactionPlayer});
   keyboard=root.LDOpenWorldWalker.keyboard(root);
+  renderer.domElement.addEventListener("click",requestPointerLock);
+  root.document?.addEventListener("mousemove",pointerMove);
   if(root.LDOpenWorldTouch&&("ontouchstart" in root||root.navigator?.maxTouchPoints>0))
    touch=root.LDOpenWorldTouch.mount(host,{onInteract:interact});
   resize();onStatus(status());raf=root.requestAnimationFrame(frame);
@@ -109,10 +117,21 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
   const p=interaction.driving?car.snapshot():walker.snapshot();
   return graph.route(p,{x,z});
  }
+ function requestPointerLock(){
+  if(!interaction?.driving&&renderer.domElement.requestPointerLock)renderer.domElement.requestPointerLock();
+ }
+ function pointerMove(event){
+  if(root.document?.pointerLockElement!==renderer.domElement||interaction?.driving)return;
+  lookInput.x+=(event.movementX||0)*0.002;
+  lookInput.y-=(event.movementY||0)*0.002;
+ }
  function dispose(){
   if(disposed)return;disposed=true;
   if(raf)root.cancelAnimationFrame(raf);
   resizeObserver?.disconnect();if(!resizeObserver)root.removeEventListener?.("resize",resize);
+  renderer.domElement.removeEventListener("click",requestPointerLock);
+  root.document?.removeEventListener("mousemove",pointerMove);
+  if(root.document?.pointerLockElement===renderer.domElement)root.document.exitPointerLock?.();
   keyboard?.dispose();touch?.dispose();view?.dispose();
   body.geometry.dispose();body.material.dispose();ground.geometry.dispose();ground.material.dispose();
   renderer.dispose();renderer.domElement.remove();
