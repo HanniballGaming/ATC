@@ -20,7 +20,8 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
  const renderer=new THREE.WebGLRenderer({antialias:false,powerPreference:"low-power"});
  renderer.setPixelRatio(Math.min(root.devicePixelRatio||1,1.5));
  renderer.domElement.style.cssText="display:block;width:100%;height:100%;touch-action:none";
- const oldPosition=host.style.position;if(!oldPosition)host.style.position="relative";
+ const oldPosition=host.style.position;
+ const needsPosition=(root.getComputedStyle?.(host)?.position||"static")==="static";\n if(needsPosition)host.style.position="relative";
  host.appendChild(renderer.domElement);
  const ambient=new THREE.HemisphereLight(0xffffff,0x677d58,2);scene.add(ambient);
  const sun=new THREE.DirectionalLight(0xffffff,1.3);sun.position.set(80,140,50);scene.add(sun);
@@ -147,7 +148,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
   keyboard?.dispose();touch?.dispose();view?.dispose();
   body.geometry.dispose();body.material.dispose();ground.geometry.dispose();ground.material.dispose();
   renderer.dispose();renderer.domElement.remove();
-  if(!oldPosition)host.style.position="";
+  if(needsPosition)host.style.position=oldPosition;
  }
  const api={start,dispose,interact,routeTo,status,life,walker,car,scene,camera,renderer};
  return api;
