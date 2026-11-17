@@ -186,11 +186,13 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
  function sitDesk(){
   if(!indoor)throw Error("Der Arbeitsplatz befindet sich in der Leitstelle");
   if(!life.snapshot().onDuty)throw Error("Bitte vor dem Dienst an der Stechuhr einstempeln");
+  if(Math.hypot(walker.snapshot().x-deskPoint.x,walker.snapshot().z-deskPoint.z)>2.4)throw Error("Bitte zum Disponentenarbeitsplatz gehen");
   atDesk=true;drawScreens();onStatus({...status(),message:"Am Disponentenarbeitsplatz – Monitore aktiv"});
  }
  function leaveDesk(){atDesk=false;onStatus({...status(),message:"Vom Arbeitsplatz aufgestanden"});}
  function toggleDoor(){
   if(!interaction||interaction.driving)throw Error("Zum Betreten müssen Sie aussteigen");
+  if(atDesk)throw Error("Bitte vor dem Verlassen der Leitstelle aufstehen");
   if(indoor){indoor=false;walker.teleport(entryPoint.x,entryPoint.z);doorPoint={...entryPoint};life.moveTo("stadt");}
   else{indoor=true;walker.teleport(0,3.8);doorPoint={x:0,z:4.3};life.moveTo("leitstelle");}
   try{life.save()}catch(e){console.warn(e)}
@@ -200,6 +202,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
   if(!indoor)throw Error("Die Stechuhr befindet sich in der Leitstelle");
   const p=walker.snapshot();if(Math.hypot(p.x-chipPoint.x,p.z-chipPoint.z)>2.5)throw Error("Bitte direkt zur Stechuhr gehen");
   const next=life.snapshot().onDuty?"dienstende":"dienstbeginn";
+  if(next==="dienstende"&&atDesk)throw Error("Bitte zuerst den Arbeitsplatz verlassen");
   life.action(next);drawScreens();try{life.save()}catch(e){console.warn(e)}
   onStatus({...status(),message:next==="dienstbeginn"?"Eingestempelt – Dienst begonnen":"Ausgestempelt – Dienst beendet"});
   return next;
