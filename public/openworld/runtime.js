@@ -12,7 +12,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
  if(!origin||!Number.isFinite(origin.lon)||!Number.isFinite(origin.lat))throw Error("WGS84 origin required");
  let model=null,view=null,graph=null,interaction=null,disposed=false,raf=0,last=0,accumulator=0;
  let touch=null,keyboard=null,lookInput={x:0,y:0};
- let indoor=false,entryPoint=null,doorPoint=null,chipPoint=null,office=null,officePieces=[];
+ let indoor=false,entryPoint=null,doorPoint=null,chipPoint=null,office=null,officePieces=[],deskPoint={x:1,z:-1.3},atDesk=false;
  const life=root.LDOpenWorldLife.create();
  const walker=root.LDOpenWorldWalker.create();
  const car=root.LDOpenWorldVehicle.create();
@@ -33,7 +33,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
  const body=new THREE.Mesh(new THREE.BoxGeometry(1.9,1.2,4.5),new THREE.MeshStandardMaterial({color:0x285c88}));
  body.position.y=0.85;vehicleVisual.add(body);scene.add(vehicleVisual);
  let frameInput={forward:0,strafe:0,lookX:0,lookY:0,run:false};
- const status=()=>({indoor,nearChip:!!chipPoint&&!interaction?.driving&&Math.hypot(walker.snapshot().x-chipPoint.x,walker.snapshot().z-chipPoint.z)<2.5,walking:walker.snapshot(),vehicle:car.snapshot(),driving:interaction?.driving||false,life:life.snapshot(),loadedTiles:view?.loadedTiles||0});
+ const status=()=>({indoor,atDesk,nearDesk:indoor&&!interaction?.driving&&Math.hypot(walker.snapshot().x-deskPoint.x,walker.snapshot().z-deskPoint.z)<2.4,nearChip:!!chipPoint&&!interaction?.driving&&Math.hypot(walker.snapshot().x-chipPoint.x,walker.snapshot().z-chipPoint.z)<2.5,walking:walker.snapshot(),vehicle:car.snapshot(),driving:interaction?.driving||false,life:life.snapshot(),loadedTiles:view?.loadedTiles||0});
  function resize(){
   const width=Math.max(1,host.clientWidth),height=Math.max(1,host.clientHeight);
   camera.aspect=width/height;camera.updateProjectionMatrix();renderer.setSize(width,height,false);
@@ -50,6 +50,8 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
  }
  function interact(){
   if(!interaction)return;
+  if(atDesk){leaveDesk();return;}
+  if(indoor&&!interaction.driving&&Math.hypot(walker.snapshot().x-deskPoint.x,walker.snapshot().z-deskPoint.z)<2.4){sitDesk();return;}
   if(!interaction.driving&&doorPoint){const p=walker.snapshot();if(Math.hypot(p.x-doorPoint.x,p.z-doorPoint.z)<2.6){toggleDoor();return;}}
   if(indoor&&!interaction.driving&&chipPoint){const p=walker.snapshot();if(Math.hypot(p.x-chipPoint.x,p.z-chipPoint.z)<2.5){stamp();return;}}
   try{
@@ -65,6 +67,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
  }
  const interactionPlayer={x:0,z:0,heading:0};
  function fixedStep(dt){
+  if(atDesk)return;
   const input=readInput();
   if(interaction.driving){
    const previous=car.snapshot();
@@ -88,7 +91,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
   while(accumulator>=1/60){fixedStep(1/60);accumulator-=1/60;}
   const driving=interaction.driving;
   const p=driving?car.snapshot():walker.snapshot();
-  camera.position.set(p.x,driving?1.65:1.7,p.z);
+  camera.position.set(atDesk?1:p.x,atDesk?1.3:driving?1.65:1.7,atDesk?-1.05:p.z);
   camera.rotation.order="YXZ";camera.rotation.y=-p.heading;camera.rotation.x=driving?0:p.pitch;
   const c=car.snapshot();vehicleVisual.position.set(c.x,0,c.z);vehicleVisual.rotation.y=-c.heading;
   vehicleVisual.visible=!driving;
@@ -133,6 +136,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
   addBox(16,3.5,.2,0,1.75,-6,0x8596a2);addBox(.2,3.5,12,-8,1.75,0,0x8596a2);addBox(.2,3.5,12,8,1.75,0,0x8596a2);
   addBox(16,3.5,.2,0,1.75,6,0x8596a2);
   addBox(3,.85,1.2,1,.75,-2,0x2e4052);
+  addBox(.7,.6,.7,1,.42,-.7,0x2c3542);
   addBox(1.2,.8,.12,.6,1.55,-2.3,0x142c41);addBox(1.2,.8,.12,2,1.55,-2.3,0x142c41);
   addBox(.5,.8,.2,-5.5,1.25,-4.5,0x1e777c);
   addBox(2.1,2.6,.15,0,1.3,5.9,0x624a37);
@@ -146,6 +150,12 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
   resize();onStatus(status());raf=root.requestAnimationFrame(frame);
   return api;
  }
+ function sitDesk(){
+  if(!indoor)throw Error("Der Arbeitsplatz befindet sich in der Leitstelle");
+  if(!life.snapshot().onDuty)throw Error("Bitte vor dem Dienst an der Stechuhr einstempeln");
+  atDesk=true;onStatus({...status(),message:"Am Disponentenarbeitsplatz – Monitore aktiv"});
+ }
+ function leaveDesk(){atDesk=false;onStatus({...status(),message:"Vom Arbeitsplatz aufgestanden"});}
  function toggleDoor(){
   if(!interaction||interaction.driving)throw Error("Zum Betreten müssen Sie aussteigen");
   if(indoor){indoor=false;walker.teleport(entryPoint.x,entryPoint.z);doorPoint={...entryPoint};life.moveTo("stadt");}
@@ -187,7 +197,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
   renderer.dispose();renderer.domElement.remove();
   if(needsPosition)host.style.position=oldPosition;
  }
- const api={start,dispose,interact,toggleDoor,stamp,routeTo,status,life,walker,car,scene,camera,renderer};
+ const api={start,dispose,interact,toggleDoor,stamp,sitDesk,leaveDesk,routeTo,status,life,walker,car,scene,camera,renderer};
  return api;
 }
 root.LDOpenWorldRuntime=Object.freeze({create});
