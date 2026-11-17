@@ -1,0 +1,25 @@
+name: Open World browser integration
+on:
+  push:
+    branches: [leitstelle-openworld-development]
+    paths: ['openworld/**', '.github/workflows/openworld-browser.yml']
+  workflow_dispatch:
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser test tools
+        run: |
+          npm install --no-save playwright@1.58.2
+          npx playwright install --with-deps chromium
+      - name: Serve integration page
+        run: |
+          python3 -m http.server 8765 --directory openworld > /tmp/openworld-http.log 2>&1 &
+          sleep 2
+      - name: Run real Chromium smoke test
+        run: node openworld/browser-smoke.cjs
