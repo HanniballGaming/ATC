@@ -101,8 +101,20 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
   view=root.LDOpenWorldRenderer.create(THREE,scene);
   view.setModel(model);
   const firstRoad=model.roads[0]?.points[0];
-  if(firstRoad){walker.teleport(firstRoad.x,firstRoad.z);car.reset({x:firstRoad.x+1.5,z:firstRoad.z+1.5});}
-  else car.reset({x:2,z:2});
+  const spawn=firstRoad||{x:0,z:0};
+  const safe=(p,r)=>!root.LDOpenWorldCollision.collides(p,model,r);
+  const findSpawn=(base,r)=>{
+   if(safe(base,r))return base;
+   for(let d=2;d<=40;d+=2)for(let a=0;a<16;a++){
+    const angle=a*Math.PI/8,p={x:base.x+Math.cos(angle)*d,z:base.z+Math.sin(angle)*d};
+    if(safe(p,r))return p;
+   }
+   throw Error("Kein freier Startpunkt in der Nähe");
+  };
+  const pedestrianSpawn=findSpawn(spawn,0.4);
+  const vehicleSpawn=findSpawn({x:pedestrianSpawn.x+1.8,z:pedestrianSpawn.z+1.8},1.1);
+  walker.teleport(pedestrianSpawn.x,pedestrianSpawn.z);
+  car.reset({x:vehicleSpawn.x,z:vehicleSpawn.z,handbrake:true});
   interaction=root.LDOpenWorldInteraction.create({vehicle:car,player:interactionPlayer});
   keyboard=root.LDOpenWorldWalker.keyboard(root);
   renderer.domElement.addEventListener("click",requestPointerLock);
