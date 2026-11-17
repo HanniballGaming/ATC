@@ -53,32 +53,33 @@ function create(THREE,scene,options={}){
   geom.setIndex(indices);geom.computeVertexNormals();
   return new THREE.Mesh(geom,roadMat);
  }
+ const featureMeshes=new Map();
  function clear(){
-  for(const group of active.values()){
-   group.traverse(obj=>{if(obj.geometry)obj.geometry.dispose();});
-   scene.remove(group);
-  }active.clear();
+  for(const mesh of featureMeshes.values()){
+   scene.remove(mesh);
+   if(mesh.geometry)mesh.geometry.dispose();
+  }
+  featureMeshes.clear();active.clear();
  }
  function setModel(next){clear();model=next;tiles=root.LDOpenWorldGeo.tilesFor(next,tileSize);}
  function update(x,z){
   if(!tiles)return;
   const wanted=root.LDOpenWorldGeo.nearbyTiles(tiles,x,z,radius,tileSize);
-  const keys=new Set(wanted.map(t=>t.key));
-  for(const [key,group] of active)if(!keys.has(key)){
-   group.traverse(obj=>{if(obj.geometry)obj.geometry.dispose();});
-   scene.remove(group);active.delete(key);
+  const visible=new Set();
+  for(const tile of wanted){
+   for(const item of tile.roads)visible.add(item);
+   for(const item of tile.buildings)visible.add(item);
   }
-  for(const tile of wanted){if(active.has(tile.key))continue;
-   const group=new THREE.Group();group.name="LD Stadtabschnitt "+tile.key;
-   // Each feature is rendered only in its owner tile to avoid duplicate geometry.
-   const owns=item=>{
-    const p=item.points?.[0]||item.rings?.[0]?.[0];
-    return p&&root.LDOpenWorldGeo.tileKey(p.x,p.z,tileSize)===tile.key;
-   };
-   for(const item of tile.roads)if(owns(item)){const mesh=makeRoad(item);if(mesh)group.add(mesh);}
-   for(const item of tile.buildings)if(owns(item)){const mesh=makeBuilding(item);if(mesh)group.add(mesh);}
-   scene.add(group);active.set(tile.key,group);
+  for(const [item,mesh] of featureMeshes){
+   if(!visible.has(item)){scene.remove(mesh);mesh.geometry.dispose();featureMeshes.delete(item);}
   }
+  for(const item of visible){
+   if(featureMeshes.has(item))continue;
+   const mesh=item.type==="road"?makeRoad(item):makeBuilding(item);
+   if(mesh){scene.add(mesh);featureMeshes.set(item,mesh);}
+  }
+  active.clear();
+  for(const tile of wanted)active.set(tile.key,true);
  }
  function dispose(){clear();roadMat.dispose();wallMat.dispose();roofMat.dispose();model=null;tiles=null;}
  return {setModel,update,dispose,get loadedTiles(){return active.size;}};
