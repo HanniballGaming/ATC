@@ -1,0 +1,32 @@
+name: Leitstelle Deutschland – Version 0.22 veröffentlichen
+on:
+  push:
+    branches: [leitstelle-deutschland-release]
+    paths:
+      - 'firstperson_v22.js'
+      - 'release_v22.py'
+      - '.github/workflows/leitstelle-release.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  paket-aktualisieren:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: leitstelle-deutschland-release
+          persist-credentials: true
+      - name: Neue Ego-Version in das Spielpaket übernehmen
+        run: python3 release_v22.py
+      - name: Git-Änderungen veröffentlichen
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add LEITSTELLE_DEUTSCHLAND_v0_21.zip
+          if git diff --cached --quiet; then
+            echo "Spielpaket ist bereits aktuell"
+          else
+            git commit -m "Publish first-person-only Leitstelle Deutschland v0.22"
+            git push origin HEAD:leitstelle-deutschland-release
+          fi
