@@ -89,9 +89,32 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
 
  const ground=new THREE.Mesh(new THREE.PlaneGeometry(5000,5000),new THREE.MeshStandardMaterial({color:0x718d66,roughness:1}));
  ground.rotation.x=-Math.PI/2;ground.position.y=-0.04;scene.add(ground);
- const vehicleVisual=new THREE.Group();
- const body=new THREE.Mesh(new THREE.BoxGeometry(1.9,1.2,4.5),new THREE.MeshStandardMaterial({color:0x285c88}));
- body.position.y=0.85;vehicleVisual.add(body);scene.add(vehicleVisual);
+ const vehicleVisual=new THREE.Group();vehicleVisual.name="FUNKSPRUCH Dienstfahrzeug";
+ const vehicleParts=[];
+ function carPart(geometry,color,x,y,z,roughness=.65){
+  const mesh=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color,roughness,metalness:.06}));
+  mesh.position.set(x,y,z);vehicleVisual.add(mesh);vehicleParts.push(mesh);return mesh;
+ }
+ // Lizenzfreie, ressourcenschonende 3D-Geometrie: kein austauschbarer Platzhalter-Kubus.
+ carPart(new THREE.BoxGeometry(1.88,.62,4.25),0x285c88,0,.82,0);
+ carPart(new THREE.BoxGeometry(1.57,.61,2.34),0x365d78,0,1.37,-.27);
+ carPart(new THREE.BoxGeometry(1.43,.48,.035),0x182e3f,0,1.42,-1.455,.22);
+ carPart(new THREE.BoxGeometry(1.43,.43,.035),0x223a49,0,1.45,.928,.22);
+ for(const side of [-1,1]){
+  carPart(new THREE.BoxGeometry(.038,.38,1.62),0x152e3e,side*.808,1.47,-.3,.2);
+  carPart(new THREE.BoxGeometry(.25,.12,.28),0x152733,side*1.02,1.26,-1.1);
+  carPart(new THREE.BoxGeometry(.25,.16,.12),0xffefcf,side*.65,.9,-2.13,.3);
+  carPart(new THREE.BoxGeometry(.24,.14,.12),0x9d1b20,side*.67,.91,2.13,.3);
+  for(const z of [-1.38,1.38]){
+   const wheel=carPart(new THREE.CylinderGeometry(.36,.36,.2,12),0x171d24,side*1.0,.36,z,.97);
+   wheel.rotation.z=Math.PI/2;
+   const hub=carPart(new THREE.CylinderGeometry(.19,.19,.21,12),0x9ba4a8,side*1.01,.36,z,.42);
+   hub.rotation.z=Math.PI/2;
+  }
+ }
+ carPart(new THREE.BoxGeometry(1.4,.16,.13),0x151b24,0,.52,-2.15,.95);
+ carPart(new THREE.BoxGeometry(1.4,.16,.13),0x151b24,0,.52,2.15,.95);
+ scene.add(vehicleVisual);
  let frameInput={forward:0,strafe:0,lookX:0,lookY:0,run:false},dispatchSummary=null,clockAccumulator=0,wallClockTexture=null,wallClockCanvas=null;
  const status=()=>({indoor,atDesk,nearDoor:!interaction?.driving&&!!doorPoint&&Math.hypot(walker.snapshot().x-doorPoint.x,walker.snapshot().z-doorPoint.z)<2.6,nearDesk:indoor&&!interaction?.driving&&Math.hypot(walker.snapshot().x-deskPoint.x,walker.snapshot().z-deskPoint.z)<2.4,nearChip:indoor&&!!chipPoint&&!interaction?.driving&&Math.hypot(walker.snapshot().x-chipPoint.x,walker.snapshot().z-chipPoint.z)<2.5,walking:walker.snapshot(),vehicle:car.snapshot(),driving:interaction?.driving||false,life:life.snapshot(),loadedTiles:view?.loadedTiles||0,dispatch:dispatchSummary?{...dispatchSummary}:null});
  function resize(){
@@ -329,7 +352,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   keyboard?.dispose();touch?.dispose();view?.dispose();worldUpgrade?.dispose();exterior?.userData?.dispose?.();
   officePieces.forEach(mesh=>{mesh.geometry?.dispose();if(mesh.material&&mesh.material!==screenMaterialRef)mesh.material.dispose()});
   screenTexture?.dispose();screenMaterialRef?.dispose();wallClockTexture?.dispose();
-  body.geometry.dispose();body.material.dispose();ground.geometry.dispose();ground.material.dispose();
+  for(const part of vehicleParts){part.geometry.dispose();part.material.dispose();}ground.geometry.dispose();ground.material.dispose();
   renderer.dispose();renderer.domElement.remove();
   if(needsPosition)host.style.position=oldPosition;
  }
