@@ -40,4 +40,21 @@ const world=path.join(output,"openworld","index.html");
 let worldHTML=fs.readFileSync(world,"utf8");
 worldHTML=worldHTML.replace(/https:\/\/cdn\.jsdelivr\.net\/npm\/three@0\.149\.0\/build\/three\.min\.js/g,"./vendor/three.min.js");
 fs.writeFileSync(world,worldHTML,"utf8");
+// Installierte iPad-/Browser-PWAs starten grundsätzlich in der neuen 3D-Startansicht,
+// nicht versehentlich im alten getrennten Leitstellenspiel.
+const manifestPath=path.join(output,"manifest.webmanifest");
+let manifest={};
+if(fs.existsSync(manifestPath)){
+ try{manifest=JSON.parse(fs.readFileSync(manifestPath,"utf8"));}catch{manifest={};}
+}
+Object.assign(manifest,{
+ name:"FUNKSPRUCH – Stimmen im Rauschen",
+ short_name:"FUNKSPRUCH",
+ start_url:"./openworld/",
+ scope:"./",
+ display:"standalone",
+ background_color:"#06121e",
+ theme_color:"#164b66"
+});
+fs.writeFileSync(manifestPath,JSON.stringify(manifest,null,2)+"\n","utf8");
 console.log("Hauptspiel, 3D-Welt und Arbeitsplätze für Windows zusammengestellt.");

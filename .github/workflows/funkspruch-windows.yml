@@ -37,6 +37,26 @@ jobs:
       - name: Windows-Setup erstellen
         working-directory: desktop
         run: npm run build:windows
+      - name: Gepackte Windows-App tatsächlich starten
+        shell: pwsh
+        run: |
+          $appFile = Join-Path $PWD "desktop/release/win-unpacked/FUNKSPRUCH.exe"
+          if (!(Test-Path $appFile)) { throw "Gepackte FUNKSPRUCH.exe fehlt" }
+          $process = Start-Process -FilePath $appFile -PassThru
+          try {
+            $ok = $false
+            for ($i=0; $i -lt 24; $i++) {
+              Start-Sleep -Milliseconds 750
+              try {
+                $response = Invoke-WebRequest -Uri "http://127.0.0.1:47821/openworld/" -UseBasicParsing -TimeoutSec 2
+                if ($response.StatusCode -eq 200 -and $response.Content -match "FUNKSPRUCH") { $ok = $true; break }
+              } catch {}
+            }
+            if (!$ok) { throw "Installierte Programmbinärdatei startet keinen gültigen lokalen Spielserver" }
+            Write-Host "Gepackte Windows-App startet die FUNKSPRUCH-3D-Welt erfolgreich."
+          } finally {
+            Get-Process -Name "FUNKSPRUCH" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          }
       - name: Browserfassung als ZIP-Testartefakt bereitstellen
         uses: actions/upload-artifact@v4
         with:
