@@ -29,7 +29,8 @@ async function run(){
  });
  test("Leitstelle: Kollision mit Trennwänden",()=>{
   const indoor=root.LDFunkspruchIndoor.model();
-  if(indoor.buildings.length!==2)throw Error("Trennwände fehlen");
+  if(indoor.buildings.length<12)throw Error("Innenraumkollisionen für Möbel und Trennwände fehlen");
+  if(!root.LDOpenWorldCollision.collides({x:1,z:-2},indoor,.3))throw Error("Disponententisch ist durchlässig");
   const w=root.LDOpenWorldWalker.create({x:-2.7,z:1.5});
   w.update(.25,{strafe:-1},indoor);
   if(w.snapshot().x<-3.05)throw Error("Trennwand ist durchlässig");
