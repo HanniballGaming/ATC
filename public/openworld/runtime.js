@@ -5,7 +5,7 @@
  * Explicit mount only: no changes to the existing dispatcher interface.
  */
 (function(root){"use strict";
-function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=>{}}={}){
+function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},onStatus=()=>{}}={}){
  if(!THREE||!host||!host.appendChild)throw Error("THREE and host required");
  const required=["LDOpenWorldGeo","LDOpenWorldRenderer","LDOpenWorldVehicle","LDOpenWorldInteraction","LDOpenWorldCollision","LDOpenWorldWalker","LDOpenWorldLife","LDOpenWorldRoadGraph"];
  for(const key of required)if(!root[key])throw Error("Missing module: "+key);
@@ -18,11 +18,11 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
  const car=root.LDOpenWorldVehicle.create();
  const scene=new THREE.Scene();scene.background=new THREE.Color(0x9cc9e7);
  const camera=new THREE.PerspectiveCamera(70,1,0.1,1500);
- const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"low-power"});
+ const renderer=new THREE.WebGLRenderer({antialias:graphics.antialias!==false,powerPreference:graphics.powerPreference==="low-power"?"low-power":"high-performance"});
  renderer.outputEncoding=THREE.sRGBEncoding;
  renderer.toneMapping=THREE.ACESFilmicToneMapping;
  renderer.toneMappingExposure=1.05;
- renderer.setPixelRatio(Math.min(root.devicePixelRatio||1,1.5));
+ renderer.setPixelRatio(Math.min(root.devicePixelRatio||1,graphics.pixelRatio===1?1:1.5));
  renderer.domElement.style.cssText="display:block;width:100%;height:100%;touch-action:none";
  const oldPosition=host.style.position;
  const needsPosition=(root.getComputedStyle?.(host)?.position||"static")==="static";
@@ -116,7 +116,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
   if(disposed)throw Error("Runtime disposed");
   model=root.LDOpenWorldGeo.loadGeoJSON(geojson,origin);
   graph=root.LDOpenWorldRoadGraph.create(model);
-  view=root.LDOpenWorldRenderer.create(THREE,scene);
+  view=root.LDOpenWorldRenderer.create(THREE,scene,{radius:graphics.renderRadius===1?1:2});
   view.setModel(model);
   const firstRoad=model.roads[0]?.points[0];
   const spawn=firstRoad||{x:0,z:0};
