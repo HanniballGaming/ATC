@@ -4,17 +4,28 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 const cwd=path.dirname(fileURLToPath(import.meta.url));
-async function closeChecked(app,label){
- console.log("Electron-Starttest: schließe "+label);
+async function closeChecked(electronApp,label){
+ console.log("Electron-Starttest: reguläres Fensterschließen – "+label);
+ const child=electronApp.process();
+ if(!child||child.exitCode!==null)return;
  let timeout;
+ const exited=new Promise((resolve,reject)=>{
+  child.once("exit",resolve);
+  timeout=setTimeout(()=>{
+   try{child.kill();}catch{}
+   reject(new Error("Windows-App beendet "+label+" nach Fensterschließen nicht innerhalb von 15 Sekunden."));
+  },15000);
+ });
  try{
-  await Promise.race([
-   app.close(),
-   new Promise((_,reject)=>{timeout=setTimeout(()=>reject(new Error("Electron beendet "+label+" nicht innerhalb von 15 Sekunden.")),15000);})
-  ]);
- }catch(error){
-  try{app.process()?.kill();}catch{}
-  throw error;
+  // Entspricht dem tatsächlichen Klicken auf das Fenster-Schließen-X.
+  // app.close() von Playwright prüft nicht denselben Ablauf und kann beim
+  // zweiten Elektron-Start auf Windows den Testprozess blockieren.
+  try{
+   await electronApp.evaluate(({BrowserWindow})=>{
+    for(const win of BrowserWindow.getAllWindows())if(!win.isDestroyed())win.close();
+   });
+  }catch(error){console.warn("Fensterschließen trennte die DevTools-Verbindung:",error.message);}
+  await exited;
  }finally{clearTimeout(timeout);}
 }
 async function run(){
