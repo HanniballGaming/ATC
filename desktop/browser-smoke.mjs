@@ -48,8 +48,13 @@ try{
  assert.match(await outer.locator("#els").getAttribute("src"),/fs_embed=1/);
  const embedded=outer.frameLocator("#els");
  await embedded.locator("body").waitFor({timeout:20000});
- const embeddedGame=await embedded.locator("body").evaluate(node=>node.innerText.slice(0,300));
- assert.ok(embeddedGame.length>0,"Vollständiges ELS nicht geladen");
+ let embeddedGame="";
+ for(let n=0;n<35;n++){
+   try{embeddedGame=await embedded.locator("body").evaluate(node=>window.LDOperations?.getState!==undefined?node.innerText.slice(0,300):"");}catch{}
+   if(embeddedGame.length>40)break;
+   await page.waitForTimeout(400);
+ }
+ assert.ok(embeddedGame.length>40,"Vollständiges ELS nicht geladen");
  const modules=await embedded.locator("body").evaluate(()=>({
    operations:typeof window.LDOperations,
    ai:typeof window.LDAI23,
