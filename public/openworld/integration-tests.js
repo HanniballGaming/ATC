@@ -22,6 +22,20 @@ async function run(){
   if(!r.every(t=>t.bounds.north>t.bounds.south&&t.bounds.east>t.bounds.west&&t.bundledUrl?.endsWith(".geojson")))throw Error("Ungültige Geodatenkacheln");
   if(r[0].bounds.east!==r[1].bounds.west||r[0].bounds.north!==r[2].bounds.south)throw Error("Lücken im Straßennetz-Bereich");
  });
+ test("OSM-Kacheln: identische Way-IDs ohne doppelte Straßen oder Gebäude",()=>{
+  const elements=[];
+  for(let i=0;i<10;i++){
+   elements.push({type:"Feature",id:"way/"+(i+1),properties:{highway:"residential"},
+    geometry:{type:"LineString",coordinates:[[10.9+i*.00001,48.37],[10.9001+i*.00001,48.37]]}});
+   elements.push({type:"Feature",id:"way/"+(i+100),properties:{building:"yes"},
+    geometry:{type:"Polygon",coordinates:[[[10.9,48.37],[10.9001,48.37],[10.9001,48.3701],[10.9,48.37]]]}});
+  }
+  const tile={type:"FeatureCollection",features:elements,metadata:{source:"OpenStreetMap",real:true}};
+  const combined=root.LDFunkspruchMap.mergeGeoJSON([{geojson:tile},{geojson:tile}]);
+  if(combined.features.length!==elements.length)throw Error("OSM-Ways doppelt übernommen");
+  if(combined.metadata.tileCount!==2||!root.LDFunkspruchMap.validData(combined))
+   throw Error("Echte OSM-Herkunft nach Zusammenführen verloren");
+ });
  test("Geodaten: fiktive Stadt ist kein erlaubter Spielstand",()=>{
   const fake={type:"FeatureCollection",metadata:{source:"Fiktive Trainingsstadt",real:false},features:[]};
   if(root.LDFunkspruchMap.validData(fake))throw Error("Fiktive Stadt wurde akzeptiert");
