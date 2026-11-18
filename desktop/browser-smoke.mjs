@@ -130,6 +130,23 @@ try{
  assert.equal(restored.life.onDuty,true,"Gespeicherter Dienststatus wurde nicht wiederhergestellt");
  console.log("Spielstand: Innenraum und Dienststatus nach Neuladen wiederhergestellt.");
  console.log("Browsertest: First Person, Dienstbeginn, Arbeitsplatz, ELS und gesperrter Modus geprüft.");
+ const tablet=await browser.newPage({viewport:{width:820,height:1180},isMobile:true,hasTouch:true,deviceScaleFactor:2});
+ try{
+  await tablet.goto(base+"/openworld/",{waitUntil:"domcontentloaded",timeout:30000});
+  await tablet.locator("#startNormal").click({timeout:30000});
+  await tablet.waitForFunction(()=>!!window.FunkspruchGame,{timeout:30000});
+  const touch=await tablet.evaluate(()=>!!document.querySelector('[aria-label="FUNKSPRUCH – Touchsteuerung"]'));
+  assert.equal(touch,true,"Tablet-Touchsteuerung nicht initialisiert");
+  const mobileDesk=await tablet.evaluate(()=>{
+   const g=window.FunkspruchGame;
+   g.toggleDoor();g.walker.teleport(-5.5,-4.5);g.stamp();g.walker.teleport(1,-1.3);g.sitDesk();
+   const r=document.querySelector("#monitor").getBoundingClientRect();
+   return {width:r.width,viewport:innerWidth,active:document.querySelector("#monitor").classList.contains("active")};
+  });
+  assert.equal(mobileDesk.active,true,"Tablet-Monitor nicht geöffnet");
+  assert.ok(mobileDesk.width>=mobileDesk.viewport*.94,"Tablet-Monitor ist nicht bildschirmfüllend");
+  console.log("Tablet: Touchsteuerung und bildschirmfüllender Arbeitsplatz geprüft.");
+ }finally{await tablet.close();}
  console.log("ELS-Ausschnitt:",embeddedGame.slice(0,170).replace(/\s+/g," "));
  assert.equal(errors.filter(error=>error.includes("Invalid LatLng object")).length,0,"Fehlerhafte Kartenkoordinaten im Leitstellenmonitor: "+JSON.stringify(errors.slice(0,4)));
  if(errors.length)throw Error("Unbehandelte Browserfehler: "+JSON.stringify(errors.slice(0,8)));
