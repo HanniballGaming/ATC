@@ -4,7 +4,7 @@ const {app,BrowserWindow,shell,session,dialog}=require("electron");
 const fs=require("node:fs"),path=require("node:path"),http=require("node:http");
 const ROOT=path.resolve(__dirname,"web"),HOST="127.0.0.1",PORT=47821,ORIGIN="http://"+HOST+":"+PORT;
 const MIME={".html":"text/html; charset=utf-8",".js":"text/javascript; charset=utf-8",".css":"text/css; charset=utf-8",".json":"application/json; charset=utf-8",".webmanifest":"application/manifest+json; charset=utf-8",".png":"image/png",".jpg":"image/jpeg",".jpeg":"image/jpeg",".svg":"image/svg+xml",".woff2":"font/woff2",".mp3":"audio/mpeg",".ogg":"audio/ogg",".wav":"audio/wav",".webp":"image/webp",".ico":"image/x-icon"};
-let server=null,win=null;
+let server=null,win=null,forcedQuitTimer=null;
 const activeSockets=new Set();
 function closeServer(){
  if(!server)return;
@@ -20,7 +20,14 @@ else{
  app.on("second-instance",()=>{if(win){if(win.isMinimized())win.restore();win.focus();}});
  app.whenReady().then(start).catch(err=>{dialog.showErrorBox("FUNKSPRUCH – Startfehler",String(err.stack||err));app.quit();});
  app.on("window-all-closed",()=>app.quit());
- app.on("before-quit",closeServer);
+ app.on("before-quit",()=>{
+  closeServer();
+  // Beenden selbst bei hängendem Renderprozess: normale Schließroutine erhält 3 Sekunden.
+  if(!forcedQuitTimer)forcedQuitTimer=setTimeout(()=>{
+   if(win&&!win.isDestroyed())win.destroy();
+  },3000);
+  forcedQuitTimer.unref?.();
+ });
  app.on("will-quit",closeServer);
 }
 function serve(req,res){
