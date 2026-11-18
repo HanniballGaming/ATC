@@ -176,6 +176,12 @@ try{
    assert.ok(conversation.turns>=2,"Gesprächsprotokoll wurde nicht angelegt");
    assert.ok(!["Anruf","Unversorgt"].includes(conversation.phase),"Notruf konnte nicht angenommen werden");
    await page.waitForFunction(()=>window.FunkspruchGame.status().dispatch?.waiting===0,null,{timeout:12000});
+   // Ereignisse müssen den kompletten Weg vom ELS über beide Frames bis ins Dienstjournal nehmen.
+   await page.waitForFunction(()=>window.FunkspruchGame.getShiftJournal?.()?.active?.events?.some(e=>e.kind==="funk"),null,{timeout:15000});
+   const events=await page.evaluate(()=>window.FunkspruchGame.getShiftJournal().active.events);
+   assert.ok(events.some(e=>e.kind==="funk"),"Funkprotokoll nicht ins Schichtjournal übertragen");
+   assert.ok(events.some(e=>e.kind==="alarmierung"),"Disposition nicht ins Schichtjournal übertragen");
+   console.log("Echte Leitstellenereignisse im 3D-Schichtjournal:",JSON.stringify(events.slice(-6)));
    // Schichtende tatsächlich an der 3D-Stechuhr: Einsatzsimulation pausiert.
    await page.evaluate(()=>{
      const g=window.FunkspruchGame;
