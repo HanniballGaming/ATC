@@ -9,7 +9,7 @@ body.playing #firstPersonPrompt{display:block}body.playing #firstPersonPrompt:em
 #crosshair{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:32;opacity:.7;color:#e8f5f9;font-size:18px;pointer-events:none;display:none}
 body.playing:not(.fatal) #crosshair{display:block}body.playing #monitor.active~#crosshair{display:none}
 @media(pointer:coarse){#firstPersonPrompt{bottom:175px;font-size:12px}#crosshair{opacity:.4}}
-#mapCredit{position:fixed;bottom:5px;left:7px;color:#e0ecf3;background:#102333b8;font:10px system-ui;z-index:35;padding:2px 5px;border-radius:4px}#mapCredit[hidden]{display:none}#panel{pointer-events:auto}body.playing #panel{display:none}body.playing.fatal #panel{display:block}#mainMenu{position:fixed;inset:0;z-index:200;background:radial-gradient(ellipse at 28% 15%,#164b66,#06121e 72%);display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;overflow:auto}#mainMenu[hidden]{display:none}#menuContent{width:min(880px,100%)}#menuContent h1{font-size:clamp(32px,6vw,66px);letter-spacing:.09em;margin:0;color:#e6f8ff}#menuContent>p{color:#a5c4d5;font-size:17px;margin:3px 0 28px}#modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.mode{background:#102a3bbd;border:1px solid #43839c;border-radius:16px;padding:24px;min-height:230px;box-sizing:border-box}.mode h2{font-size:22px}.mode p{color:#b7c9d6;line-height:1.6}.mode button{font-size:16px;padding:12px 18px}.mode.locked{background:#27151bd9;border-color:#804652}.mode.locked button{opacity:.6;cursor:not-allowed}.mode.locked strong{color:#f1a4a4}#menuHint{color:#a6bbc9;margin-top:20px}#ambientRow,#voiceRow{display:block;color:#c1dfeb;margin-top:12px;font-size:13px}#graphicsRow{display:block;color:#c1dfeb;margin-top:8px;font-size:13px}#graphicsQuality{background:#112c40;color:white;border:1px solid #426882;border-radius:5px;padding:6px}#ambientEnabled,#voiceEnabled{accent-color:#48b2bd}@media(max-width:650px){#modes{grid-template-columns:1fr}.mode{min-height:unset;padding:17px}} </style></head><body>
+#mapCredit{position:fixed;bottom:5px;left:7px;color:#e0ecf3;background:#102333b8;font:10px system-ui;z-index:35;padding:2px 5px;border-radius:4px}#mapCredit[hidden]{display:none}#panel{pointer-events:auto}body.started #panel{display:none}body.fatal #panel{display:block}#mainMenu{position:fixed;inset:0;z-index:200;background:radial-gradient(ellipse at 28% 15%,#164b66,#06121e 72%);display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;overflow:auto}#mainMenu[hidden]{display:none}#menuContent{width:min(880px,100%)}#menuContent h1{font-size:clamp(32px,6vw,66px);letter-spacing:.09em;margin:0;color:#e6f8ff}#menuContent>p{color:#a5c4d5;font-size:17px;margin:3px 0 28px}#modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.mode{background:#102a3bbd;border:1px solid #43839c;border-radius:16px;padding:24px;min-height:230px;box-sizing:border-box}.mode h2{font-size:22px}.mode p{color:#b7c9d6;line-height:1.6}.mode button{font-size:16px;padding:12px 18px}.mode.locked{background:#27151bd9;border-color:#804652}.mode.locked button{opacity:.6;cursor:not-allowed}.mode.locked strong{color:#f1a4a4}#menuHint{color:#a6bbc9;margin-top:20px}#ambientRow,#voiceRow{display:block;color:#c1dfeb;margin-top:12px;font-size:13px}#graphicsRow{display:block;color:#c1dfeb;margin-top:8px;font-size:13px}#graphicsQuality{background:#112c40;color:white;border:1px solid #426882;border-radius:5px;padding:6px}#ambientEnabled,#voiceEnabled{accent-color:#48b2bd}@media(max-width:650px){#modes{grid-template-columns:1fr}.mode{min-height:unset;padding:17px}} </style></head><body>
 <div id="mainMenu" role="dialog" aria-modal="true" aria-labelledby="gameTitle"><div id="menuContent"><h1 id="gameTitle">FUNKSPRUCH</h1><p>Stimmen im Rauschen</p><div id="modes"><section class="mode"><h2>Leitstellenbetrieb</h2><p>Beginne deine Schicht, betrete die Leitstelle und bearbeite Notrufe, Einsätze und Funkverkehr in der Ego-Perspektive.</p><button id="startNormal" type="button">Leitstellenmodus starten</button></section><section class="mode locked"><strong>IN ENTWICKLUNG</strong><h2>Apokalypse &amp; Überleben</h2><p>Katastrophen, Zusammenbruch der Versorgung und Überleben in der Leitstelle. Dieser Modus wird später freigeschaltet.</p><button type="button" disabled aria-disabled="true" title="Noch in Entwicklung">Noch nicht verfügbar</button></section></div><label id="ambientRow"><input type="checkbox" id="ambientEnabled" checked> Umgebungsgeräusche aktivieren</label><label id="voiceRow"><input type="checkbox" id="voiceEnabled" checked> Gesprochene Antworten der KI-Kollegen (Systemstimme)</label><label id="graphicsRow">Grafikqualität: <select id="graphicsQuality"><option value="auto">Automatisch</option><option value="low">Niedrig (ältere Laptops und iPads)</option><option value="medium">Mittel</option></select></label><p id="menuHint">Aktuell ist ausschließlich der normale Leitstellenmodus spielbar. Steuerung: WASD, Maus, E für Interaktionen; Mobilgeräte mit Touchsteuerung.</p></div></div>
 <div id="world"></div><div id="crosshair" aria-hidden="true">+</div><div id="firstPersonPrompt" role="status" aria-live="polite"></div><div id="mapCredit" hidden>Geodaten © OpenStreetMap-Mitwirkende (ODbL 1.0)</div><section id="monitor" aria-label="Disponentenarbeitsplatz"><header><strong>FUNKSPRUCH · Arbeitsplatzmonitor</strong><button id="stand">Aufstehen</button></header><iframe title="Leitstellen-Einsatzleitsystem" loading="lazy" data-src="./arbeitsplatz.html" id="dispatchMonitor"></iframe></section><div id="panel"><strong>FUNKSPRUCH · Leitstellenbetrieb</strong>
 <p>Immer in Ego-Perspektive · WASD bewegen · E: Tür, Stechuhr oder Fahrzeug · Auf Mobilgeräten: Touchsteuerung · Am Schreibtisch E drücken</p><div id="clock">Dienstfrei · Zur Leitstelle gehen und einstempeln</div>
@@ -29,15 +29,40 @@ body.playing:not(.fatal) #crosshair{display:block}body.playing #monitor.active~#
 const info=document.getElementById("info");
 const mainMenu=document.getElementById("mainMenu");
 try{if(localStorage.getItem("funkspruch-openworld-save-v1"))document.getElementById("startNormal").textContent="Spielstand fortsetzen";}catch{}
+const startButton=document.getElementById("startNormal");
+const initialResume=(()=>{try{return !!localStorage.getItem("funkspruch-openworld-save-v1")}catch{return false}})();
+startButton.disabled=true;startButton.textContent="Spielwelt wird vorbereitet …";
 const audio=LDFunkspruchAmbient.create();
+let gameInstance=null,started=false;
+function lowerGraphics(){
+ const quality=document.getElementById("graphicsQuality").value;
+ return quality==="low"||(quality==="auto"&&(matchMedia("(max-width: 1100px), (pointer: coarse)").matches||(navigator.deviceMemory&&navigator.deviceMemory<=8)));
+}
+function resumeGame(){
+ started=true;document.body.classList.add("started","playing");
+ audio.setEnabled(document.getElementById("ambientEnabled").checked);audio.start();
+ gameInstance?.setGraphicsProfile(lowerGraphics());
+ gameInstance?.setPaused(false);
+ mainMenu.hidden=true;startButton.textContent="Spiel fortsetzen";
+ window.dispatchEvent(new Event("resize"));
+}
+function togglePause(){
+ if(!started||!gameInstance||document.getElementById("monitor").classList.contains("active"))return;
+ if(mainMenu.hidden){
+  gameInstance.setPaused(true);mainMenu.hidden=false;document.body.classList.remove("playing");
+  startButton.textContent="Spiel fortsetzen";
+ }else resumeGame();
+}
+window.addEventListener("keydown",event=>{
+ if(event.code==="Escape"&&!event.repeat){togglePause();event.preventDefault();}
+});
 const prompt=document.getElementById("firstPersonPrompt");let lastEventText="",lastEventTime=0;
-document.getElementById("startNormal").addEventListener("click",()=>{audio.setEnabled(document.getElementById("ambientEnabled").checked);audio.start();mainMenu.hidden=true;document.body.classList.add("playing");window.dispatchEvent(new Event("resize"));});
+startButton.addEventListener("click",resumeGame);
 const tests=await LDOpenWorldIntegrationTests.run();
 info.textContent="Modultests: "+tests.passed+"/"+tests.total+" bestanden\n"+tests.results.filter(r=>!r.ok).map(r=>r.name+": "+r.error).join("\n");
 const origin={lon:10.8985,lat:48.3705};
 // Dynamic resolution for tablets and low-powered devices.
-const quality=document.getElementById("graphicsQuality").value;
-const reducedGraphics=quality==="low"||(quality==="auto"&&(matchMedia("(max-width: 900px), (pointer: coarse)").matches||(navigator.deviceMemory&&navigator.deviceMemory<=4)));
+const reducedGraphics=lowerGraphics();
 const syntheticGeojson={type:"FeatureCollection",features:[
  {type:"Feature",properties:{highway:"residential"},geometry:{type:"LineString",coordinates:[[10.8983,48.3705],[10.901,48.3705]]}},
  {type:"Feature",properties:{building:"yes","building:levels":"3"},geometry:{type:"Polygon",coordinates:[[[10.899,48.3708],[10.8993,48.3708],[10.8993,48.3706],[10.899,48.3706],[10.899,48.3708]]]}},
@@ -60,6 +85,8 @@ const game=LDOpenWorldRuntime.create({THREE,host:document.getElementById("world"
  if(s.atDesk&&!dispatchMonitor.getAttribute("src"))dispatchMonitor.src=dispatchMonitor.dataset.src;
 }});
 await game.start();
+gameInstance=game;game.setPaused(!started);
+startButton.disabled=false;startButton.textContent=initialResume?"Spielstand fortsetzen":"Leitstellenmodus starten";
 window.addEventListener("message",event=>{
  if(event.origin!==location.origin||event.source!==dispatchMonitor.contentWindow)return;
  if(event.data?.type==="funkspruch:dispatch-summary")game.setDispatchSummary(event.data);

@@ -10,7 +10,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
  const required=["LDOpenWorldGeo","LDOpenWorldRenderer","LDOpenWorldVehicle","LDOpenWorldInteraction","LDOpenWorldCollision","LDOpenWorldWalker","LDOpenWorldLife","LDOpenWorldRoadGraph"];
  for(const key of required)if(!root[key])throw Error("Missing module: "+key);
  if(!origin||!Number.isFinite(origin.lon)||!Number.isFinite(origin.lat))throw Error("WGS84 origin required");
- let model=null,view=null,graph=null,interaction=null,disposed=false,raf=0,last=0,accumulator=0;
+ let model=null,view=null,graph=null,interaction=null,disposed=false,raf=0,last=0,accumulator=0,paused=true;
  let touch=null,keyboard=null,lookInput={x:0,y:0},worldUpgrade=null;
  let indoor=false,entryPoint=null,doorPoint=null,chipPoint=null,office=null,officePieces=[],exterior=null,deskPoint={x:1,z:-1.3},atDesk=false,screenTexture=null,screenCanvas=null,screenContext=null,screenMaterialRef=null;
  const life=root.LDOpenWorldLife.create();
@@ -131,6 +131,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
  }
  function frame(time){
   if(disposed)return;
+  if(paused){last=time;raf=root.requestAnimationFrame(frame);return;}
   const dt=last?Math.min((time-last)/1000,0.1):0;last=time;
   accumulator=Math.min(accumulator+dt,0.2);
   while(accumulator>=1/60){fixedStep(1/60);accumulator-=1/60;}
@@ -154,7 +155,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   ground.visible=!indoor;
   vehicleVisual.visible=!driving&&!indoor;
   scene.background.setHex(indoor?0x1c2835:0x9cc9e7);
-  renderer.render(scene,camera);
+  if(!atDesk)renderer.render(scene,camera); // Der ELS-Bildschirm verdeckt die Szene vollständig.
   raf=root.requestAnimationFrame(frame);
  }
  async function start(){
@@ -311,6 +312,11 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   renderer.dispose();renderer.domElement.remove();
   if(needsPosition)host.style.position=oldPosition;
  }
+ function setPaused(value){paused=!!value;return paused;}
+ function setGraphicsProfile(low){
+  renderer.setPixelRatio(Math.min(root.devicePixelRatio||1,low?1:1.5));
+  view?.setRadius?.(low?1:2);resize();return low;
+ }
  function setDispatchSummary(raw){
   if(!raw||!["open","waiting","free","total"].every(k=>Number.isSafeInteger(raw[k])&&raw[k]>=0&&raw[k]<=100000))return false;
   if(raw.waiting>raw.open||raw.free>raw.total)return false;
@@ -348,7 +354,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   drawScreens();onStatus({...status(),message:"Gespeicherter Spielstand geladen"});
   return true;
  }
- const api={start,dispose,interact,toggleDoor,stamp,sitDesk,leaveDesk,routeTo,status,setDispatchSummary,saveWorld,restoreWorld,life,walker,car,scene,camera,renderer,getShift:()=>worldUpgrade?.shift()};
+ const api={start,dispose,interact,toggleDoor,stamp,sitDesk,leaveDesk,routeTo,status,setDispatchSummary,setPaused,setGraphicsProfile,saveWorld,restoreWorld,life,walker,car,scene,camera,renderer,getShift:()=>worldUpgrade?.shift()};
  return api;
 }
 root.LDOpenWorldRuntime=Object.freeze({create});

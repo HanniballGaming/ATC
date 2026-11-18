@@ -31,6 +31,11 @@ try{
  assert.equal(await page.locator(".mode.locked button").isDisabled(),true,"Zweiter Modus muss gesperrt bleiben");
  await page.locator("#startNormal").click();
  await page.waitForFunction(()=>!!window.FunkspruchGame,{timeout:25000});
+ await page.keyboard.press("Escape");
+ await page.locator("#mainMenu").waitFor({state:"visible"});
+ assert.match(await page.locator("#startNormal").textContent(),/fortsetzen/i,"Pausenmenü fehlt");
+ await page.locator("#startNormal").click();
+ await page.locator("#mainMenu").waitFor({state:"hidden"});
  const state=await page.evaluate(()=>{
   const g=window.FunkspruchGame;
   g.toggleDoor();

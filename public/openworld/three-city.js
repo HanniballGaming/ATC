@@ -7,7 +7,7 @@
 (function(root){"use strict";
 function create(THREE,scene,options={}){
  if(!THREE||!scene)throw Error("THREE and scene required");
- const tileSize=options.tileSize||256, radius=options.radius??2;
+ const tileSize=options.tileSize||256;let radius=options.radius??2;
  const roadWidth=options.roadWidth||5, defaultHeight=options.defaultBuildingHeight||9;
  const roadMat=new THREE.MeshStandardMaterial({color:0x404953,roughness:1,side:THREE.DoubleSide});
  const wallMat=new THREE.MeshStandardMaterial({color:0xa6a9a4,roughness:0.9});
@@ -82,7 +82,10 @@ function create(THREE,scene,options={}){
   for(const tile of wanted)active.set(tile.key,true);
  }
  function dispose(){clear();roadMat.dispose();wallMat.dispose();roofMat.dispose();model=null;tiles=null;}
- return {setModel,update,dispose,get loadedTiles(){return active.size;}};
+ return {setModel,update,dispose,
+  setRadius(next){if(!Number.isInteger(next)||next<1||next>5)throw Error("Ungültiger Sichtradius");radius=next;},
+  get loadedTiles(){return active.size;}
+ };
 }
 root.LDOpenWorldRenderer=Object.freeze({create});
 })(typeof window!=="undefined"?window:globalThis);
