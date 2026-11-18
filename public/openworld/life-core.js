@@ -18,6 +18,15 @@ function create(initial={}){
   s.hygiene=clamp(s.hygiene-minutes*0.013,0,100);
   return snapshot();
  }
+ function syncClock(minute){
+  if(!Number.isFinite(minute)||minute<0)return snapshot();
+  const normalized=((Math.round(minute)%1440)+1440)%1440;
+  const current=((Math.round(s.minutes)%1440)+1440)%1440;
+  const advanceBy=(normalized-current+1440)%1440;
+  // Die Spielzeit darf nicht rückwärts springen und übernimmt nur plausible Schritte.
+  if(advanceBy>0&&advanceBy<=240)advance(advanceBy);
+  return snapshot();
+ }
  function action(name){
   const actions={
    essen:{place:["wohnung","restaurant"],duration:20,cost:5,apply:()=>{s.hunger=clamp(s.hunger-55,0,100);}},
@@ -45,7 +54,7 @@ function create(initial={}){
   for(const key of Object.keys(defaults))if(Object.prototype.hasOwnProperty.call(data,key)&&typeof data[key]===typeof defaults[key])s[key]=data[key];
   return snapshot();
  }
- return {snapshot,advance,action,moveTo,save,load};
+ return {snapshot,advance,syncClock,action,moveTo,save,load};
 }
 root.LDOpenWorldLife=Object.freeze({create});
 })(typeof window!=="undefined"?window:globalThis);

@@ -76,7 +76,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
  const vehicleVisual=new THREE.Group();
  const body=new THREE.Mesh(new THREE.BoxGeometry(1.9,1.2,4.5),new THREE.MeshStandardMaterial({color:0x285c88}));
  body.position.y=0.85;vehicleVisual.add(body);scene.add(vehicleVisual);
- let frameInput={forward:0,strafe:0,lookX:0,lookY:0,run:false},dispatchSummary=null;
+ let frameInput={forward:0,strafe:0,lookX:0,lookY:0,run:false},dispatchSummary=null,clockAccumulator=0,wallClockTexture=null,wallClockCanvas=null;
  const status=()=>({indoor,atDesk,nearDesk:indoor&&!interaction?.driving&&Math.hypot(walker.snapshot().x-deskPoint.x,walker.snapshot().z-deskPoint.z)<2.4,nearChip:indoor&&!!chipPoint&&!interaction?.driving&&Math.hypot(walker.snapshot().x-chipPoint.x,walker.snapshot().z-chipPoint.z)<2.5,walking:walker.snapshot(),vehicle:car.snapshot(),driving:interaction?.driving||false,life:life.snapshot(),loadedTiles:view?.loadedTiles||0,dispatch:dispatchSummary?{...dispatchSummary}:null});
  function resize(){
   const width=Math.max(1,host.clientWidth),height=Math.max(1,host.clientHeight);
@@ -134,6 +134,13 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   const dt=last?Math.min((time-last)/1000,0.1):0;last=time;
   accumulator=Math.min(accumulator+dt,0.2);
   while(accumulator>=1/60){fixedStep(1/60);accumulator-=1/60;}
+  if(!dispatchSummary&&!atDesk){
+   clockAccumulator+=dt;
+   if(clockAccumulator>=20){
+    life.advance(Math.floor(clockAccumulator/20));
+    clockAccumulator%=20;drawWallClock();
+   }
+  }
   worldUpgrade?.update(dt,{indoor,onDuty:life.snapshot().onDuty});
   const driving=interaction.driving;
   const p=driving?car.snapshot():walker.snapshot();
@@ -199,6 +206,11 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
    panel.position.set(x,1.58,-2.281);office.add(panel);officePieces.push(panel);
   }
   drawScreens();
+  wallClockCanvas=root.document.createElement("canvas");wallClockCanvas.width=512;wallClockCanvas.height=150;
+  wallClockTexture=new THREE.CanvasTexture(wallClockCanvas);
+  const clockPanel=new THREE.Mesh(new THREE.PlaneGeometry(2.25,.65),new THREE.MeshBasicMaterial({map:wallClockTexture}));
+  clockPanel.position.set(-4,2.65,-5.87);clockPanel.name="Schichtuhr";
+  office.add(clockPanel);officePieces.push(clockPanel);drawWallClock();
   addBox(.5,.8,.2,-5.5,1.25,-4.5,0x1e777c);
   addBox(.38,.24,.035,-5.5,1.45,-4.38,0x8fe3cb);
   for(const x of [-6,-3.8,-1.6,4.5,6.5]){addBox(.95,.72,.85,x,.44,3.9,0x344c5d);addBox(.85,.08,.8,x,.88,3.9,0x192c3d);}
@@ -214,6 +226,16 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
    touch=root.LDOpenWorldTouch.mount(host,{onInteract:interact});
   resize();onStatus(status());raf=root.requestAnimationFrame(frame);
   return api;
+ }
+ function drawWallClock(){
+  if(!wallClockCanvas)return;
+  const ctx=wallClockCanvas.getContext("2d");if(!ctx)return;
+  const now=Math.round(life.snapshot().minutes);
+  const time=String(Math.floor(now/60)%24).padStart(2,"0")+":"+String(now%60).padStart(2,"0");
+  ctx.fillStyle="#071b29";ctx.fillRect(0,0,512,150);
+  ctx.fillStyle="#a1e3e7";ctx.font="bold 61px monospace";ctx.fillText(time,20,83);
+  ctx.font="23px system-ui";ctx.fillStyle="#d4e6ef";ctx.fillText("LEITPLATZ · SCHICHTUHR",21,122);
+  wallClockTexture.needsUpdate=true;
  }
  function drawScreens(){
   if(!screenContext)return;
@@ -258,7 +280,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   const p=walker.snapshot();if(Math.hypot(p.x-chipPoint.x,p.z-chipPoint.z)>2.5)throw Error("Bitte direkt zur Stechuhr gehen");
   const next=life.snapshot().onDuty?"dienstende":"dienstbeginn";
   if(next==="dienstende"&&atDesk)throw Error("Bitte zuerst den Arbeitsplatz verlassen");
-  life.action(next);drawScreens();try{life.save()}catch(e){console.warn(e)}
+  life.action(next);drawScreens();drawWallClock();try{life.save()}catch(e){console.warn(e)}
   onStatus({...status(),message:next==="dienstbeginn"?"Eingestempelt – Dienst begonnen":"Ausgestempelt – Dienst beendet"});
   return next;
  }
@@ -284,7 +306,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   if(root.document?.pointerLockElement===renderer.domElement)root.document.exitPointerLock?.();
   keyboard?.dispose();touch?.dispose();view?.dispose();worldUpgrade?.dispose();exterior?.userData?.dispose?.();
   officePieces.forEach(mesh=>{mesh.geometry?.dispose();if(mesh.material&&mesh.material!==screenMaterialRef)mesh.material.dispose()});
-  screenTexture?.dispose();screenMaterialRef?.dispose();
+  screenTexture?.dispose();screenMaterialRef?.dispose();wallClockTexture?.dispose();
   body.geometry.dispose();body.material.dispose();ground.geometry.dispose();ground.material.dispose();
   renderer.dispose();renderer.domElement.remove();
   if(needsPosition)host.style.position=oldPosition;
@@ -296,7 +318,8 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
    open:raw.open,waiting:raw.waiting,free:raw.free,total:raw.total,
    minute:Number.isFinite(raw.minute)?Math.max(0,Math.min(1439,Math.round(raw.minute))):null
   };
-  drawScreens();return true;
+  if(dispatchSummary.minute!==null)life.syncClock(dispatchSummary.minute);
+  drawScreens();drawWallClock();return true;
  }
  function saveWorld(){
   if(!model)return null;

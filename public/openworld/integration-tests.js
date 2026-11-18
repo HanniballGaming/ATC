@@ -32,6 +32,14 @@ async function run(){
   const before=w.snapshot();w.update(0.1,{forward:1});
   if(!(w.snapshot().z<before.z))throw Error("Walker did not move north");
  });
+ test("Schichtuhr: Vorwärts-Synchronisierung",()=>{
+  const life=root.LDOpenWorldLife.create({minutes:6*60,hunger:15});
+  life.syncClock(6*60+14);
+  if(life.snapshot().minutes!==374)throw Error("Clock did not sync");
+  const before=life.snapshot().minutes;
+  life.syncClock(6*60+3);
+  if(life.snapshot().minutes!==before)throw Error("Clock went backwards");
+ });
  test("Fahrzeug: Beschleunigung",()=>{
   const v=root.LDOpenWorldVehicle.create();v.reset({handbrake:false});
   for(let i=0;i<30;i++)v.step(1/60,{throttle:1,handbrake:false});
