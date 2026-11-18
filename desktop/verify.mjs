@@ -75,4 +75,8 @@ assert.equal(report.start.open,2);
 assert.equal(report.end.open,1);
 assert.match(journal.format(report),/Simulierte Schichtdauer: 30 Minuten/);
 assert.equal(context.LDFunkspruchShiftJournal.create(memoStore).snapshot().reports.length,1);
+const historical=context.LDFunkspruchShiftJournal.create({getItem:()=>null,setItem:()=>{}});
+assert.equal(historical.reconcile(duty(600,true,{open:1,waiting:0,free:10,total:10})),true);
+assert.equal(historical.snapshot().active.startMinute,600);
+assert.equal(historical.reconcile(duty(601,true,{open:1,waiting:0,free:10,total:10})),false);
 console.log("OK: "+result.passed+"/"+result.total+" Logiktests, vier KI-Kollegenantworten, Speicherstand-Export/-Import, Dienstpausen und Trinkstation, Tag-Nacht-Zyklus, Desktop-Paket und gesperrter zweiter Modus geprüft.");
