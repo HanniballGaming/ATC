@@ -1,0 +1,75 @@
+name: FUNKSPRUCH – öffentliche iPad-Browser-Version
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: atc-main-github-pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Bestehende NORDTAL-Website unverändert beziehen
+        uses: actions/checkout@v4
+        with:
+          path: site-main
+      - name: Geprüfte FUNKSPRUCH-Entwicklungsfassung beziehen
+        uses: actions/checkout@v4
+        with:
+          ref: funkspruch-v1-integration
+          path: funkspruch-source
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Vollständiges FUNKSPRUCH-Einsatzleitsystem integrieren
+        working-directory: funkspruch-source
+        run: python release_v23.py
+      - name: Echte Augsburger OSM-Karten exportieren
+        working-directory: funkspruch-source
+        run: python scripts/export_osm_augsburg.py
+      - name: FUNKSPRUCH-Webversion einschließlich iPad-PWA erzeugen
+        working-directory: funkspruch-source/desktop
+        run: |
+          npm install --no-audit --no-fund
+          npm run prepare:web
+          npm run verify
+      - name: iPad-Steuerung und Pausenmenü automatisch testen
+        working-directory: funkspruch-source/desktop
+        run: node tablet-smoke.mjs
+      - name: Leitstellenbetrieb, Notrufe und Funk vollständig testen
+        working-directory: funkspruch-source/desktop
+        run: node browser-smoke.mjs
+      - name: NORDTAL am Stamm-Pfad beibehalten und FUNKSPRUCH separat veröffentlichen
+        run: |
+          mkdir -p publish/funkspruch
+          cp site-main/index.html site-main/engine.js site-main/tower3d.html site-main/offline.html publish/
+          cp -a funkspruch-source/desktop/web/. publish/funkspruch/
+          touch publish/.nojekyll
+          test -f publish/index.html
+          test -f publish/funkspruch/openworld/index.html
+          test -f publish/funkspruch/openworld/data/augsburg-nordost.geojson
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: publish
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.publish.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+      - id: publish
+        uses: actions/deploy-pages@v4
+      - name: Öffentlicher FUNKSPRUCH-Link
+        run: echo "Online ${{ steps.publish.outputs.page_url }}funkspruch/openworld/"
