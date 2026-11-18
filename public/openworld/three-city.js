@@ -5,11 +5,37 @@
  *        view.update(player.position.x, player.position.z); view.dispose();
  */
 (function(root){"use strict";
+// Fahrbahnbreite: tatsächliche OSM-width-Angaben bevorzugen, andernfalls
+// als Schätzwert anhand der OSM-Straßenklasse ableiten (kein amtlicher Messwert).
+function roadWidth(properties={},fallback=5){
+ const raw=String(properties.width||"").replace(",",".").match(/^\s*(\d+(?:\.\d+)?)/);
+ if(raw){
+  const measured=Number(raw[1]);
+  if(measured>=.5&&measured<=35)return measured;
+ }
+ const highway=properties.highway;
+ const defaults={
+  motorway:11,trunk:10,primary:8,secondary:7.4,tertiary:6.5,
+  residential:5.3,living_street:4.5,unclassified:5.3,service:3.5,
+  motorway_link:5,trunk_link:4.8,primary_link:4.5,secondary_link:4.3,
+  pedestrian:4,footway:1.8,cycleway:2,steps:1.4,path:2,track:3
+ };
+ const lanes=Number.parseInt(properties.lanes,10);
+ if(Number.isInteger(lanes)&&lanes>=1&&lanes<=6&&
+  !["footway","cycleway","path","steps","track","pedestrian"].includes(highway))
+  return Math.max(3,Math.min(30,lanes*3.1+.65));
+ return defaults[highway]||fallback;
+}
+const roadWidthByClass=roadWidth;
 function create(THREE,scene,options={}){
  if(!THREE||!scene)throw Error("THREE and scene required");
  const tileSize=options.tileSize||256;let radius=options.radius??2;
  const roadWidth=options.roadWidth||5, defaultHeight=options.defaultBuildingHeight||9;
+ const roadWidthFor=roadWidthByClass;
  const roadMat=new THREE.MeshStandardMaterial({color:0x404953,roughness:1,side:THREE.DoubleSide});
+ const footMat=new THREE.MeshStandardMaterial({color:0x91918b,roughness:1,side:THREE.DoubleSide});
+ const bikeMat=new THREE.MeshStandardMaterial({color:0x785b50,roughness:1,side:THREE.DoubleSide});
+ const gravelMat=new THREE.MeshStandardMaterial({color:0x777367,roughness:1,side:THREE.DoubleSide});
  const wallMat=new THREE.MeshStandardMaterial({color:0xa6a9a4,roughness:0.9});
  const roofMat=new THREE.MeshStandardMaterial({color:0x555c61,roughness:1});
  let model=null,tiles=null,active=new Map();
@@ -40,7 +66,8 @@ function create(THREE,scene,options={}){
  }
  function makeRoad(item){
   const points=item.points;if(points.length<2)return null;
-  const verts=[],indices=[],half=roadWidth/2;
+  const props=item.properties||{},kind=props.highway||"",width=roadWidthFor(props,roadWidth);
+  const verts=[],indices=[],half=width/2;
   for(let i=0;i<points.length;i++){
    const a=points[Math.max(0,i-1)],b=points[Math.min(points.length-1,i+1)];
    const dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz)||1;
@@ -51,7 +78,14 @@ function create(THREE,scene,options={}){
   const geom=new THREE.BufferGeometry();
   geom.setAttribute("position",new THREE.Float32BufferAttribute(verts,3));
   geom.setIndex(indices);geom.computeVertexNormals();
-  return new THREE.Mesh(geom,roadMat);
+  const mat=kind==="footway"||kind==="pedestrian"||kind==="steps"?footMat:
+    kind==="cycleway"?bikeMat:
+    kind==="track"||props.surface==="gravel"||props.surface==="unpaved"?gravelMat:roadMat;
+  const mesh=new THREE.Mesh(geom,mat);
+  mesh.userData.osmStreetName=typeof props.name==="string"?props.name:"";
+  mesh.userData.osmRoadClass=kind;
+  mesh.userData.roadWidthMeters=width;
+  return mesh;
  }
  const featureMeshes=new Map();
  function clear(){
@@ -81,11 +115,11 @@ function create(THREE,scene,options={}){
   active.clear();
   for(const tile of wanted)active.set(tile.key,true);
  }
- function dispose(){clear();roadMat.dispose();wallMat.dispose();roofMat.dispose();model=null;tiles=null;}
+ function dispose(){clear();roadMat.dispose();footMat.dispose();bikeMat.dispose();gravelMat.dispose();wallMat.dispose();roofMat.dispose();model=null;tiles=null;}
  return {setModel,update,dispose,
   setRadius(next){if(!Number.isInteger(next)||next<1||next>5)throw Error("Ungültiger Sichtradius");radius=next;},
   get loadedTiles(){return active.size;}
  };
 }
-root.LDOpenWorldRenderer=Object.freeze({create});
+root.LDOpenWorldRenderer=Object.freeze({create,roadWidth});
 })(typeof window!=="undefined"?window:globalThis);
