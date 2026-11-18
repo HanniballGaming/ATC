@@ -31,7 +31,7 @@ if("serviceWorker" in navigator&&location.protocol==="https:"){
  window.addEventListener("load",()=>navigator.serviceWorker.register("../sw.js").catch(error=>console.warn("Offline-Dienst nicht verfügbar",error)));
 }
 </script>
-<script src="./geo-core.js"></script><script src="./collision-core.js"></script><script src="./indoor-collision.js"></script>
+<script src="./geo-core.js"></script><script src="./training-town.js"></script><script src="./collision-core.js"></script><script src="./indoor-collision.js"></script>
 <script src="./three-city.js"></script><script src="./vehicle-core.js"></script>
 <script src="./vehicle-interaction.js"></script><script src="./walker-core.js"></script>
 <script src="./life-core.js"></script><script src="./road-graph.js"></script>
@@ -79,11 +79,7 @@ info.textContent="Modultests: "+tests.passed+"/"+tests.total+" bestanden\n"+test
 const origin={lon:10.8985,lat:48.3705};
 // Dynamic resolution for tablets and low-powered devices.
 const reducedGraphics=lowerGraphics();
-const syntheticGeojson={type:"FeatureCollection",features:[
- {type:"Feature",properties:{highway:"residential"},geometry:{type:"LineString",coordinates:[[10.8983,48.3705],[10.901,48.3705]]}},
- {type:"Feature",properties:{building:"yes","building:levels":"3"},geometry:{type:"Polygon",coordinates:[[[10.899,48.3708],[10.8993,48.3708],[10.8993,48.3706],[10.899,48.3706],[10.899,48.3708]]]}},
- {type:"Feature",properties:{building:"yes","building:levels":"2"},geometry:{type:"Polygon",coordinates:[[[10.900,48.3708],[10.9002,48.3708],[10.9002,48.3706],[10.900,48.3706],[10.900,48.3708]]]}}
-]};
+const syntheticGeojson=LDFunkspruchTrainingTown.create({origin});
 const map=await LDFunkspruchMap.load({bounds:{south:48.3675,west:10.8945,north:48.3740,east:10.9050},fallback:syntheticGeojson});
 const geojson=map.geojson;
 if(map.real)document.getElementById("mapCredit").hidden=false;

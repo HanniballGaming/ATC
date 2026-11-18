@@ -27,11 +27,11 @@ assert.match(read("openworld/index.html"),/\.\/vendor\/three\.min\.js/);
 assert.ok(fs.statSync(path.join(base,"openworld","vendor","three.min.js")).size>100000);
 const serviceWorker=read("sw.js");
 assert.match(serviceWorker,/funkspruch-pwa-[a-f0-9]{14}/,"Versionierter Offline-Cache fehlt");
-for(const file of ["openworld/traffic-ai.js","openworld/shift-journal.js","openworld/ambient.js","openworld/vendor/three.min.js","vendor/leaflet/leaflet.js"])
+for(const file of ["openworld/training-town.js","openworld/traffic-ai.js","openworld/shift-journal.js","openworld/ambient.js","openworld/vendor/three.min.js","vendor/leaflet/leaflet.js"])
  assert.ok(serviceWorker.includes("./"+file),"Offline-Cache enthält "+file+" nicht");
 const context={console,Math,Date,JSON,Map,Set,Array,Object,Number,String,Boolean,Promise,Intl,setTimeout,clearTimeout};
 context.window=context;vm.createContext(context);
-for(const file of ["geo-core.js","collision-core.js","indoor-collision.js","vehicle-core.js","vehicle-interaction.js","walker-core.js","life-core.js","road-graph.js","osm-loader.js","integration-tests.js","world-upgrades.js","traffic-ai.js","save-manager.js","shift-journal.js","ambient.js"])
+for(const file of ["geo-core.js","training-town.js","collision-core.js","indoor-collision.js","vehicle-core.js","vehicle-interaction.js","walker-core.js","life-core.js","road-graph.js","osm-loader.js","integration-tests.js","world-upgrades.js","traffic-ai.js","save-manager.js","shift-journal.js","ambient.js"])
  vm.runInContext(read("openworld/"+file),context,{filename:file,timeout:3000});
 const result=await context.LDOpenWorldIntegrationTests.run();
 if(result.passed!==result.total)throw Error("Open-World-Tests fehlgeschlagen: "+JSON.stringify(result.results.filter(x=>!x.ok)));
