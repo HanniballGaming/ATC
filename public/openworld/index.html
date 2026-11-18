@@ -106,6 +106,7 @@ startButton.disabled=false;startButton.textContent=initialResume?"Spielstand for
 window.addEventListener("message",event=>{
  if(event.origin!==location.origin||event.source!==dispatchMonitor.contentWindow)return;
  if(event.data?.type==="funkspruch:dispatch-summary"&&game.setDispatchSummary(event.data))audio.update(game.status());
+ if(event.data?.type==="funkspruch:dispatch-activity")game.recordDispatchEvent?.(event.data);
 });
 window.FunkspruchGame=game; // Laufzeitdiagnose und Browser-Abnahmetests
 // The scene can initialize behind the menu, but only normal mode can be entered.
@@ -158,7 +159,8 @@ document.getElementById("viewShiftReport").onclick=()=>{
   const journal=game.getShiftJournal?.();
   const text=journal?.reports?.[0]?journal.format(journal.reports[0]):"Schichtjournal\n\nNoch keine abgeschlossene Schicht vorhanden.";
   const current=journal?.active?"\n\nLaufende Schicht seit "+String(Math.floor(journal.active.startMinute/60)%24).padStart(2,"0")+":"+String(journal.active.startMinute%60).padStart(2,"0")+" Uhr.":"";
-  document.getElementById("shiftReport").textContent="FUNKSPRUCH · Dienstbericht\n\n"+text+current;
+  const currentEvents=journal?.active?.events?.length?"\n\nBisherige Funk- und Einsatzereignisse:\n"+journal.active.events.slice(-15).map(e=>e.text).join("\n"):"";
+  document.getElementById("shiftReport").textContent="FUNKSPRUCH · Dienstbericht\n\n"+text+current+currentEvents;
  }
 };
 document.getElementById("eat").onclick=()=>{try{game.life.action("essen");persistLife()}catch(e){alert(e.message)}info.textContent=JSON.stringify(game.status(),null,2)};

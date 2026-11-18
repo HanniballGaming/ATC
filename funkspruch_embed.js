@@ -15,7 +15,7 @@ style.textContent=[
 "body.fs-embed-active #app .game{height:100dvh!important;min-height:0!important}"
 ].join("\n");
 document.head.append(style);
-let lastReport="",lastSummary="";
+let lastReport="",lastSummary="",previousIncidents=null,previousRadioCount=null;
 function shareSummary(s){
  if(!s||!Array.isArray(s.incidents)||!Array.isArray(s.vehicles))return;
  const payload={
@@ -31,6 +31,35 @@ function shareSummary(s){
  lastSummary=signature;host.postMessage(payload,location.origin);
 }
 
+function shareActivity(s){
+ if(!s||!Array.isArray(s.incidents)||!context.onDuty||!s.ld22Completed)return;
+ const current=new Map();
+ for(const issue of s.incidents.slice(0,300)){
+  if(!issue||!["string","number"].includes(typeof issue.id))continue;
+  const id=String(issue.id).slice(0,55),phase=typeof issue.phase==="string"?issue.phase.slice(0,60):"";
+  const assigned=Array.isArray(issue.assigned)?issue.assigned.length:Array.isArray(issue.units)?issue.units.length:0;
+  current.set(id,{phase,assigned:Math.min(100,assigned)});
+ }
+ const radioCount=Array.isArray(s.radioLog)?s.radioLog.length:0;
+ if(previousIncidents!==null){
+  const events=[];
+  for(const [id,now] of current){
+   const before=previousIncidents.get(id);
+   if(!before&&["Anruf","Unversorgt"].includes(now.phase))events.push({kind:"notruf",id});
+   if(before&&before.phase!==now.phase){
+    if(now.phase==="Disponierung")events.push({kind:"annahme",id});
+    if(now.phase==="Abgeschlossen")events.push({kind:"abschluss",id});
+   }
+   if(before&&now.assigned>before.assigned)events.push({kind:"alarmierung",id});
+  }
+  if(previousRadioCount!==null&&radioCount>previousRadioCount)events.push({kind:"funk",id:""});
+  const minute=Number.isFinite(s.minute)?Math.round(s.minute):null;
+  for(const event of events.slice(0,12)){
+   host.postMessage({type:"funkspruch:dispatch-activity",kind:event.kind,incidentId:event.id,minute},location.origin);
+  }
+ }
+ previousIncidents=current;previousRadioCount=radioCount;
+}
 function report(status,message){
  const label=status+":"+(message||"");
  if(label===lastReport)return;
@@ -48,6 +77,7 @@ function update(){
  const s=ops?.getState?.()||window.getGame?.()?.s;
  const gameVisible=!!document.querySelector("#app .game")&&!document.querySelector("#app .menu");
  shareSummary(s);
+ if(s&&gameVisible)shareActivity(s);
  if(!s||!gameVisible){
    context.opened=false;document.body.classList.remove("fs-embed-active");
    report("menue","Leitstelle im Einsatzleitsystem auswählen");

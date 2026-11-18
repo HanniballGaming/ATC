@@ -35,7 +35,7 @@ frame.addEventListener("load",()=>{status.textContent=backup?"Ersatzansicht gela
 window.addEventListener("message",event=>{
  if(event.source!==frame.contentWindow||event.origin!==location.origin||!event.data||backup)return;
  if(event.data.type==="funkspruch:embedded-ready"){ready=true;send();}
- if(event.data.type==="funkspruch:dispatch-summary"&&window.parent!==window)window.parent.postMessage(event.data,location.origin);
+ if((event.data.type==="funkspruch:dispatch-summary"||event.data.type==="funkspruch:dispatch-activity")&&window.parent!==window)window.parent.postMessage(event.data,location.origin);
  if(event.data.type==="funkspruch:embedded-status"){
    status.textContent=event.data.message||"Einsatzleitsystem bereit";
    status.style.color=event.data.status==="fehler"?"#ffb1b1":"#b8c8d4";

@@ -401,7 +401,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   drawScreens();onStatus({...status(),message:"Gespeicherter Spielstand geladen"});
   return true;
  }
- const api={start,dispose,interact,toggleDoor,stamp,sitDesk,leaveDesk,routeTo,status,setDispatchSummary,setPaused,setGraphicsProfile,saveWorld,restoreWorld,life,walker,car,scene,camera,renderer,getShift:()=>worldUpgrade?.shift(),getShiftJournal:()=>journal?{...journal.snapshot(),format:journal.format}:null,reconcileShiftJournal:()=>journal?.reconcile(status())};
+ const api={start,dispose,interact,toggleDoor,stamp,sitDesk,leaveDesk,routeTo,status,setDispatchSummary,setPaused,setGraphicsProfile,saveWorld,restoreWorld,life,walker,car,scene,camera,renderer,getShift:()=>worldUpgrade?.shift(),getShiftJournal:()=>journal?{...journal.snapshot(),format:journal.format}:null,reconcileShiftJournal:()=>journal?.reconcile(status()),recordDispatchEvent:event=>journal?.recordEvent(event)||false};
  return api;
 }
 root.LDOpenWorldRuntime=Object.freeze({create});

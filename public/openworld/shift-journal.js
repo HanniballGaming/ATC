@@ -21,7 +21,7 @@ function create(storage=root.localStorage){
  function begin(s){
   if(state.active)return false;
   const snap=location(s);
-  state.active={startMinute:snap.minute,start:snap.dispatch,last:snap.dispatch,peakWaiting:snap.dispatch?.waiting??null,updatedMinute:snap.minute};
+  state.active={startMinute:snap.minute,start:snap.dispatch,last:snap.dispatch,peakWaiting:snap.dispatch?.waiting??null,updatedMinute:snap.minute,events:[]};
   persist();return true;
  }
  function record(s){
@@ -34,6 +34,25 @@ function create(storage=root.localStorage){
   active.updatedMinute=Math.max(active.updatedMinute??active.startMinute,snap.minute);
   persist();return true;
  }
+ function recordEvent(raw){
+  if(!state.active||!raw||typeof raw!=="object")return false;
+  const messages={
+   notruf:"Neuer Übungsnotruf eingegangen",
+   annahme:"Notruf angenommen und Einsatzakte eröffnet",
+   alarmierung:"Einsatzmittel alarmiert",
+   abschluss:"Einsatz abgeschlossen",
+   funk:"Funkmeldung protokolliert"
+  };
+  if(!Object.prototype.hasOwnProperty.call(messages,raw.kind))return false;
+  const id=typeof raw.incidentId==="string"&&/^[\w\-#]{1,55}$/.test(raw.incidentId)?raw.incidentId:null;
+  const minute=Number.isFinite(raw.minute)&&raw.minute>=0?Math.round(raw.minute):state.active.updatedMinute;
+  const clock=Math.max(state.active.startMinute,minute);
+  const events=state.active.events||(state.active.events=[]);
+  const text=messages[raw.kind]+(id?" · #"+id:"");
+  if(events.length>=120)events.shift();
+  events.push({kind:raw.kind,minute:clock,text});
+  persist();return true;
+ }
  function finish(s){
   if(!state.active)return null;
   record(s);
@@ -43,7 +62,7 @@ function create(storage=root.localStorage){
    startMinute:a.startMinute,
    endMinute:Math.max(final.minute,a.updatedMinute??0),
    durationMinutes:Math.max(0,Math.max(final.minute,a.updatedMinute??0)-a.startMinute),
-   start:a.start,end:a.last,peakWaiting:a.peakWaiting
+   start:a.start,end:a.last,peakWaiting:a.peakWaiting,events:(a.events||[]).slice(-120)
   };
   state.reports.unshift(report);state.reports=state.reports.slice(0,LIMIT);state.active=null;
   persist();return JSON.parse(JSON.stringify(report));
@@ -57,14 +76,16 @@ function create(storage=root.localStorage){
   if(!report)return "Noch keine abgeschlossene Schicht vorhanden.";
   const span=(v)=>v?("Offene Einsätze: "+v.open+" · Wartende Notrufe: "+v.waiting+" · Einsatzmittel frei: "+v.free+"/"+v.total):"Noch keine Verbindung zum Einsatzleitsystem";
   const time=m=>String(Math.floor(m/60)%24).padStart(2,"0")+":"+String(Math.floor(m%60)).padStart(2,"0");
+  const eventLines=Array.isArray(report.events)&&report.events.length?report.events.slice(-30).map(e=>time(e.minute)+" · "+e.text).join("\n"):"Keine einzelnen Funk- oder Einsatzereignisse protokolliert";
   return "Beginn: "+time(report.startMinute)+" · Ende: "+time(report.endMinute)+
    "\nSimulierte Schichtdauer: "+report.durationMinutes+" Minuten"+
    "\n\nEinsatzlage bei Beginn:\n"+span(report.start)+
    "\n\nEinsatzlage bei Ende:\n"+span(report.end)+
    "\n\nMaximal gleichzeitig wartende Notrufe: "+(report.peakWaiting??"nicht erfasst")+
+   "\n\nEinsatz- und Funkchronik:\n"+eventLines+
    "\n\nHinweis: Dies sind protokollierte Lagewerte, keine erfundenen Einsatz- oder Leistungsbewertungen.";
  }
- return {begin,record,finish,reconcile,snapshot,format};
+ return {begin,record,recordEvent,finish,reconcile,snapshot,format};
 }
 root.LDFunkspruchShiftJournal=Object.freeze({create,location,key:KEY});
 })(typeof window!=="undefined"?window:globalThis);
