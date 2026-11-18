@@ -19,6 +19,8 @@ Erforderlich: Windows, Python 3, Node.js 22, Internet zum Installieren der Bauwe
 
 Das Setup liegt danach in desktop/release/. GitHub Actions erstellt bei jedem Push auf den Integrationszweig ein Windows-Testartefakt.
 
+Das Windows-Paket liefert Three.js und Leaflet samt Lizenz lokal aus. Externe OSM-Daten sind optional und fallen bei Offlinebetrieb auf eine fiktive Trainingskarte zurück. Echte Online-Kartenkacheln benötigen weiterhin eine Verbindung.
+
 FUNKSPRUCH startet nur einen lokalen HTTP-Server unter 127.0.0.1:47821. Die feste Adresse erhält lokale Spielstände zwischen Neustarts. Keine Verbindung zu echten Notrufen oder BOS-Systemen.
 
 ## Offen vor Version 1.0

@@ -20,6 +20,16 @@ if(!html.includes("funkspruch_embed.js")){
  if(!/<\/body\s*>/i.test(html))throw Error("Hauptspiel hat kein schließendes body-Tag.");
  html=html.replace(/<\/body\s*>/i,'<script src="./funkspruch_embed.js"></script></body>');
 }
+// Leaflet lokal bereitstellen, damit die Leitstellenkarte ohne CDN starten kann.
+const leafletRoot=path.join(desktop,"node_modules","leaflet");
+const leafletDist=path.join(leafletRoot,"dist");
+if(!fs.existsSync(path.join(leafletDist,"leaflet.js")))throw Error("Leaflet fehlt: npm install erforderlich");
+const leafletDest=path.join(output,"vendor","leaflet");
+fs.mkdirSync(leafletDest,{recursive:true});
+fs.cpSync(leafletDist,leafletDest,{recursive:true});
+if(fs.existsSync(path.join(leafletRoot,"LICENSE")))fs.copyFileSync(path.join(leafletRoot,"LICENSE"),path.join(leafletDest,"LICENSE"));
+html=html.replaceAll("https://unpkg.com/leaflet@1.9.4/dist/leaflet.js","./vendor/leaflet/leaflet.js")
+         .replaceAll("https://unpkg.com/leaflet@1.9.4/dist/leaflet.css","./vendor/leaflet/leaflet.css");
 fs.writeFileSync(index,html,"utf8");
 const vendor=path.join(output,"openworld","vendor");
 fs.mkdirSync(vendor,{recursive:true});

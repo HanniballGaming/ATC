@@ -7,6 +7,8 @@ import assert from "node:assert/strict";
 const base=path.join(path.dirname(fileURLToPath(import.meta.url)),"web");
 const read=p=>fs.readFileSync(path.join(base,p),"utf8");
 assert.match(read("index.html"),/funkspruch_embed\.js/);
+assert.match(read("index.html"),/\.\/vendor\/leaflet\/leaflet\.(js|css)/);
+assert.ok(fs.statSync(path.join(base,"vendor","leaflet","leaflet.js")).size>100000);
 assert.match(read("openworld/index.html"),/FUNKSPRUCH/);
 assert.match(read("openworld/index.html"),/id="startNormal"/);
 assert.match(read("openworld/index.html"),/disabled aria-disabled="true"/);

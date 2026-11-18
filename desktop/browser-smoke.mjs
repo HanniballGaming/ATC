@@ -26,6 +26,8 @@ try{
  const page=await browser.newPage({viewport:{width:1365,height:860}});
  const errors=[];
  page.on("pageerror",e=>errors.push(e.stack||e.message));
+ // Testet den vollständigen Kernbetrieb auch ohne Verbindung zu externen CDNs.
+ await page.route(/^https?:\/\/(?!127\.0\.0\.1[:\/])[^/]+/i,route=>route.abort());
  await page.goto(base+"/openworld/",{waitUntil:"domcontentloaded",timeout:30000});
  await page.locator("#startNormal").waitFor();
  assert.equal(await page.locator(".mode.locked button").isDisabled(),true,"Zweiter Modus muss gesperrt bleiben");
