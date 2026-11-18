@@ -105,7 +105,7 @@ gameInstance=game;game.setPaused(!started);
 startButton.disabled=false;startButton.textContent=initialResume?"Spielstand fortsetzen":"Leitstellenmodus starten";
 window.addEventListener("message",event=>{
  if(event.origin!==location.origin||event.source!==dispatchMonitor.contentWindow)return;
- if(event.data?.type==="funkspruch:dispatch-summary")game.setDispatchSummary(event.data);
+ if(event.data?.type==="funkspruch:dispatch-summary"&&game.setDispatchSummary(event.data))audio.update(game.status());
 });
 window.FunkspruchGame=game; // Laufzeitdiagnose und Browser-Abnahmetests
 // The scene can initialize behind the menu, but only normal mode can be entered.
