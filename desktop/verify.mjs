@@ -21,16 +21,28 @@ assert.match(read("openworld/index.html"),/\.\/vendor\/three\.min\.js/);
 assert.ok(fs.statSync(path.join(base,"openworld","vendor","three.min.js")).size>100000);
 const context={console,Math,Date,JSON,Map,Set,Array,Object,Number,String,Boolean,Promise,Intl,setTimeout,clearTimeout};
 context.window=context;vm.createContext(context);
-for(const file of ["geo-core.js","collision-core.js","indoor-collision.js","vehicle-core.js","vehicle-interaction.js","walker-core.js","life-core.js","road-graph.js","osm-loader.js","integration-tests.js","world-upgrades.js"])
+for(const file of ["geo-core.js","collision-core.js","indoor-collision.js","vehicle-core.js","vehicle-interaction.js","walker-core.js","life-core.js","road-graph.js","osm-loader.js","integration-tests.js","world-upgrades.js","save-manager.js"])
  vm.runInContext(read("openworld/"+file),context,{filename:file,timeout:3000});
 const result=await context.LDOpenWorldIntegrationTests.run();
 if(result.passed!==result.total)throw Error("Open-World-Tests fehlgeschlagen: "+JSON.stringify(result.results.filter(x=>!x.ok)));
 assert.equal(context.LDFunkspruchWorld.daylight(0),0);
 assert.ok(context.LDFunkspruchWorld.daylight(720)>.99);
 assert.equal(context.LDFunkspruchWorld.daylight(1300),0);
+const storage=(()=>{
+ const data=new Map([["ld-openworld-life-v1",'{"onDuty":true}'],["funkspruch-openworld-save-v1",'{"version":1}'],["funkspruch-osm-cache-v1:xyz","huge-map"],["unrelated-data","unrelated"]]);
+ return {key:i=>Array.from(data.keys())[i],getItem:k=>data.has(k)?data.get(k):null,setItem:(k,v)=>data.set(k,String(v)),removeItem:k=>data.delete(k),get length(){return data.size}};
+})();
+const backup=context.LDFunkspruchSave.capture(storage);
+assert.equal(backup.entries["ld-openworld-life-v1"],'{"onDuty":true}');
+assert.equal(backup.entries["funkspruch-openworld-save-v1"],'{"version":1}');
+assert.equal(backup.entries["funkspruch-osm-cache-v1:xyz"],undefined);
+storage.setItem("ld-openworld-life-v1",'{"onDuty":false}');
+assert.equal(context.LDFunkspruchSave.restore(backup,storage),2);
+assert.equal(storage.getItem("ld-openworld-life-v1"),'{"onDuty":true}');
+assert.throws(()=>context.LDFunkspruchSave.validate({format:"invalid",entries:{}}));
 const colleague=context.LDFunkspruchWorld.colleagueResponse;
 assert.match(colleague("Kollegin Meyer",{open:3,waiting:2,free:7,total:24},true),/2 wartende Notrufe/);
 assert.match(colleague("Kollege Weber",{open:3,waiting:0,free:5,total:24},true),/3 Einsätze/);
 assert.match(colleague("Kollege Braun",null,true),/Lageübersicht/);
 assert.match(colleague("Kollegin Schulz",{open:1,waiting:1,free:0,total:24},false),/zum Dienst/);
-console.log("OK: "+result.passed+"/"+result.total+" Logiktests, vier KI-Kollegenantworten, Tag-Nacht-Zyklus, Desktop-Paket und gesperrter zweiter Modus geprüft.");
+console.log("OK: "+result.passed+"/"+result.total+" Logiktests, vier KI-Kollegenantworten, Speicherstand-Export/-Import, Tag-Nacht-Zyklus, Desktop-Paket und gesperrter zweiter Modus geprüft.");

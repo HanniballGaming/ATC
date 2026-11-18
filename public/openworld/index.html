@@ -18,8 +18,8 @@ body.playing #firstPersonPrompt{display:block}body.playing #firstPersonPrompt:em
 #crosshair{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:32;opacity:.7;color:#e8f5f9;font-size:18px;pointer-events:none;display:none}
 body.playing:not(.fatal) #crosshair{display:block}body.playing #monitor.active~#crosshair{display:none}
 @media(pointer:coarse){#firstPersonPrompt{bottom:175px;font-size:12px}#crosshair{opacity:.4}}
-#mapCredit{position:fixed;bottom:5px;left:7px;color:#e0ecf3;background:#102333b8;font:10px system-ui;z-index:35;padding:2px 5px;border-radius:4px}#mapCredit[hidden]{display:none}#panel{pointer-events:auto}body.started #panel{display:none}body.fatal #panel{display:block}#mainMenu{position:fixed;inset:0;z-index:200;background:radial-gradient(ellipse at 28% 15%,#164b66,#06121e 72%);display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;overflow:auto}#mainMenu[hidden]{display:none}#menuContent{width:min(880px,100%)}#menuContent h1{font-size:clamp(32px,6vw,66px);letter-spacing:.09em;margin:0;color:#e6f8ff}#menuContent>p{color:#a5c4d5;font-size:17px;margin:3px 0 28px}#modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.mode{background:#102a3bbd;border:1px solid #43839c;border-radius:16px;padding:24px;min-height:230px;box-sizing:border-box}.mode h2{font-size:22px}.mode p{color:#b7c9d6;line-height:1.6}.mode button{font-size:16px;padding:12px 18px}.mode.locked{background:#27151bd9;border-color:#804652}.mode.locked button{opacity:.6;cursor:not-allowed}.mode.locked strong{color:#f1a4a4}#menuHint{color:#a6bbc9;margin-top:20px}#ambientRow,#voiceRow{display:block;color:#c1dfeb;margin-top:12px;font-size:13px}#graphicsRow{display:block;color:#c1dfeb;margin-top:8px;font-size:13px}#graphicsQuality{background:#112c40;color:white;border:1px solid #426882;border-radius:5px;padding:6px}#ambientEnabled,#voiceEnabled{accent-color:#48b2bd}@media(max-width:650px){#modes{grid-template-columns:1fr}.mode{min-height:unset;padding:17px}} </style></head><body>
-<div id="mainMenu" role="dialog" aria-modal="true" aria-labelledby="gameTitle"><div id="menuContent"><h1 id="gameTitle">FUNKSPRUCH</h1><p>Stimmen im Rauschen</p><div id="modes"><section class="mode"><h2>Leitstellenbetrieb</h2><p>Beginne deine Schicht, betrete die Leitstelle und bearbeite Notrufe, Einsätze und Funkverkehr in der Ego-Perspektive.</p><button id="startNormal" type="button">Leitstellenmodus starten</button></section><section class="mode locked"><strong>IN ENTWICKLUNG</strong><h2>Apokalypse &amp; Überleben</h2><p>Katastrophen, Zusammenbruch der Versorgung und Überleben in der Leitstelle. Dieser Modus wird später freigeschaltet.</p><button type="button" disabled aria-disabled="true" title="Noch in Entwicklung">Noch nicht verfügbar</button></section></div><label id="ambientRow"><input type="checkbox" id="ambientEnabled" checked> Umgebungsgeräusche aktivieren</label><label id="voiceRow"><input type="checkbox" id="voiceEnabled" checked> Gesprochene Antworten der KI-Kollegen (Systemstimme)</label><label id="graphicsRow">Grafikqualität: <select id="graphicsQuality"><option value="auto">Automatisch</option><option value="low">Niedrig (ältere Laptops und iPads)</option><option value="medium">Mittel</option></select></label><p id="menuHint">Aktuell ist ausschließlich der normale Leitstellenmodus spielbar. Steuerung: WASD, Maus, E für Interaktionen; Mobilgeräte mit Touchsteuerung.</p></div></div>
+#mapCredit{position:fixed;bottom:5px;left:7px;color:#e0ecf3;background:#102333b8;font:10px system-ui;z-index:35;padding:2px 5px;border-radius:4px}#mapCredit[hidden]{display:none}#panel{pointer-events:auto}body.started #panel{display:none}body.fatal #panel{display:block}#mainMenu{position:fixed;inset:0;z-index:200;background:radial-gradient(ellipse at 28% 15%,#164b66,#06121e 72%);display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;overflow:auto}#mainMenu[hidden]{display:none}#menuContent{width:min(880px,100%)}#menuContent h1{font-size:clamp(32px,6vw,66px);letter-spacing:.09em;margin:0;color:#e6f8ff}#menuContent>p{color:#a5c4d5;font-size:17px;margin:3px 0 28px}#modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.mode{background:#102a3bbd;border:1px solid #43839c;border-radius:16px;padding:24px;min-height:230px;box-sizing:border-box}.mode h2{font-size:22px}.mode p{color:#b7c9d6;line-height:1.6}.mode button{font-size:16px;padding:12px 18px}.mode.locked{background:#27151bd9;border-color:#804652}.mode.locked button{opacity:.6;cursor:not-allowed}.mode.locked strong{color:#f1a4a4}#menuHint{color:#a6bbc9;margin-top:20px}#saveControls{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}#saveControls button{font-size:13px}#ambientRow,#voiceRow{display:block;color:#c1dfeb;margin-top:12px;font-size:13px}#graphicsRow{display:block;color:#c1dfeb;margin-top:8px;font-size:13px}#graphicsQuality{background:#112c40;color:white;border:1px solid #426882;border-radius:5px;padding:6px}#ambientEnabled,#voiceEnabled{accent-color:#48b2bd}@media(max-width:650px){#modes{grid-template-columns:1fr}.mode{min-height:unset;padding:17px}} </style></head><body>
+<div id="mainMenu" role="dialog" aria-modal="true" aria-labelledby="gameTitle"><div id="menuContent"><h1 id="gameTitle">FUNKSPRUCH</h1><p>Stimmen im Rauschen</p><div id="modes"><section class="mode"><h2>Leitstellenbetrieb</h2><p>Beginne deine Schicht, betrete die Leitstelle und bearbeite Notrufe, Einsätze und Funkverkehr in der Ego-Perspektive.</p><button id="startNormal" type="button">Leitstellenmodus starten</button></section><section class="mode locked"><strong>IN ENTWICKLUNG</strong><h2>Apokalypse &amp; Überleben</h2><p>Katastrophen, Zusammenbruch der Versorgung und Überleben in der Leitstelle. Dieser Modus wird später freigeschaltet.</p><button type="button" disabled aria-disabled="true" title="Noch in Entwicklung">Noch nicht verfügbar</button></section></div><label id="ambientRow"><input type="checkbox" id="ambientEnabled" checked> Umgebungsgeräusche aktivieren</label><label id="voiceRow"><input type="checkbox" id="voiceEnabled" checked> Gesprochene Antworten der KI-Kollegen (Systemstimme)</label><label id="graphicsRow">Grafikqualität: <select id="graphicsQuality"><option value="auto">Automatisch</option><option value="low">Niedrig (ältere Laptops und iPads)</option><option value="medium">Mittel</option></select></label><div id="saveControls"><button id="exportSave" type="button">Spielstand exportieren</button><button id="importSave" type="button">Spielstand importieren</button><input id="saveImportFile" type="file" accept=".json,application/json" hidden></div><p id="menuHint">Aktuell ist ausschließlich der normale Leitstellenmodus spielbar. Steuerung: WASD, Maus, E für Interaktionen; Mobilgeräte mit Touchsteuerung.</p></div></div>
 <div id="world"></div><div id="crosshair" aria-hidden="true">+</div><div id="firstPersonPrompt" role="status" aria-live="polite"></div><div id="mapCredit" hidden>Geodaten © OpenStreetMap-Mitwirkende (ODbL 1.0)</div><section id="monitor" aria-label="Disponentenarbeitsplatz"><header><strong>FUNKSPRUCH · Arbeitsplatzmonitor</strong><button id="stand">Aufstehen</button></header><iframe title="Leitstellen-Einsatzleitsystem" loading="lazy" data-src="./arbeitsplatz.html" id="dispatchMonitor"></iframe></section><div id="panel"><strong>FUNKSPRUCH · Leitstellenbetrieb</strong>
 <p>Immer in Ego-Perspektive · WASD bewegen · E: Tür, Stechuhr oder Fahrzeug · Auf Mobilgeräten: Touchsteuerung · Am Schreibtisch E drücken</p><div id="clock">Dienstfrei · Zur Leitstelle gehen und einstempeln</div>
 <button id="interact">Interagieren (E)</button><button id="eat">Essen</button>
@@ -36,7 +36,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 <script src="./vehicle-interaction.js"></script><script src="./walker-core.js"></script>
 <script src="./life-core.js"></script><script src="./road-graph.js"></script>
 <script src="./osm-loader.js"></script><script src="./geodata-session.js"></script><script src="./touch-controls.js"></script>
-<script src="./world-upgrades.js"></script><script src="./ambient.js"></script>
+<script src="./world-upgrades.js"></script><script src="./save-manager.js"></script><script src="./ambient.js"></script>
 <script src="./runtime.js"></script><script src="./integration-tests.js"></script>
 <script>
 (async()=>{
@@ -116,7 +116,9 @@ try{
  const raw=localStorage.getItem(worldKey);
  if(raw)game.restoreWorld(JSON.parse(raw));
 }catch(error){console.warn("Gespeicherter Open-World-Spielstand nicht lesbar",error);}
+let importingSave=false;
 const persistLife=()=>{
+ if(importingSave)return;
  try{
   game.life.save();
   const world=game.saveWorld();if(world)localStorage.setItem(worldKey,JSON.stringify(world));
@@ -124,6 +126,25 @@ const persistLife=()=>{
  }catch(error){console.warn("Speichern fehlgeschlagen",error);}
 };
 window.addEventListener("message",e=>{if(e.origin===location.origin&&e.data?.type==="ld-life-reload"){try{game.life.load()}catch(err){console.warn(err)}}});
+document.getElementById("exportSave").onclick=()=>{
+ try{persistLife();LDFunkspruchSave.download(LDFunkspruchSave.capture());}
+ catch(error){alert("Export fehlgeschlagen: "+(error.message||error));}
+};
+const importFile=document.getElementById("saveImportFile");
+document.getElementById("importSave").onclick=()=>importFile.click();
+importFile.onchange=async()=>{
+ const file=importFile.files?.[0];if(!file)return;
+ try{
+  if(file.size>5_000_000)throw Error("Die Datei ist zu groß.");
+  const data=JSON.parse(await file.text());
+  const entries=LDFunkspruchSave.validate(data);
+  if(!confirm("Spielstand mit "+entries.length+" Speichereinträgen importieren? Bestehende Fortschritte werden überschrieben."))return;
+  importingSave=true;
+  LDFunkspruchSave.restore(data);
+  location.reload();
+ }catch(error){importingSave=false;alert("Import fehlgeschlagen: "+(error.message||error));}
+ finally{importFile.value="";}
+};
 window.addEventListener("pagehide",()=>{persistLife();audio.dispose();});
 document.addEventListener("visibilitychange",()=>{if(document.hidden)persistLife();});
 setInterval(persistLife,10000);
