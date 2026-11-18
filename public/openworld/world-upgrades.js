@@ -49,6 +49,7 @@ function install({THREE,scene,camera,life,onMessage=()=>{}}){
   interactables.push({id:"telefon",label:"Notruftelefon",x:1.7,z:-1.2});
   interactables.push({id:"dienstplan",label:"Dienstplan",x:4.8,z:4.8});
   interactables.push({id:"pause",label:"Pausenraum",x:-5.3,z:2.65});
+  interactables.push({id:"automat",label:"Getränkeautomat",x:-7.1,z:1.9});
  }
  function addOutdoor(){
   const g=new THREE.Group();scene.add(g);owned.push(g);
@@ -84,6 +85,16 @@ function install({THREE,scene,camera,life,onMessage=()=>{}}){
  }
  function interact(p){
   const obj=nearest(p);if(!obj)return false;
+  if(obj.id==="pause"||obj.id==="automat"){
+   try{
+    const before=life.snapshot(),action=obj.id==="pause"?"ruhepause":"trinken";
+    if(obj.id==="automat"&&!before.onDuty)throw Error("Bitte vor dem Dienst zuerst einstempeln.");
+    life.action(action);
+    try{life.save();}catch(error){console.warn("Dienststand konnte nicht gespeichert werden",error);}
+    onMessage(obj.id==="pause"?"10 Minuten Dienstpause beendet – Müdigkeit verringert.":"Getränk geholt – Durst verringert, 1 € bezahlt.");
+   }catch(error){onMessage(error.message||"Diese Aktion ist hier nicht verfügbar.");}
+   return true;
+  }
   if(obj.kind==="colleague"){
    const message=colleagueResponse(obj.label,dispatchSummary,life.snapshot().onDuty);
    onMessage(message);

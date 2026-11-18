@@ -33,13 +33,15 @@ function create(initial={}){
    trinken:{place:["wohnung","restaurant","leitstelle"],duration:2,cost:1,apply:()=>{s.thirst=clamp(s.thirst-55,0,100);}},
    duschen:{place:["wohnung"],duration:12,cost:0.5,apply:()=>{s.hygiene=100;}},
    schlafen:{place:["wohnung"],duration:480,cost:0,apply:()=>{s.fatigue=0;}},
+   ruhepause:{place:["leitstelle"],duration:10,cost:0,apply:()=>{s.fatigue=clamp(s.fatigue-15,0,100);s.thirst=clamp(s.thirst-4,0,100);}},
    dienstbeginn:{place:["leitstelle"],duration:0,cost:0,apply:()=>{if(s.onDuty)throw Error("Already on duty");s.onDuty=true;}},
    dienstende:{place:["leitstelle"],duration:0,cost:0,apply:()=>{if(!s.onDuty)throw Error("Not on duty");s.onDuty=false;}}
   };
   const a=actions[name];if(!a)throw Error("Unknown action");
   if(!a.place.includes(s.location))throw Error("Action unavailable here");
   if(s.money<a.cost)throw Error("Insufficient money");
-  if(s.onDuty&&["schlafen","duschen","essen"].includes(name))throw Error("Not available during duty");
+  if(s.onDuty&&["schlafen","duschen","essen"].includes(name))throw Error("Während des Dienstes nicht verfügbar");
+  if(name==="ruhepause"&&!s.onDuty)throw Error("Für eine Dienstpause müssen Sie eingestempelt sein");
   // Validate first; mutate only after all preconditions pass.
   if(name==="dienstbeginn"&&s.onDuty)throw Error("Already on duty");
   if(name==="dienstende"&&!s.onDuty)throw Error("Not on duty");
