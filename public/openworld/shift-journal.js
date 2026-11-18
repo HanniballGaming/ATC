@@ -48,6 +48,10 @@ function create(storage=root.localStorage){
   state.reports.unshift(report);state.reports=state.reports.slice(0,LIMIT);state.active=null;
   persist();return JSON.parse(JSON.stringify(report));
  }
+ function reconcile(current){
+  if(current?.life?.onDuty===true&&!state.active)return begin(current);
+  return false;
+ }
  function snapshot(){return JSON.parse(JSON.stringify(state));}
  function format(report){
   if(!report)return "Noch keine abgeschlossene Schicht vorhanden.";
@@ -60,7 +64,7 @@ function create(storage=root.localStorage){
    "\n\nMaximal gleichzeitig wartende Notrufe: "+(report.peakWaiting??"nicht erfasst")+
    "\n\nHinweis: Dies sind protokollierte Lagewerte, keine erfundenen Einsatz- oder Leistungsbewertungen.";
  }
- return {begin,record,finish,snapshot,format};
+ return {begin,record,finish,reconcile,snapshot,format};
 }
 root.LDFunkspruchShiftJournal=Object.freeze({create,location,key:KEY});
 })(typeof window!=="undefined"?window:globalThis);
