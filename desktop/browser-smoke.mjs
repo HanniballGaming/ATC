@@ -96,6 +96,10 @@ try{
    assert.equal(embeddedStatus.active,true,"Monitor nicht als Spielbildschirm eingebettet");
    assert.equal(embeddedStatus.workstationOpen,true,"ELS-Monitor nicht geöffnet");
    assert.equal(embeddedStatus.onDuty,true,"Leitplatzprüfung nicht abgeschlossen");
+   await page.waitForFunction(()=>window.FunkspruchGame?.status()?.dispatch!==null,{timeout:12000});
+   const summary=await page.evaluate(()=>window.FunkspruchGame.status().dispatch);
+   assert.ok(Number.isInteger(summary.open)&&Number.isInteger(summary.waiting)&&Number.isInteger(summary.free),"ELS-Lage nicht an 3D-Monitore übergeben");
+   console.log("3D-Monitore mit echter ELS-Lage synchronisiert:",JSON.stringify(summary));
  }
  await page.reload({waitUntil:"domcontentloaded"});
  await page.locator("#startNormal").waitFor();

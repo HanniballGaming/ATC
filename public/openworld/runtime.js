@@ -76,8 +76,8 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
  const vehicleVisual=new THREE.Group();
  const body=new THREE.Mesh(new THREE.BoxGeometry(1.9,1.2,4.5),new THREE.MeshStandardMaterial({color:0x285c88}));
  body.position.y=0.85;vehicleVisual.add(body);scene.add(vehicleVisual);
- let frameInput={forward:0,strafe:0,lookX:0,lookY:0,run:false};
- const status=()=>({indoor,atDesk,nearDesk:indoor&&!interaction?.driving&&Math.hypot(walker.snapshot().x-deskPoint.x,walker.snapshot().z-deskPoint.z)<2.4,nearChip:indoor&&!!chipPoint&&!interaction?.driving&&Math.hypot(walker.snapshot().x-chipPoint.x,walker.snapshot().z-chipPoint.z)<2.5,walking:walker.snapshot(),vehicle:car.snapshot(),driving:interaction?.driving||false,life:life.snapshot(),loadedTiles:view?.loadedTiles||0});
+ let frameInput={forward:0,strafe:0,lookX:0,lookY:0,run:false},dispatchSummary=null;
+ const status=()=>({indoor,atDesk,nearDesk:indoor&&!interaction?.driving&&Math.hypot(walker.snapshot().x-deskPoint.x,walker.snapshot().z-deskPoint.z)<2.4,nearChip:indoor&&!!chipPoint&&!interaction?.driving&&Math.hypot(walker.snapshot().x-chipPoint.x,walker.snapshot().z-chipPoint.z)<2.5,walking:walker.snapshot(),vehicle:car.snapshot(),driving:interaction?.driving||false,life:life.snapshot(),loadedTiles:view?.loadedTiles||0,dispatch:dispatchSummary?{...dispatchSummary}:null});
  function resize(){
   const width=Math.max(1,host.clientWidth),height=Math.max(1,host.clientHeight);
   camera.aspect=width/height;camera.updateProjectionMatrix();renderer.setSize(width,height,false);
@@ -225,8 +225,16 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   ctx.fillText("EINSATZLEITSYSTEM  |  FUNK  |  NOTRUF",16,86);
   ctx.fillStyle="#1c5b70";ctx.fillRect(16,106,480,52);
   ctx.fillStyle="#fff";ctx.fillText(life.snapshot().onDuty?"DIENST AKTIV":"NICHT EINGESTEMPELT",29,139);
-  ctx.fillStyle="#91d4e6";ctx.fillText("Zum Bedienen am Schreibtisch Platz nehmen",16,210);
-  ctx.fillText("E: Arbeitsplatz öffnen",16,250);
+  ctx.fillStyle="#91d4e6";if(dispatchSummary){
+   ctx.font="bold 19px system-ui";
+   ctx.fillStyle="#a3eeea";ctx.fillText("OFFENE EINSÄTZE: "+dispatchSummary.open,16,200);
+   ctx.fillStyle=dispatchSummary.waiting?"#ffcc8d":"#c1dce9";
+   ctx.fillText("WARTENDE NOTRUFE: "+dispatchSummary.waiting,16,235);
+   ctx.fillStyle="#b8d8e7";ctx.fillText("FREIE FAHRZEUGE: "+dispatchSummary.free+"/"+dispatchSummary.total,16,270);
+  }else{
+   ctx.fillText("Zum Bedienen am Schreibtisch Platz nehmen",16,210);
+   ctx.fillText("E: Arbeitsplatz öffnen",16,250);
+  }
   screenTexture.needsUpdate=true;
  }
  function sitDesk(){
@@ -281,6 +289,15 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   renderer.dispose();renderer.domElement.remove();
   if(needsPosition)host.style.position=oldPosition;
  }
+ function setDispatchSummary(raw){
+  if(!raw||!["open","waiting","free","total"].every(k=>Number.isSafeInteger(raw[k])&&raw[k]>=0&&raw[k]<=100000))return false;
+  if(raw.waiting>raw.open||raw.free>raw.total)return false;
+  dispatchSummary={
+   open:raw.open,waiting:raw.waiting,free:raw.free,total:raw.total,
+   minute:Number.isFinite(raw.minute)?Math.max(0,Math.min(1439,Math.round(raw.minute))):null
+  };
+  drawScreens();return true;
+ }
  function saveWorld(){
   if(!model)return null;
   return {version:1,indoor,player:walker.snapshot(),vehicle:car.snapshot(),onDuty:!!life.snapshot().onDuty};
@@ -307,7 +324,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   drawScreens();onStatus({...status(),message:"Gespeicherter Spielstand geladen"});
   return true;
  }
- const api={start,dispose,interact,toggleDoor,stamp,sitDesk,leaveDesk,routeTo,status,saveWorld,restoreWorld,life,walker,car,scene,camera,renderer,getShift:()=>worldUpgrade?.shift()};
+ const api={start,dispose,interact,toggleDoor,stamp,sitDesk,leaveDesk,routeTo,status,setDispatchSummary,saveWorld,restoreWorld,life,walker,car,scene,camera,renderer,getShift:()=>worldUpgrade?.shift()};
  return api;
 }
 root.LDOpenWorldRuntime=Object.freeze({create});

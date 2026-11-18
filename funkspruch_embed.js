@@ -15,7 +15,22 @@ style.textContent=[
 "body.fs-embed-active #app .game{height:100dvh!important;min-height:0!important}"
 ].join("\n");
 document.head.append(style);
-let lastReport="";
+let lastReport="",lastSummary="";
+function shareSummary(s){
+ if(!s||!Array.isArray(s.incidents)||!Array.isArray(s.vehicles))return;
+ const payload={
+  type:"funkspruch:dispatch-summary",
+  minute:Number.isFinite(s.minute)?Math.round(s.minute):null,
+  open:s.incidents.filter(i=>i&&i.phase!=="Abgeschlossen").length,
+  waiting:s.incidents.filter(i=>i&&["Anruf","Unversorgt"].includes(i.phase)).length,
+  free:s.vehicles.filter(v=>v&&v.status==="frei").length,
+  total:s.vehicles.length
+ };
+ const signature=JSON.stringify(payload);
+ if(signature===lastSummary)return;
+ lastSummary=signature;host.postMessage(payload,location.origin);
+}
+
 function report(status,message){
  const label=status+":"+(message||"");
  if(label===lastReport)return;
@@ -32,6 +47,7 @@ function update(){
  const ops=window.LDOperations;
  const s=ops?.getState?.()||window.getGame?.()?.s;
  const gameVisible=!!document.querySelector("#app .game")&&!document.querySelector("#app .menu");
+ shareSummary(s);
  if(!s||!gameVisible){
    context.opened=false;document.body.classList.remove("fs-embed-active");
    report("menue","Leitstelle im Einsatzleitsystem auswählen");

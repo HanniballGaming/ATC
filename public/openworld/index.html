@@ -60,6 +60,10 @@ const game=LDOpenWorldRuntime.create({THREE,host:document.getElementById("world"
  if(s.atDesk&&!dispatchMonitor.getAttribute("src"))dispatchMonitor.src=dispatchMonitor.dataset.src;
 }});
 await game.start();
+window.addEventListener("message",event=>{
+ if(event.origin!==location.origin||event.source!==dispatchMonitor.contentWindow)return;
+ if(event.data?.type==="funkspruch:dispatch-summary")game.setDispatchSummary(event.data);
+});
 window.FunkspruchGame=game; // Laufzeitdiagnose und Browser-Abnahmetests
 // The scene can initialize behind the menu, but only normal mode can be entered.
 if(reducedGraphics){game.renderer.setPixelRatio(Math.min(devicePixelRatio||1,1));game.renderer.setSize(document.getElementById("world").clientWidth,document.getElementById("world").clientHeight,false);}
