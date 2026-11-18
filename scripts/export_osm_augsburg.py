@@ -111,8 +111,9 @@ def valid(features: list[dict]) -> bool:
 
 def main() -> int:
     requests = [
+        ("https://overpass.private.coffee/api/interpreter", "json"),
+        ("https://ovp.dresel.systems/api/interpreter", "json"),
         ("https://overpass-api.de/api/interpreter", "json"),
-        ("https://overpass.kumi.systems/api/interpreter", "json"),
         ("https://api.openstreetmap.org/api/0.6/map?bbox="
          + ",".join(str(value) for value in (WEST, SOUTH, EAST, NORTH)), "xml"),
     ]

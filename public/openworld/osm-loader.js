@@ -4,7 +4,7 @@
  * Fetch only bounded small areas, never whole cities in a single request.
  */
 (function(root){"use strict";
-const DEFAULT_ENDPOINT="https://overpass.kumi.systems/api/interpreter";
+const DEFAULT_ENDPOINT="https://overpass.private.coffee/api/interpreter";
 function validateBounds(b){
  if(!b||!["south","west","north","east"].every(k=>Number.isFinite(b[k])))throw Error("Ungültige Kartengrenzen");
  if(b.south>=b.north||b.west>=b.east||Math.abs(b.south)>85||Math.abs(b.north)>85||Math.abs(b.west)>180||Math.abs(b.east)>180)throw Error("Ungültiger Kartenausschnitt");

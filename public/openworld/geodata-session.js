@@ -6,8 +6,8 @@
 (function(root){"use strict";
 const PREFIX="funkspruch-osm-cache-v1:",TTL=14*86400000,MAX_FEATURES=50000;
 const ENDPOINTS=Object.freeze([
- "https://overpass-api.de/api/interpreter",
- "https://overpass.kumi.systems/api/interpreter"
+ "https://overpass.private.coffee/api/interpreter",
+ "https://ovp.dresel.systems/api/interpreter"
 ]);
 function key(bounds){return PREFIX+["south","west","north","east"].map(k=>bounds[k].toFixed(5)).join(":");}
 function validData(data){

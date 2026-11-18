@@ -31,7 +31,7 @@ export function osmResponse(){
  return {version:0.6,generator:"Automatisierter UI-Test – NICHT echte OSM-Daten",elements:[...nodes,...ways]};
 }
 export function mockOsmRoute(route){
- if(route.request().url().startsWith("https://overpass-api.de/api/interpreter"))
+ if(route.request().url().startsWith("https://overpass.private.coffee/api/interpreter"))
   return route.fulfill({status:200,contentType:"application/json",body:JSON.stringify(osmResponse())});
  return route.abort();
 }
