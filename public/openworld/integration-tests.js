@@ -24,6 +24,14 @@ async function run(){
   const fake={type:"FeatureCollection",metadata:{source:"OpenStreetMap"},features:[...data.features,{type:"Feature",properties:{synthetic:true,highway:"residential"},geometry:{type:"LineString",coordinates:[[10.9,48.37],[10.901,48.37]]}}]};
   if(root.LDFunkspruchMap.validData(fake))throw Error("Synthetische Geometrie als OSM akzeptiert");
  });
+ test("Echte OSM-Straßenarten: klassengerechte Fahrbahnbreiten",()=>{
+  const width=root.LDOpenWorldRenderer?.roadWidth;
+  if(typeof width!=="function")throw Error("OSM-Straßenrenderer fehlt");
+  if(!(width({highway:"primary"})>width({highway:"residential"})))throw Error("Hauptstraße nicht breiter als Wohnstraße");
+  if(!(width({highway:"residential"})>width({highway:"footway"})))throw Error("Gehweg zu breit");
+  if(Math.abs(width({highway:"residential",width:"6.75"})-6.75)>1e-8)throw Error("OSM-Originalbreite nicht übernommen");
+  if(width({highway:"secondary",lanes:"2"})<6)throw Error("Anzahl Fahrstreifen ignoriert");
+ });
  test("GeoJSON: Straße und Gebäude",()=>{if(model.roads.length!==1||model.buildings.length!==1)throw Error("Feature count");});
  test("Tile-Index: lange Straße ohne Zwischenpunkte",()=>{
   const tiles=geo.tilesFor(model,32);
