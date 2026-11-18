@@ -5,6 +5,8 @@ import re
 root=Path(__file__).parent
 archive=root/"LEITSTELLE_DEUTSCHLAND_v0_21.zip"
 module=(root/"ai_dispatch_v23.js").read_bytes()
+embed=(root/"funkspruch_embed.js").read_bytes()
+assert len(embed)>1500
 assert len(module)>18000
 with ZipFile(archive) as z:
     files={name:z.read(name) for name in z.namelist() if not name.endswith("/")}
@@ -16,8 +18,15 @@ if "ai_dispatch_v23.js" not in html:
 html=html.replace("LEITSTELLE DEUTSCHLAND · 0.22","LEITSTELLE DEUTSCHLAND · 0.23")
 files["index.html"]=html.encode("utf-8")
 files["ai_dispatch_v23.js"]=module
+if "funkspruch_embed.js" not in html:
+    assert "</body></html>" in html
+    html=html.replace("</body></html>",'<script src="./funkspruch_embed.js"></script></body></html>')
+    files["index.html"]=html.encode("utf-8")
+files["funkspruch_embed.js"]=embed
 sw=files["sw.js"].decode("utf-8")
-sw=re.sub(r"const CACHE='[^']+'","const CACHE='leitstelle-v023-call-team-shell'",sw)
+sw=re.sub(r"const CACHE='[^']+'","const CACHE='leitstelle-v024-embedded-dispatch-shell'",sw)
+if "'./funkspruch_embed.js'" not in sw and "'./ai_dispatch_v23.js'" in sw:
+    sw=sw.replace("'./ai_dispatch_v23.js'","'./ai_dispatch_v23.js','./funkspruch_embed.js'")
 if "'./ai_dispatch_v23.js'" not in sw:
     sw=sw.replace("'./firstperson_v22.js'","'./firstperson_v22.js','./ai_dispatch_v23.js'")
 files["sw.js"]=sw.encode("utf-8")
@@ -29,4 +38,6 @@ with ZipFile(archive) as z:
     assert z.testzip() is None
     assert z.read("index.html").count(b"ai_dispatch_v23.js")==1
     assert b"ai_dispatch_v23.js" in z.read("sw.js")
+    assert z.read("index.html").count(b"funkspruch_embed.js")==1
+    assert b"funkspruch_embed.js" in z.read("sw.js")
 print("Version 0.23 verpackt und geprüft.")

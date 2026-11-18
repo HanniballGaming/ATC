@@ -1,43 +1,48 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NOTRUF 112 – Arbeitsplatz</title><style>
-*{box-sizing:border-box}body{margin:0;background:#071523;color:#d9efff;font:13px system-ui}header{display:flex;align-items:center;gap:10px;padding:8px;background:#102d43;border-bottom:1px solid #31556d}header strong{color:#8fd7ec}button,input,select{font:inherit}button{background:#19435d;border:1px solid #4b7992;color:#fff;border-radius:5px;padding:8px;cursor:pointer}button:disabled{opacity:.5}main{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px}section{background:#10283b;border:1px solid #35526a;border-radius:7px;padding:10px;min-width:0}h2{font-size:14px;margin:0 0 8px}input,select{width:100%;background:#071a2a;border:1px solid #53718a;color:white;padding:8px;border-radius:5px;margin:4px 0 8px}label{display:block}#calls,#events{height:120px;overflow:auto;white-space:pre-wrap}#radioLog{height:120px;overflow:auto;white-space:pre-wrap}.call{border-bottom:1px solid #35526a;padding:5px}small{color:#9ab6c8}#banner{padding:5px;color:#e8d79a}@media(max-width:650px){main{grid-template-columns:1fr}} </style></head><body>
-<header><strong>NOTRUF 112 – Der Leitstellensimulator</strong><span>Disponentenarbeitsplatz · ELS / Funk / Notruf</span><span id="duty"></span></header>
-<div id="banner">Trainingsbetrieb: Übungsnotrufe auf Anforderung, unterschiedliche Rückfragen und simulierte Fahrzeugantworten. Keine Verbindung zu echten Notrufdiensten.</div>
-<main><section><h2>Notrufannahme</h2><button id="call">Übungsnotruf erzeugen</button> <button id="answer">Anruf annehmen</button><div id="calls"></div><label>Rückfrage an Anrufer<input id="question" placeholder="Was ist genau passiert?"></label><button id="ask">Nachfragen</button><div id="reply"></div></section>
-<section><h2>Einsatzleitsystem</h2><label>Einsatzstichwort<select id="keyword"><option>Notfallrettung</option><option>Verkehrsunfall</option><option>Brandmeldeanlage</option><option>Wohnungsbrand</option></select></label><label>Einsatzort<input id="address" placeholder="Straße, Hausnummer, Ort"></label><button id="create">Einsatz anlegen</button><div id="events"></div></section>
-<section><h2>Funkverkehr</h2><label>Funkrufname<select id="unit"><option>RTW 1</option><option>NEF 1</option><option>HLF 1</option></select></label><label>Funkspruch<input id="radio" placeholder="Hier Leitstelle, kommen"></label><button id="send">Senden</button><div id="radioLog"></div></section>
-<section><h2>Fahrzeugstatus</h2><div id="units"></div><small>Simulation: Fahrzeug- und Funkstatus sind lokal und nicht mit realen Leitstellen verbunden.</small></section></main>
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>FUNKSPRUCH – Einsatzleitsystem</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#06111e;color:#deedf5;font-family:system-ui,Segoe UI,sans-serif}
+main{display:flex;flex-direction:column;height:100dvh}header{display:flex;align-items:center;gap:10px;min-height:42px;background:#10283b;border-bottom:1px solid #42647b;padding:5px 11px;font-size:12px}
+header strong{color:#91dbea;letter-spacing:.05em}#status{margin-left:auto;color:#b8c8d4}button{background:#1a4059;color:white;border:1px solid #507a92;padding:6px 10px;border-radius:5px;cursor:pointer}
+iframe{width:100%;flex:1;min-height:0;border:0;background:#081625}small{color:#9dbacc}
+#help{position:absolute;bottom:10px;left:12px;background:#071625d9;padding:6px 9px;border-radius:6px;pointer-events:none;font-size:11px}
+@media(max-width:550px){header{gap:5px;padding:5px;font-size:11px}header strong{display:none}#help{font-size:10px}}
+</style>
+</head>
+<body><main>
+<header><strong>FUNKSPRUCH</strong><span>Leitplatz · Einsatzleitsystem</span><span id="status" role="status">Verbindung wird hergestellt …</span>
+<button id="reload" title="Einsatzleitsystem neu laden">Neu laden</button><button id="backup" title="Einfache Ersatzansicht">Ersatzansicht</button></header>
+<iframe id="els" title="Vollständiges Einsatzleitsystem" allow="autoplay" src="../index.html?fs_embed=1"></iframe>
+</main>
+<div id="help">Erstmalig Leitstelle im ELS auswählen · Keine echten Notrufverbindungen</div>
 <script>
 (()=>{"use strict";
-const $=id=>document.getElementById(id),key="ld-els-v2";
-const cases=[
- {type:"Notfallrettung",address:"Bahnhofstraße 12",description:"Meine Mutter bekommt kaum Luft!",person:"Meine Mutter, 68 Jahre.",location:"Bahnhofstraße 12, zweiter Stock.",condition:"Sie ist wach, aber die Atmung fällt ihr schwer.",danger:"Keine erkennbare Gefahr.",other:"Ich bin allein bei ihr.",priority:"hoch",units:["RTW 1","NEF 1"]},
- {type:"Verkehrsunfall",address:"Hauptstraße 5",description:"Hier gab es gerade einen Verkehrsunfall!",person:"Zwei Personen, eine davon verletzt.",location:"Hauptstraße 5, direkt an der Kreuzung.",condition:"Eine Person ist ansprechbar und hat starke Schmerzen.",danger:"Die Fahrzeuge stehen teilweise auf der Fahrbahn.",other:"Weitere Personen halten bereits an.",priority:"hoch",units:["RTW 1","HLF 1"]},
- {type:"Wohnungsbrand",address:"Marktstraße 8",description:"Aus der Wohnung gegenüber kommt Rauch!",person:"Ich weiß nicht, ob noch jemand drinnen ist.",location:"Marktstraße 8, drittes Obergeschoss.",condition:"Ich sehe keine verletzten Personen.",danger:"Dichter Rauch kommt aus einem Fenster.",other:"Ich stehe draußen vor dem Gebäude.",priority:"hoch",units:["HLF 1","RTW 1"]},
- {type:"Notfallrettung",address:"Schulweg 3",description:"Ein Schüler ist auf dem Pausenhof zusammengebrochen!",person:"Ein Jugendlicher, ungefähr 16 Jahre.",location:"Schulweg 3, auf dem Schulhof.",condition:"Er ist bewusstlos, atmet aber.",danger:"Der Bereich ist frei zugänglich.",other:"Eine Lehrkraft ist bei ihm.",priority:"hoch",units:["RTW 1","NEF 1"]}
-];
-let state={events:[],radio:[],history:[],active:null,units:{"RTW 1":2,"NEF 1":2,"HLF 1":2},assignments:{}};
-try{const s=JSON.parse(localStorage.getItem(key)||"null");if(s&&Array.isArray(s.events)&&s.units)state={...state,...s,active:null}}catch{}
-const persist=()=>{try{localStorage.setItem(key,JSON.stringify(state))}catch{}};
-const time=()=>new Date().toLocaleTimeString("de-DE");
-function log(field,msg){state[field].unshift(time()+" · "+msg);state[field]=state[field].slice(0,80);persist();render()}
-function activeDuty(){try{return !!JSON.parse(localStorage.getItem("ld-openworld-life-v1")||"{}").onDuty}catch{return false}}
-function requireDuty(){if(activeDuty())return true;alert("Bitte zuerst an der Stechuhr einstempeln.");return false}
-function category(q){const t=q.toLocaleLowerCase("de-DE");if(/wo|adresse|ort|straße|standort|befind/.test(t))return"location";if(/bewusst|atm|verletz|zustand|ansprech|schmerz|geht es/.test(t))return"condition";if(/gefahr|feuer|rauch|sicher|verkehr|explosion/.test(t))return"danger";if(/wer|person|alt|betroffen|patient/.test(t))return"person";return"other"}
-function render(){
- $("duty").textContent=activeDuty()?"● Im Dienst":"○ Dienstfrei";
- const a=state.active;
- $("calls").textContent=a?(a.answered?"Aktives Gespräch: ":"Eingehender Notruf: ")+a.description+"\n"+(a.answered?"Gespräch läuft · Rückfragen stellen":"Bitte Anruf annehmen"):"Kein aktiver Notruf";
- $("events").textContent=state.events.join("\n")||"Noch keine Einsätze";
- $("radioLog").textContent=state.radio.join("\n")||"Noch keine Funksprüche";
- $("units").textContent=Object.entries(state.units).map(([n,s])=>n+" · Status "+s+(state.assignments[n]?" · "+state.assignments[n]:"")).join("\n");
- $("answer").disabled=!a||a.answered;$("ask").disabled=!a||!a.answered;
- $("create").disabled=!activeDuty();
+const frame=document.getElementById("els"),status=document.getElementById("status");
+let backup=false,ready=false;
+function shift(){
+ try{const data=JSON.parse(localStorage.getItem("ld-openworld-life-v1")||"{}");return {onDuty:data.onDuty===true,minutes:Number.isFinite(data.minutes)?data.minutes:null};}
+ catch{return {onDuty:false,minutes:null};}
 }
-$("call").onclick=()=>{if(!requireDuty())return;if(state.active){alert("Bitte zunächst den laufenden Notruf abschließen.");return}const s=cases[Math.floor(Math.random()*cases.length)];state.active={...s,answered:false,asked:[]};$("reply").textContent="";persist();render()};
-$("answer").onclick=()=>{if(!requireDuty()||!state.active)return;state.active.answered=true;$("reply").textContent="Anrufer: "+state.active.description;$("keyword").value=state.active.type;$("address").value=state.active.address;persist();render()};
-$("ask").onclick=()=>{if(!requireDuty()||!state.active?.answered)return;const q=$("question").value.trim();if(!q)return;const kind=category(q),a=state.active;const answer=a[kind];a.asked.push({question:q,answer});$("reply").textContent="Sie: "+q+"\nAnrufer: "+answer;$("question").value="";persist();render()};
-$("create").onclick=()=>{if(!requireDuty())return;const address=$("address").value.trim();if(!address){alert("Bitte Einsatzort eingeben.");return}const a=state.active;const id="E"+String(Date.now()).slice(-7);const type=$("keyword").value;const entry=id+" · "+type+" · "+address;state.events.unshift(entry);state.events=state.events.slice(0,80);if(a){state.history.unshift({id,type,address,questions:a.asked||[],time:time()});state.history=state.history.slice(0,40)}state.active=null;$("address").value="";$("reply").textContent="Einsatz "+id+" aufgenommen. Fahrzeug per Funk disponieren.";persist();render()};
-$("send").onclick=()=>{if(!requireDuty())return;const msg=$("radio").value.trim();if(!msg)return;const unit=$("unit").value;log("radio","Leitstelle an "+unit+": "+msg);const lower=msg.toLocaleLowerCase("de-DE");let response;if(/frei|einsatzende|wieder verfügbar/.test(lower)){state.units[unit]=2;delete state.assignments[unit];response="Verstanden, Status 2 – einsatzbereit."}else if(/einsatz|anfahrt|übernehmen|alarm/.test(lower)){if(state.units[unit]!==2){response="Negativ, Fahrzeug derzeit nicht verfügbar (Status "+state.units[unit]+")."}else{state.units[unit]=3;state.assignments[unit]=state.events[0]||"Funkauftrag";response="Verstanden, Status 3 – Einsatz übernommen."}}else{response="Hier "+unit+", verstanden. Bitte weitere Anweisung."}log("radio",unit+": "+response);$("radio").value="";persist();render()};
-window.addEventListener("storage",render);setInterval(()=>{$("duty").textContent=activeDuty()?"● Im Dienst":"○ Dienstfrei"},2000);render();
+function send(){
+ if(backup||!frame.contentWindow)return;
+ const s=shift();
+ frame.contentWindow.postMessage({type:"funkspruch:desk-context",onDuty:s.onDuty,minutes:s.minutes},location.origin);
+}
+frame.addEventListener("load",()=>{status.textContent=backup?"Ersatzansicht geladen":"ELS geladen · Synchronisierung läuft";send();});
+window.addEventListener("message",event=>{
+ if(event.source!==frame.contentWindow||event.origin!==location.origin||!event.data||backup)return;
+ if(event.data.type==="funkspruch:embedded-ready"){ready=true;send();}
+ if(event.data.type==="funkspruch:embedded-status"){
+   status.textContent=event.data.message||"Einsatzleitsystem bereit";
+   status.style.color=event.data.status==="fehler"?"#ffb1b1":"#b8c8d4";
+ }
+});
+document.getElementById("reload").addEventListener("click",()=>{ready=false;frame.src=backup?"./arbeitsplatz-basis.html":"../index.html?fs_embed=1";});
+document.getElementById("backup").addEventListener("click",()=>{backup=!backup;ready=false;frame.src=backup?"./arbeitsplatz-basis.html":"../index.html?fs_embed=1";document.getElementById("backup").textContent=backup?"Vollständiges ELS":"Ersatzansicht";status.textContent="Lade …";});
+setInterval(send,1800);
+setTimeout(()=>{if(!ready&&!backup)status.textContent="ELS startet – bei Problemen Ersatzansicht wählen";},10000);
 })();
 </script></body></html>
