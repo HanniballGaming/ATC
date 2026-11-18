@@ -15,8 +15,13 @@ assert.match(read("openworld/index.html"),/\.\/vendor\/three\.min\.js/);
 assert.ok(fs.statSync(path.join(base,"openworld","vendor","three.min.js")).size>100000);
 const context={console,Math,Date,JSON,Map,Set,Array,Object,Number,String,Boolean,Promise,Intl,setTimeout,clearTimeout};
 context.window=context;vm.createContext(context);
-for(const file of ["geo-core.js","collision-core.js","vehicle-core.js","vehicle-interaction.js","walker-core.js","life-core.js","road-graph.js","osm-loader.js","integration-tests.js"])
+for(const file of ["geo-core.js","collision-core.js","vehicle-core.js","vehicle-interaction.js","walker-core.js","life-core.js","road-graph.js","osm-loader.js","integration-tests.js","world-upgrades.js"])
  vm.runInContext(read("openworld/"+file),context,{filename:file,timeout:3000});
 const result=await context.LDOpenWorldIntegrationTests.run();
 if(result.passed!==result.total)throw Error("Open-World-Tests fehlgeschlagen: "+JSON.stringify(result.results.filter(x=>!x.ok)));
-console.log("OK: "+result.passed+"/"+result.total+" Logiktests; Desktop-Paket und gesperrter zweiter Modus geprüft.");
+const colleague=context.LDFunkspruchWorld.colleagueResponse;
+assert.match(colleague("Kollegin Meyer",{open:3,waiting:2,free:7,total:24},true),/2 wartende Notrufe/);
+assert.match(colleague("Kollege Weber",{open:3,waiting:0,free:5,total:24},true),/3 Einsätze/);
+assert.match(colleague("Kollege Braun",null,true),/Lageübersicht/);
+assert.match(colleague("Kollegin Schulz",{open:1,waiting:1,free:0,total:24},false),/zum Dienst/);
+console.log("OK: "+result.passed+"/"+result.total+" Logiktests, vier KI-Kollegenantworten, Desktop-Paket und gesperrter zweiter Modus geprüft.");

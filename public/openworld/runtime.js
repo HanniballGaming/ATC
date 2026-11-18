@@ -319,6 +319,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
    minute:Number.isFinite(raw.minute)?Math.max(0,Math.min(1439,Math.round(raw.minute))):null
   };
   if(dispatchSummary.minute!==null)life.syncClock(dispatchSummary.minute);
+  worldUpgrade?.setDispatchSummary?.(dispatchSummary);
   drawScreens();drawWallClock();return true;
  }
  function saveWorld(){
