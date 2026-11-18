@@ -28,6 +28,7 @@ body.playing:not(.fatal) #crosshair{display:block}body.playing #monitor.active~#
 (async()=>{
 const info=document.getElementById("info");
 const mainMenu=document.getElementById("mainMenu");
+try{if(localStorage.getItem("funkspruch-openworld-save-v1"))document.getElementById("startNormal").textContent="Spielstand fortsetzen";}catch{}
 const audio=LDFunkspruchAmbient.create();
 const prompt=document.getElementById("firstPersonPrompt");let lastEventText="",lastEventTime=0;
 document.getElementById("startNormal").addEventListener("click",()=>{audio.setEnabled(document.getElementById("ambientEnabled").checked);audio.start();mainMenu.hidden=true;document.body.classList.add("playing");window.dispatchEvent(new Event("resize"));});
@@ -63,9 +64,22 @@ window.FunkspruchGame=game; // Laufzeitdiagnose und Browser-Abnahmetests
 // The scene can initialize behind the menu, but only normal mode can be entered.
 if(reducedGraphics){game.renderer.setPixelRatio(Math.min(devicePixelRatio||1,1));game.renderer.setSize(document.getElementById("world").clientWidth,document.getElementById("world").clientHeight,false);}
 try{game.life.load()}catch(e){console.warn("Life save could not be loaded",e)}
-const persistLife=()=>{game.life.save();if(window.parent!==window)window.parent.postMessage({type:"ld-life-updated"},location.origin)};
+const worldKey="funkspruch-openworld-save-v1";
+try{
+ const raw=localStorage.getItem(worldKey);
+ if(raw)game.restoreWorld(JSON.parse(raw));
+}catch(error){console.warn("Gespeicherter Open-World-Spielstand nicht lesbar",error);}
+const persistLife=()=>{
+ try{
+  game.life.save();
+  const world=game.saveWorld();if(world)localStorage.setItem(worldKey,JSON.stringify(world));
+  if(window.parent!==window)window.parent.postMessage({type:"ld-life-updated"},location.origin);
+ }catch(error){console.warn("Speichern fehlgeschlagen",error);}
+};
 window.addEventListener("message",e=>{if(e.origin===location.origin&&e.data?.type==="ld-life-reload"){try{game.life.load()}catch(err){console.warn(err)}}});
 window.addEventListener("pagehide",()=>{persistLife();audio.dispose();});
+document.addEventListener("visibilitychange",()=>{if(document.hidden)persistLife();});
+setInterval(persistLife,10000);
 document.getElementById("interact").onclick=()=>game.interact();
 document.getElementById("stand").onclick=()=>game.leaveDesk();
 document.getElementById("eat").onclick=()=>{try{game.life.action("essen");persistLife()}catch(e){alert(e.message)}info.textContent=JSON.stringify(game.status(),null,2)};

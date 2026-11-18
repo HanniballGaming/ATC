@@ -281,7 +281,33 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   renderer.dispose();renderer.domElement.remove();
   if(needsPosition)host.style.position=oldPosition;
  }
- const api={start,dispose,interact,toggleDoor,stamp,sitDesk,leaveDesk,routeTo,status,life,walker,car,scene,camera,renderer,getShift:()=>worldUpgrade?.shift()};
+ function saveWorld(){
+  if(!model)return null;
+  return {version:1,indoor,player:walker.snapshot(),vehicle:car.snapshot(),onDuty:!!life.snapshot().onDuty};
+ }
+ function restoreWorld(saved){
+  if(!model||!entryPoint||!saved||saved.version!==1||!saved.player)return false;
+  const p=saved.player,c=saved.vehicle;
+  if(![p.x,p.z,p.heading,p.pitch].every(Number.isFinite))return false;
+  if(Math.abs(p.x)>100000||Math.abs(p.z)>100000)return false;
+  if(saved.indoor){
+   if(p.x < -7.1||p.x>7.1||p.z < -5.1||p.z>5.1)return false;
+   indoor=true;doorPoint={x:0,z:4.3};
+   walker.teleport(p.x,p.z,p.heading,p.pitch);
+   life.moveTo("leitstelle");
+  }else{
+   if(Math.hypot(p.x-entryPoint.x,p.z-entryPoint.z)>1000||root.LDOpenWorldCollision.collides(p,model,.35))return false;
+   indoor=false;doorPoint={x:entryPoint.x,z:entryPoint.z-1.7};
+   walker.teleport(p.x,p.z,p.heading,p.pitch);
+   life.moveTo("stadt");
+  }
+  atDesk=false;
+  if(c&&[c.x,c.z,c.heading].every(Number.isFinite)&&Math.hypot(c.x-entryPoint.x,c.z-entryPoint.z)<1000)
+   car.reset({x:c.x,z:c.z,heading:c.heading,speed:0,handbrake:true});
+  drawScreens();onStatus({...status(),message:"Gespeicherter Spielstand geladen"});
+  return true;
+ }
+ const api={start,dispose,interact,toggleDoor,stamp,sitDesk,leaveDesk,routeTo,status,saveWorld,restoreWorld,life,walker,car,scene,camera,renderer,getShift:()=>worldUpgrade?.shift()};
  return api;
 }
 root.LDOpenWorldRuntime=Object.freeze({create});

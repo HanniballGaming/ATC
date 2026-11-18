@@ -42,6 +42,13 @@ try{
  });
  assert.equal(state.life.onDuty,true,"Schichtbeginn fehlgeschlagen");
  assert.equal(state.atDesk,true,"Arbeitsplatz nicht aktiv");
+ await page.evaluate(()=>{
+  const g=window.FunkspruchGame;
+  localStorage.setItem("funkspruch-openworld-save-v1",JSON.stringify(g.saveWorld()));
+ });
+ const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem("funkspruch-openworld-save-v1")));
+ assert.equal(saved.indoor,true,"Innenraum nicht speicherbar");
+ assert.equal(saved.onDuty,true,"Dienststatus nicht speicherbar");
  await page.waitForFunction(()=>document.getElementById("dispatchMonitor")?.getAttribute("src")!==null);
  const outer=page.frameLocator("#dispatchMonitor");
  await outer.locator("#els").waitFor({timeout:15000});
@@ -90,6 +97,15 @@ try{
    assert.equal(embeddedStatus.workstationOpen,true,"ELS-Monitor nicht geöffnet");
    assert.equal(embeddedStatus.onDuty,true,"Leitplatzprüfung nicht abgeschlossen");
  }
+ await page.reload({waitUntil:"domcontentloaded"});
+ await page.locator("#startNormal").waitFor();
+ assert.match(await page.locator("#startNormal").textContent(),/fortsetzen/);
+ await page.locator("#startNormal").click();
+ await page.waitForFunction(()=>!!window.FunkspruchGame&&window.FunkspruchGame.status().indoor,{timeout:30000});
+ const restored=await page.evaluate(()=>window.FunkspruchGame.status());
+ assert.equal(restored.indoor,true,"Gespeicherter Innenraum wurde nicht wiederhergestellt");
+ assert.equal(restored.life.onDuty,true,"Gespeicherter Dienststatus wurde nicht wiederhergestellt");
+ console.log("Spielstand: Innenraum und Dienststatus nach Neuladen wiederhergestellt.");
  console.log("Browsertest: First Person, Dienstbeginn, Arbeitsplatz, ELS und gesperrter Modus geprüft.");
  console.log("ELS-Ausschnitt:",embeddedGame.slice(0,170).replace(/\s+/g," "));
  if(errors.length)console.warn("Weitere Browserfehler:",errors.slice(0,8));
