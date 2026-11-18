@@ -118,6 +118,24 @@ try{
    const summary=await page.evaluate(()=>window.FunkspruchGame.status().dispatch);
    assert.ok(Number.isInteger(summary.open)&&Number.isInteger(summary.waiting)&&Number.isInteger(summary.free),"ELS-Lage nicht an 3D-Monitore übergeben");
    console.log("3D-Monitore mit echter ELS-Lage synchronisiert:",JSON.stringify(summary));
+   // End-to-End-Fallbearbeitung: Notruf, Rückfrage, dokumentierte KI-Antwort.
+   const conversation=await embedded.locator("body").evaluate(()=>{
+     const s=window.LDOperations.getState();
+     const issue=s.incidents.find(i=>["Anruf","Unversorgt"].includes(i.phase));
+     if(!issue)return {error:"Kein übernehmbarer Übungsnotruf im Spielstand"};
+     window.LDLogic.accept(s,issue.id,()=>{},"Eigenplatz");
+     const response=window.LDLogic.converse(s,issue.id,"Wo genau ist der Einsatzort?",()=>{});
+     window.LDOperations.save?.();
+     window.refreshWorkstation?.();
+     return {phase:issue.phase,answer:response?.answer||"",matched:!!response?.matched,turns:issue.transcript?.length||0};
+   });
+   console.log("KI-Notrufannahme:",JSON.stringify(conversation));
+   assert.ok(!conversation.error,conversation.error||"");
+   assert.ok(conversation.matched&&conversation.answer.length>15,"KI-Rückfrage liefert keine passende Antwort");
+   assert.ok(conversation.turns>=2,"Gesprächsprotokoll wurde nicht angelegt");
+   assert.ok(!["Anruf","Unversorgt"].includes(conversation.phase),"Notruf konnte nicht angenommen werden");
+   await page.waitForFunction(()=>window.FunkspruchGame.status().dispatch?.waiting===0,null,{timeout:12000});
+
  }
  await page.reload({waitUntil:"domcontentloaded"});
  await page.locator("#startNormal").waitFor();
