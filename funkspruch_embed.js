@@ -54,9 +54,23 @@ function update(){
    return;
  }
  if(!context.onDuty){
+   // Nach dem tatsächlichen Ausstempeln darf der Simulationsleitplatz nicht
+   // unbeaufsichtigt weiterlaufen. Ein noch nicht begonnener Dienst wird nicht verändert.
+   if(s.ld22Completed&&!s.funkspruchPausedByDuty){
+     s.funkspruchWasPausedBeforeDuty=!!s.paused;
+     s.funkspruchPausedByDuty=true;
+     s.paused=true;
+     ops?.save?.();
+   }
    document.body.classList.remove("fs-embed-active");
-   report("dienstfrei","Vorher in der 3D-Leitstelle einstempeln");
+   report("dienstfrei","Dienst beendet – Einsatzsimulation pausiert");
    return;
+ }
+ if(s.funkspruchPausedByDuty){
+   s.paused=!!s.funkspruchWasPausedBeforeDuty;
+   delete s.funkspruchWasPausedBeforeDuty;
+   delete s.funkspruchPausedByDuty;
+   ops?.save?.();
  }
  // Physisch einstempeln und danach die vier Leitplatzprüfungen persönlich abschließen.
  // Die bestehende Schichtübergabe wird nicht automatisch übersprungen.
