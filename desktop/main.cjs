@@ -4,7 +4,7 @@ const {app,BrowserWindow,shell,session,dialog}=require("electron");
 const fs=require("node:fs"),path=require("node:path"),http=require("node:http");
 const ROOT=path.resolve(__dirname,"web"),HOST="127.0.0.1",PORT=47821,ORIGIN="http://"+HOST+":"+PORT;
 const MIME={".html":"text/html; charset=utf-8",".js":"text/javascript; charset=utf-8",".css":"text/css; charset=utf-8",".json":"application/json; charset=utf-8",".webmanifest":"application/manifest+json; charset=utf-8",".png":"image/png",".jpg":"image/jpeg",".jpeg":"image/jpeg",".svg":"image/svg+xml",".woff2":"font/woff2",".mp3":"audio/mpeg",".ogg":"audio/ogg",".wav":"audio/wav",".webp":"image/webp",".ico":"image/x-icon"};
-let server=null,win=null,forcedQuitTimer=null;
+let server=null,win=null,forcedQuitTimer=null,windowCloseWatchdog=null;
 const activeSockets=new Set();
 function closeServer(){
  if(!server)return;
@@ -76,6 +76,23 @@ async function start(){
   title:"FUNKSPRUCH – Stimmen im Rauschen",autoHideMenuBar:true,show:false,
   webPreferences:{nodeIntegration:false,contextIsolation:true,sandbox:true,webSecurity:true,backgroundThrottling:false}});
  win.once("ready-to-show",()=>win.show());
+ // Das eigentliche Spiel-Fenster beendet die App auch dann, wenn Electron
+ // noch verdeckte Chromium-/DevTools-Handles hält.
+ win.on("close",()=>{
+  if(!windowCloseWatchdog)windowCloseWatchdog=setTimeout(()=>{
+   console.warn("FUNKSPRUCH: Fensterschließen blockiert, beende den Prozess kontrolliert");
+   closeServer();
+   app.exit(0);
+  },5000);
+ });
+ win.on("closed",()=>{
+  win=null;
+  closeServer();
+  app.quit();
+  if(windowCloseWatchdog){clearTimeout(windowCloseWatchdog);windowCloseWatchdog=null;}
+  // Auch beim zweiten Programmstart kann Electron noch interne Handles halten.
+  setTimeout(()=>app.exit(0),2200);
+ });
  win.webContents.setWindowOpenHandler(({url})=>{
   if(/^https?:\/\//i.test(url)&&!url.startsWith(ORIGIN+"/"))shell.openExternal(url).catch(()=>{});
   return {action:"deny"};
