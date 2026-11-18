@@ -25,10 +25,11 @@ if "funkspruch_embed.js" not in html:
 files["funkspruch_embed.js"]=embed
 sw=files["sw.js"].decode("utf-8")
 sw=re.sub(r"const CACHE='[^']+'","const CACHE='leitstelle-v024-embedded-dispatch-shell'",sw)
-if "'./funkspruch_embed.js'" not in sw and "'./ai_dispatch_v23.js'" in sw:
-    sw=sw.replace("'./ai_dispatch_v23.js'","'./ai_dispatch_v23.js','./funkspruch_embed.js'")
 if "'./ai_dispatch_v23.js'" not in sw:
     sw=sw.replace("'./firstperson_v22.js'","'./firstperson_v22.js','./ai_dispatch_v23.js'")
+if "'./funkspruch_embed.js'" not in sw:
+    assert "'./ai_dispatch_v23.js'" in sw
+    sw=sw.replace("'./ai_dispatch_v23.js'","'./ai_dispatch_v23.js','./funkspruch_embed.js'")
 files["sw.js"]=sw.encode("utf-8")
 files["RELEASE_V023.txt"]="LEITSTELLE DEUTSCHLAND v0.23: Notruf- und Team-KI, fiktive Offline-Simulation.\n".encode("utf-8")
 with ZipFile(archive,"w",ZIP_DEFLATED,compresslevel=7) as z:

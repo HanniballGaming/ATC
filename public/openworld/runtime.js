@@ -177,7 +177,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
   const ctx=screenContext,w=screenCanvas.width,h=screenCanvas.height;
   ctx.fillStyle="#081a2b";ctx.fillRect(0,0,w,h);
   ctx.fillStyle="#123b52";ctx.fillRect(0,0,w,43);
-  ctx.fillStyle="#a7e4f0";ctx.font="bold 21px system-ui";ctx.fillText("LEITSTELLE DEUTSCHLAND",16,29);
+  ctx.fillStyle="#a7e4f0";ctx.font="bold 21px system-ui";ctx.fillText("FUNKSPRUCH",16,29);
   ctx.font="17px system-ui";ctx.fillStyle="#e6f3fc";
   ctx.fillText("EINSATZLEITSYSTEM  |  FUNK  |  NOTRUF",16,86);
   ctx.fillStyle="#1c5b70";ctx.fillRect(16,106,480,52);
@@ -190,6 +190,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
   if(!indoor)throw Error("Der Arbeitsplatz befindet sich in der Leitstelle");
   if(!life.snapshot().onDuty)throw Error("Bitte vor dem Dienst an der Stechuhr einstempeln");
   if(Math.hypot(walker.snapshot().x-deskPoint.x,walker.snapshot().z-deskPoint.z)>2.4)throw Error("Bitte zum Disponentenarbeitsplatz gehen");
+  if(root.document?.pointerLockElement===renderer.domElement)root.document.exitPointerLock?.();
   atDesk=true;drawScreens();onStatus({...status(),message:"Am Disponentenarbeitsplatz – Monitore aktiv"});
  }
  function leaveDesk(){atDesk=false;onStatus({...status(),message:"Vom Arbeitsplatz aufgestanden"});}

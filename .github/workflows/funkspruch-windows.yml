@@ -38,3 +38,28 @@ jobs:
           path: desktop/release/*.exe
           if-no-files-found: error
           retention-days: 14
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Hauptsimulator mit Schicht- und Monitorbrücke verpacken
+        run: python release_v23.py
+      - name: Testumgebung installieren
+        working-directory: desktop
+        run: npm install --no-audit --no-fund
+      - name: Webfassung vorbereiten
+        working-directory: desktop
+        run: npm run prepare:web
+      - name: Chromium für Browsertest installieren
+        working-directory: desktop
+        run: npx playwright install --with-deps chromium
+      - name: Schicht und vollständigen Leitstellenmonitor im Browser prüfen
+        working-directory: desktop
+        run: node browser-smoke.mjs
