@@ -235,7 +235,8 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   addBox(2,.14,.55,5.5,1.05,-5.5,0x647987);
   addBox(2.1,2.6,.15,0,1.3,5.9,0x624a37);
   chipPoint={x:-5.5,z:-4.5};
-  doorPoint={x:0,z:4.3};
+  // Beim Spielstart befindet sich der Spieler draußen. Erst nach dem Betreten
+  // wechselt der Tür-Interaktionspunkt auf die Position der Innentür.
   keyboard=root.LDOpenWorldWalker.keyboard(root);
   renderer.domElement.addEventListener("click",requestPointerLock);
   root.document?.addEventListener("mousemove",pointerMove);
