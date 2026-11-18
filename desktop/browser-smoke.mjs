@@ -59,6 +59,17 @@ try{
  console.log("Hauptspiel-Module und Menü:",JSON.stringify(modules));
  assert.equal(modules.operations,"object","Einsatzlogik nicht eingebunden");
  assert.notEqual(modules.ai,"undefined","Notruf- und Team-KI fehlt");
+ const newGame=embedded.locator("#app .menu button",{hasText:"Neuen Spielstand starten"});
+ if(await newGame.count()){
+   await newGame.click();
+   await page.waitForTimeout(800);
+   const next=await embedded.locator("#app").evaluate(el=>({
+     preview:el.innerText.slice(0,1100),
+     inputs:Array.from(el.querySelectorAll("select, input")).map(i=>({type:i.tagName,id:i.id,options:i.tagName==="SELECT"?Array.from(i.options).slice(0,5).map(o=>o.textContent):[]})).slice(0,10),
+     buttons:Array.from(el.querySelectorAll("button")).slice(0,20).map(b=>b.textContent.trim())
+   }));
+   console.log("ELS-Menü nach Neu:",JSON.stringify(next));
+ }
  console.log("Browsertest: First Person, Dienstbeginn, Arbeitsplatz, ELS und gesperrter Modus geprüft.");
  console.log("ELS-Ausschnitt:",embeddedGame.slice(0,170).replace(/\s+/g," "));
  if(errors.length)console.warn("Weitere Browserfehler:",errors.slice(0,8));
