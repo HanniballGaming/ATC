@@ -60,7 +60,8 @@ function update(){
    report("initialisierung","Das Einsatzleitsystem wird geladen");
    return;
  }
- if(!context.opened||!window.LDWorkstation?.isOpen?.()){
+ const workstationOpen=window.LDWorkstation?.isOpen?.();
+ if(!context.opened||workstationOpen===false){
    try{window.openWorkstation("call");context.opened=true;}
    catch(e){report("fehler",String(e.message||e));return;}
  }
