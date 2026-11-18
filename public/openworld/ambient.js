@@ -29,7 +29,7 @@ function create(){
  }
  return {
   start(){try{init();return ctx?.resume?.()||Promise.resolve();}catch(e){console.warn("Audio nicht verfügbar",e);return Promise.resolve();}},
-  setEnabled(value){enabled=!!value;if(master)master.gain.setTargetAtTime(enabled?.12:0,ctx.currentTime,.1);},
+  setEnabled(value){enabled=!!value;if(master)master.gain.setTargetAtTime(enabled ? 0.12 : 0,ctx.currentTime,.1);},
   update(s){
    if(!ctx||!s)return;
    const t=ctx.currentTime;
