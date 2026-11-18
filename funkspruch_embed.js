@@ -32,7 +32,7 @@ function shareSummary(s){
 }
 
 function shareActivity(s){
- if(!s||!Array.isArray(s.incidents)||!context.onDuty||!s.ld22Completed)return;
+ if(!s||!Array.isArray(s.incidents))return;
  const current=new Map();
  for(const issue of s.incidents.slice(0,300)){
   if(!issue||!["string","number"].includes(typeof issue.id))continue;
@@ -41,7 +41,7 @@ function shareActivity(s){
   current.set(id,{phase,assigned:Math.min(100,assigned)});
  }
  const radioCount=Array.isArray(s.radioLog)?s.radioLog.length:0;
- if(previousIncidents!==null){
+ if(previousIncidents!==null&&context.onDuty&&s.ld22Completed){
   const events=[];
   for(const [id,now] of current){
    const before=previousIncidents.get(id);
