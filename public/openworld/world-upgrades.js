@@ -1,7 +1,15 @@
 /* FUNKSPRUCH open-world extensions: modular, no external assets. */
 (function(root){"use strict";
+function colleagueResponse(name,summary,onDuty){
+ const who=name||"Kollege";
+ if(!onDuty)return who+": Guten Tag. Melden Sie sich bitte erst zum Dienst an.";
+ if(!summary)return who+": Die Einsatzlage ist noch nicht mit dem Leitplatz verbunden. Prüfen Sie die Lageübersicht am Bildschirm.";
+ if(summary.waiting>0)return who+": Wir haben "+summary.waiting+" wartende "+(summary.waiting===1?"Notruf":"Notrufe")+". Bitte übernehmen Sie einen im Telefonmonitor.";
+ if(summary.open>0)return who+": Derzeit laufen "+summary.open+" "+(summary.open===1?"Einsatz":"Einsätze")+". Von "+summary.total+" Einsatzmitteln sind "+summary.free+" frei. Prüfen Sie die offenen Vorgänge.";
+ return who+": Die aktuelle Lage ist ruhig. "+summary.free+" von "+summary.total+" Fahrzeugen sind einsatzbereit.";
+}
 function install({THREE,scene,camera,life,onMessage=()=>{}}){
- const owned=[],actors=[],interactables=[];let elapsed=0,shiftSeconds=0,ambientPhase=0;
+ const owned=[],actors=[],interactables=[];let elapsed=0,shiftSeconds=0,ambientPhase=0,dispatchSummary=null;
  const material=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:.78,...extra});
  function box(parent,name,x,y,z,w,h,d,color){
   const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material(color));o.position.set(x,y,z);o.name=name;parent.add(o);owned.push(o);return o;
@@ -30,7 +38,7 @@ function install({THREE,scene,camera,life,onMessage=()=>{}}){
    box(person,"Körper",0,1.08,0,.44,.65,.3,i%2?0x244960:0x304c5b);
    box(person,"Kopf",0,1.55,0,.29,.32,.28,0xc59c81);
    box(person,"Beine",0,.58,0,.36,.5,.26,0x202b39);
-   group.add(person);actors.push({person,x,z,phase:i*1.6,name:["Kollegin Meyer","Kollege Weber","Kollegin Schulz","Kollege Braun"][i]});
+   group.add(person);const name=["Kollegin Meyer","Kollege Weber","Kollegin Schulz","Kollege Braun"][i];actors.push({person,x,z,phase:i*1.6,name});interactables.push({id:"kollege"+i,kind:"colleague",label:name,x,z});
   }
   interactables.push({id:"funk",label:"Funkgerät",x:1,z:-1.2});
   interactables.push({id:"telefon",label:"Notruftelefon",x:1.7,z:-1.2});
@@ -71,12 +79,26 @@ function install({THREE,scene,camera,life,onMessage=()=>{}}){
  }
  function interact(p){
   const obj=nearest(p);if(!obj)return false;
+  if(obj.kind==="colleague"){
+   const message=colleagueResponse(obj.label,dispatchSummary,life.snapshot().onDuty);
+   onMessage(message);
+   const voice=root.speechSynthesis;
+   if(root.document?.getElementById("voiceEnabled")?.checked&&voice&&typeof root.SpeechSynthesisUtterance==="function"){
+    try{
+     voice.cancel();
+     const utterance=new root.SpeechSynthesisUtterance(message.replace(/^.*?: /,""));
+     utterance.lang="de-DE";utterance.rate=1.02;utterance.pitch=.98;utterance.volume=.75;
+     voice.speak(utterance);
+    }catch(e){console.warn("Kollegenstimme nicht verfügbar",e);}
+   }
+   return true;
+  }
   const messages={funk:"Funkgerät: Am Arbeitsplatz ist der Funkverkehr verfügbar.",telefon:"Notruftelefon: Am Arbeitsplatz können Sie Notrufe annehmen.",dienstplan:"Dienstplan: "+(life.snapshot().onDuty?"Dienst läuft":"Noch nicht eingestempelt")+".",pause:"Pausenraum: Hier können Sie sich während der Schicht erholen."};
   onMessage(messages[obj.id]);return true;
  }
  function shift(){return {onDuty:!!life.snapshot().onDuty,seconds:Math.floor(shiftSeconds),colleagues:actors.map(a=>a.name)};}
  function dispose(){for(const o of owned.reverse()){o.parent?.remove(o);o.geometry?.dispose();if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material.dispose();}}}
- return {addIndoor,update,nearest,interact,shift,dispose};
+ return {addIndoor,update,nearest,interact,shift,dispose,setDispatchSummary(s){dispatchSummary=s&&Number.isInteger(s.open)&&Number.isInteger(s.waiting)?{...s}:null;}};
 }
-root.LDFunkspruchWorld=Object.freeze({install});
+root.LDFunkspruchWorld=Object.freeze({install,colleagueResponse});
 })(typeof window!=="undefined"?window:globalThis);
