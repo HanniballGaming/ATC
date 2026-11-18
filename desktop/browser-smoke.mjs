@@ -137,6 +137,25 @@ try{
     console.log("ELS-Dispositionsstruktur:",JSON.stringify(dispatchApi).slice(0,3200));
     const logicSignatures=await embedded.locator("body").evaluate(()=>({dispatch:window.LDLogic.dispatch.toString().slice(0,3400),radio:window.LDLogic.radio.toString().slice(0,2600),opsDispatch:window.LDOperations.dispatch.toString().slice(0,1800)}));
     console.log("ELS-Dispositionsfunktionen:",JSON.stringify(logicSignatures).slice(0,7500));
+    const deployed=await embedded.locator("body").evaluate(()=>{
+      const ops=window.LDOperations,s=ops.getState();
+      const incident=s.incidents.find(i=>i.phase==="Disponierung"&&i.owner==="Eigenplatz");
+      if(!incident)return {error:"Kein disponierbarer Notruf nach Annahme"};
+      const need=Array.isArray(incident.need)?incident.need:typeof incident.need==="string"?[incident.need]:[];
+      const unit=s.vehicles.find(v=>v.status==="frei"&&need.includes(v.type))||s.vehicles.find(v=>v.status==="frei"&&v.type==="RTW");
+      if(!unit)return {error:"Kein freies disponierbares Fahrzeug"};
+      const before=unit.status,radioBefore=s.radioLog?.length||0;
+      const dispatched=ops.dispatch(incident.id,unit.type,unit.id);
+      const assigned=incident.assigned?.includes(unit.id)||unit.incident===incident.id;
+      const radioAccepted=ops.radio(unit.id,"Leitstelle an "+unit.id+": Bitte kommen.");
+      return {dispatched,assigned,radioAccepted,unit:unit.id,before,after:unit.status,incident:incident.id,assignedList:incident.assigned,radioAdded:(s.radioLog?.length||0)>radioBefore,need};
+    });
+    console.log("ELS-Fahrzeugdisposition und Funk:",JSON.stringify(deployed));
+    assert.ok(!deployed.error,deployed.error||"");
+    assert.equal(deployed.dispatched,true,"Fahrzeug wurde nicht disponiert");
+    assert.equal(deployed.assigned,true,"Fahrzeug ist nicht dem Einsatz zugeordnet");
+    assert.equal(deployed.radioAccepted,true,"Funkspruch wurde abgelehnt");
+    assert.equal(deployed.radioAdded,true,"Funkspruch wurde nicht protokolliert");
    assert.ok(!conversation.error,conversation.error||"");
    assert.ok(conversation.matched&&conversation.answer.length>15,"KI-Rückfrage liefert keine passende Antwort");
    assert.ok(conversation.turns>=2,"Gesprächsprotokoll wurde nicht angelegt");
