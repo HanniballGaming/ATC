@@ -12,11 +12,52 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
  if(!origin||!Number.isFinite(origin.lon)||!Number.isFinite(origin.lat))throw Error("WGS84 origin required");
  let model=null,view=null,graph=null,interaction=null,disposed=false,raf=0,last=0,accumulator=0;
  let touch=null,keyboard=null,lookInput={x:0,y:0},worldUpgrade=null;
- let indoor=false,entryPoint=null,doorPoint=null,chipPoint=null,office=null,officePieces=[],deskPoint={x:1,z:-1.3},atDesk=false,screenTexture=null,screenCanvas=null,screenContext=null,screenMaterialRef=null;
+ let indoor=false,entryPoint=null,doorPoint=null,chipPoint=null,office=null,officePieces=[],exterior=null,deskPoint={x:1,z:-1.3},atDesk=false,screenTexture=null,screenCanvas=null,screenContext=null,screenMaterialRef=null;
  const life=root.LDOpenWorldLife.create();
  const walker=root.LDOpenWorldWalker.create();
  const car=root.LDOpenWorldVehicle.create();
  const scene=new THREE.Scene();scene.background=new THREE.Color(0x9cc9e7);
+ // Fiktives Trainingsgebäude: keine Behauptung über reale Rettungsleitstellenstandorte.
+ function makeStationExterior(position){
+  const g=new THREE.Group();g.name="FUNKSPRUCH Trainingsleitstelle";g.position.set(position.x,0,position.z);
+  const mats=[],geoms=[],textures=[];
+  function cuboid(name,x,y,z,w,h,d,color){
+   const geo=new THREE.BoxGeometry(w,h,d),mat=new THREE.MeshStandardMaterial({color,roughness:.84});
+   const mesh=new THREE.Mesh(geo,mat);mesh.name=name;mesh.position.set(x,y,z);g.add(mesh);mats.push(mat);geoms.push(geo);return mesh;
+  }
+  cuboid("Hauptgebäude",0,4,-9,18,8,12,0x7d8c98);
+  cuboid("Dachrand",0,8.12,-9,18.6,.38,12.6,0x2e4857);
+  cuboid("Sockel",0,.28,-9,18,.55,12,0x435768);
+  cuboid("Eingangstür",0,1.5,-2.94,1.9,2.9,.13,0x1b445e);
+  cuboid("Türglas",0,1.7,-2.85,1.62,2.2,.06,0x4d8eaa);
+  cuboid("Türgriff",.66,1.4,-2.78,.09,.35,.12,0xcfdde3);
+  cuboid("Vordach",0,3.1,-2.25,5,.23,2.1,0x2c4557);
+  cuboid("Fußweg",0,.022,-1.5,2.5,.05,3.1,0x9eaeb5);
+  for(const floor of [1.5,5.2]){
+   for(const x of [-7,-4.6,4.6,7]){
+    cuboid("Fenster",x,floor,-2.94,1.35,1.55,.09,0x286581);
+    cuboid("Fensterrahmen",x,floor,-2.87,1.42,.08,.13,0xc5d9e2);
+   }
+  }
+  const canvas=root.document?.createElement?.("canvas");
+  if(canvas){
+   canvas.width=1024;canvas.height=180;
+   const ctx=canvas.getContext("2d");
+   if(ctx){
+    ctx.fillStyle="#10314a";ctx.fillRect(0,0,1024,180);
+    ctx.fillStyle="#9ee9ee";ctx.font="bold 80px Arial";ctx.fillText("FUNKSPRUCH",32,104);
+    ctx.fillStyle="#e4f6f8";ctx.font="34px Arial";ctx.fillText("FIKTIVE TRAININGSLEITSTELLE",34,153);
+    const tex=new THREE.CanvasTexture(canvas),mat=new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide});
+    const geo=new THREE.PlaneGeometry(8.8,1.6),sign=new THREE.Mesh(geo,mat);
+    sign.name="Eingangsschild";sign.position.set(0,5.85,-2.915);g.add(sign);
+    textures.push(tex);mats.push(mat);geoms.push(geo);
+   }
+  }
+  scene.add(g);
+  g.userData.dispose=()=>{for(const geom of geoms)geom.dispose();for(const mat of mats)mat.dispose();for(const tex of textures)tex.dispose();scene.remove(g);};
+  return g;
+ }
+
  const camera=new THREE.PerspectiveCamera(70,1,0.1,1500);
  const renderer=new THREE.WebGLRenderer({antialias:graphics.antialias!==false,powerPreference:graphics.powerPreference==="low-power"?"low-power":"high-performance"});
  renderer.outputEncoding=THREE.sRGBEncoding;
@@ -97,11 +138,12 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   const driving=interaction.driving;
   const p=driving?car.snapshot():walker.snapshot();
   camera.position.set(atDesk?1:p.x,atDesk?1.3:driving?1.65:1.7,atDesk?-1.05:p.z);
-  camera.rotation.order="YXZ";camera.rotation.y=-p.heading;camera.rotation.x=driving?0:p.pitch;
+  camera.rotation.order="YXZ";camera.rotation.y=atDesk?0:-p.heading;camera.rotation.x=atDesk?-.04:driving?0:p.pitch;
   const c=car.snapshot();vehicleVisual.position.set(c.x,0,c.z);vehicleVisual.rotation.y=-c.heading;
   vehicleVisual.visible=!driving;
   view.update(indoor?entryPoint.x:p.x,indoor?entryPoint.z:p.z);
   if(office)office.visible=indoor;
+  if(exterior)exterior.visible=!indoor;
   ground.visible=!indoor;
   vehicleVisual.visible=!driving&&!indoor;
   scene.background.setHex(indoor?0x1c2835:0x9cc9e7);
@@ -134,7 +176,8 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   walker.teleport(pedestrianSpawn.x,pedestrianSpawn.z);
   car.reset({x:vehicleSpawn.x,z:vehicleSpawn.z,handbrake:true});
   interaction=root.LDOpenWorldInteraction.create({vehicle:car,player:interactionPlayer});
-  entryPoint={...pedestrianSpawn};doorPoint={...pedestrianSpawn};
+  entryPoint={...pedestrianSpawn};doorPoint={x:entryPoint.x,z:entryPoint.z-1.7};
+  exterior=makeStationExterior(entryPoint);
   office=new THREE.Group();scene.add(office);office.visible=false;
   if(root.LDFunkspruchWorld){worldUpgrade=root.LDFunkspruchWorld.install({THREE,scene,camera,life,onMessage:message=>onStatus({...status(),message})});worldUpgrade.addIndoor(office);}
   const addBox=(w,h,d,x,y,z,color)=>{const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color}));mesh.position.set(x,y,z);office.add(mesh);officePieces.push(mesh);return mesh;};
@@ -197,7 +240,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
  function toggleDoor(){
   if(!interaction||interaction.driving)throw Error("Zum Betreten müssen Sie aussteigen");
   if(atDesk)throw Error("Bitte vor dem Verlassen der Leitstelle aufstehen");
-  if(indoor){indoor=false;walker.teleport(entryPoint.x,entryPoint.z);doorPoint={...entryPoint};life.moveTo("stadt");}
+  if(indoor){indoor=false;walker.teleport(entryPoint.x,entryPoint.z);doorPoint={x:entryPoint.x,z:entryPoint.z-1.7};life.moveTo("stadt");}
   else{indoor=true;walker.teleport(0,3.8);doorPoint={x:0,z:4.3};life.moveTo("leitstelle");}
   try{life.save()}catch(e){console.warn(e)}
   onStatus({...status(),message:indoor?"Leitstelle betreten – zur Stechuhr gehen":"Leitstelle zu Fuß verlassen"});
@@ -231,7 +274,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   renderer.domElement.removeEventListener("click",requestPointerLock);
   root.document?.removeEventListener("mousemove",pointerMove);
   if(root.document?.pointerLockElement===renderer.domElement)root.document.exitPointerLock?.();
-  keyboard?.dispose();touch?.dispose();view?.dispose();worldUpgrade?.dispose();
+  keyboard?.dispose();touch?.dispose();view?.dispose();worldUpgrade?.dispose();exterior?.userData?.dispose?.();
   officePieces.forEach(mesh=>{mesh.geometry?.dispose();if(mesh.material&&mesh.material!==screenMaterialRef)mesh.material.dispose()});
   screenTexture?.dispose();screenMaterialRef?.dispose();
   body.geometry.dispose();body.material.dispose();ground.geometry.dispose();ground.material.dispose();
