@@ -162,6 +162,44 @@ try{
    assert.ok(conversation.turns>=2,"Gesprächsprotokoll wurde nicht angelegt");
    assert.ok(!["Anruf","Unversorgt"].includes(conversation.phase),"Notruf konnte nicht angenommen werden");
    await page.waitForFunction(()=>window.FunkspruchGame.status().dispatch?.waiting===0,null,{timeout:12000});
+   // Schichtende tatsächlich an der 3D-Stechuhr: Einsatzsimulation pausiert.
+   await page.evaluate(()=>{
+     const g=window.FunkspruchGame;
+     g.leaveDesk();
+     g.walker.teleport(-5.5,-4.5);
+     g.stamp();
+   });
+   let offDuty;
+   for(let n=0;n<25;n++){
+     offDuty=await embedded.locator("body").evaluate(()=>{
+       const s=window.LDOperations.getState();
+       return {paused:s.paused,byDuty:s.funkspruchPausedByDuty===true};
+     });
+     if(offDuty.byDuty&&offDuty.paused)break;
+     await page.waitForTimeout(350);
+   }
+   assert.equal(offDuty.byDuty,true,"Leitstelle läuft nach dem Ausstempeln weiter");
+   assert.equal(offDuty.paused,true,"Einsatzsimulation bei Dienstende nicht angehalten");
+   // Nächste Schicht: zuvor laufende Simulation wieder aufnehmen, Fortschritt behalten.
+   await page.evaluate(()=>{
+     const g=window.FunkspruchGame;
+     g.walker.teleport(-5.5,-4.5);
+     g.stamp();
+     g.walker.teleport(1,-1.3);
+     g.sitDesk();
+   });
+   let newDuty;
+   for(let n=0;n<25;n++){
+     newDuty=await embedded.locator("body").evaluate(()=>{
+       const s=window.LDOperations.getState();
+       return {paused:!!s.paused,byDuty:!!s.funkspruchPausedByDuty};
+     });
+     if(!newDuty.byDuty&&!newDuty.paused)break;
+     await page.waitForTimeout(350);
+   }
+   assert.equal(newDuty.byDuty,false,"Dienstsimulation nicht wiederaufgenommen");
+   assert.equal(newDuty.paused,false,"Simulation nach neuer Schicht weiterhin pausiert");
+   console.log("Dienstende und erneute Schichtübernahme: Einsatzsimulation pausiert und setzt korrekt fort.");
 
  }
  await page.reload({waitUntil:"domcontentloaded"});
