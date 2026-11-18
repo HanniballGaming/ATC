@@ -35,7 +35,7 @@ if("serviceWorker" in navigator&&location.protocol==="https:"){
 <script src="./three-city.js"></script><script src="./vehicle-core.js"></script>
 <script src="./vehicle-interaction.js"></script><script src="./walker-core.js"></script>
 <script src="./life-core.js"></script><script src="./road-graph.js"></script>
-<script src="./osm-loader.js"></script><script src="./geodata-session.js"></script><script src="./touch-controls.js"></script>
+<script src="./osm-loader.js"></script><script src="./city-region.js"></script><script src="./geodata-session.js"></script><script src="./touch-controls.js"></script>
 <script src="./world-upgrades.js"></script><script src="./traffic-ai.js"></script><script src="./save-manager.js"></script><script src="./shift-journal.js"></script><script src="./ambient.js"></script>
 <script src="./runtime.js"></script><script src="./integration-tests.js"></script>
 <script>
@@ -76,12 +76,12 @@ const prompt=document.getElementById("firstPersonPrompt");let lastEventText="",l
 startButton.addEventListener("click",resumeGame);
 const tests=await LDOpenWorldIntegrationTests.run();
 info.textContent="Modultests: "+tests.passed+"/"+tests.total+" bestanden\n"+tests.results.filter(r=>!r.ok).map(r=>r.name+": "+r.error).join("\n");
-const origin={lon:10.8985,lat:48.3705};
+const origin=LDFunkspruchRegion.origin;
 // Dynamic resolution for tablets and low-powered devices.
 const reducedGraphics=lowerGraphics();
 let map;
 try{
- map=await LDFunkspruchMap.load({bounds:{south:48.3675,west:10.8945,north:48.3740,east:10.9050}});
+ map=await LDFunkspruchMap.loadRegion({regions:LDFunkspruchRegion.tiles});
 }catch(error){
  info.textContent="Kartendaten nicht verfügbar: "+(error.message||error);
  document.getElementById("menuHint").textContent=error.message||String(error);
@@ -92,7 +92,7 @@ try{
 }
 const geojson=map.geojson;
 document.getElementById("mapCredit").hidden=false;
-document.getElementById("menuHint").textContent+=" Gebiet: Augsburg (echter OSM-Stadtausschnitt). Weitere Stadtteile benötigen zusätzliche OSM-Kartenausschnitte.";
+document.getElementById("menuHint").textContent+=" Augsburg: "+map.tilesLoaded+" von "+map.tilesTotal+" echten OSM-Kacheln geladen."+(map.partial?" Einzelne Stadtteile sind noch nicht verfügbar.":"");
 try{
 if(tests.passed!==tests.total)throw Error("Modultests fehlgeschlagen: "+JSON.stringify(tests.results.filter(t=>!t.ok)));
 if(typeof THREE==="undefined")throw Error("Three.js konnte nicht geladen werden");

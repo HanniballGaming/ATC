@@ -65,5 +65,41 @@ async function load({bounds,storage=root.localStorage,fetchImpl=root.fetch,timeo
  if(cached)return {geojson:cached.geojson,source:"OpenStreetMap",real:true,cache:true,stale:true};
  throw Error("Für Augsburg konnten keine echten OpenStreetMap-Straßen und Gebäude geladen werden. Bitte die Internetverbindung prüfen und neu laden. Eine fiktive Ersatzstadt wird nicht verwendet.");
 }
-root.LDFunkspruchMap=Object.freeze({load,key,validData});
+function mergeGeoJSON(items){
+ if(!Array.isArray(items)||items.length===0)throw Error("Keine echten OSM-Kacheln");
+ const features=[],seen=new Set();
+ for(const item of items){
+  const data=item.geojson||item;
+  if(!validData(data))throw Error("Ungültige echte OSM-Daten");
+  for(const f of data.features){
+   if(f.id&&seen.has(f.id))continue;
+   if(f.id)seen.add(f.id);
+   features.push(f);
+  }
+ }
+ const merged={type:"FeatureCollection",features,metadata:{source:"OpenStreetMap",real:true,license:"ODbL 1.0",attribution:"© OpenStreetMap-Mitwirkende",region:"Augsburg",tileCount:items.length}};
+ if(!validData(merged))throw Error("Zusammengeführtes OSM-Gebiet ungültig");
+ return merged;
+}
+async function loadRegion({regions=root.LDFunkspruchRegion?.tiles,storage=root.localStorage,fetchImpl=root.fetch,online=root.navigator?.onLine!==false,timeoutMs=14500}={}){
+ if(!Array.isArray(regions)||regions.length<1||regions.length>9)throw Error("Ungültige Kartenregion");
+ const list=regions.map(tile=>({tile})),found=new Array(list.length),missing=[];
+ // Maximal zwei externe Kachelabrufe gleichzeitig.
+ async function worker(){
+  while(list.length){
+   const {tile}=list.shift();
+   const i=regions.indexOf(tile);
+   if(!tile?.bounds||typeof tile.id!=="string")throw Error("Ungültige OSM-Kachel");
+   try{
+    found[i]={...await load({bounds:tile.bounds,bundledUrl:tile.bundledUrl,storage,fetchImpl,online,timeoutMs}),id:tile.id};
+   }catch(error){missing.push(tile.id);console.warn("Reale Kachel nicht verfügbar",tile.id,error.message||error);}
+  }
+ }
+ await Promise.all([worker(),worker()]);
+ const ready=found.filter(Boolean);
+ if(!ready.length)throw Error("Für Augsburg sind keine echten OpenStreetMap-Karten verfügbar. Internetverbindung prüfen oder die Windows-Version mit Offline-Kartendaten verwenden.");
+ return {geojson:mergeGeoJSON(ready),source:"OpenStreetMap",real:true,
+  tilesLoaded:ready.length,tilesTotal:regions.length,partial:ready.length!==regions.length,missing,cache:ready.every(x=>x.cache)};
+}
+root.LDFunkspruchMap=Object.freeze({load,key,validData,mergeGeoJSON,loadRegion});
 })(typeof window!=="undefined"?window:globalThis);

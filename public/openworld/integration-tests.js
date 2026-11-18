@@ -16,6 +16,12 @@ async function run(){
   {type:"Feature",properties:{building:"yes"},geometry:{type:"Polygon",coordinates:[[[10.901,48.371],[10.9012,48.371],[10.9012,48.3708],[10.901,48.3708],[10.901,48.371]]]}}
  ]};
  const model=geo.loadGeoJSON(data,origin);
+ test("Augsburg: benachbarte geografische OSM-Kacheln",()=>{
+  const r=root.LDFunkspruchRegion.tiles;
+  if(r.length!==4||new Set(r.map(t=>t.id)).size!==4)throw Error("OSM-Kacheln fehlen");
+  if(!r.every(t=>t.bounds.north>t.bounds.south&&t.bounds.east>t.bounds.west&&t.bundledUrl?.endsWith(".geojson")))throw Error("Ungültige Geodatenkacheln");
+  if(r[0].bounds.east!==r[1].bounds.west||r[0].bounds.north!==r[2].bounds.south)throw Error("Lücken im Straßennetz-Bereich");
+ });
  test("Geodaten: fiktive Stadt ist kein erlaubter Spielstand",()=>{
   const fake={type:"FeatureCollection",metadata:{source:"Fiktive Trainingsstadt",real:false},features:[]};
   if(root.LDFunkspruchMap.validData(fake))throw Error("Fiktive Stadt wurde akzeptiert");

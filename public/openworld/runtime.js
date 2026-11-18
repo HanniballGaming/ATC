@@ -211,7 +211,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   view=root.LDOpenWorldRenderer.create(THREE,scene,{radius:graphics.renderRadius===1?1:2});
   view.setModel(model);
   const firstRoad=model.roads[0]?.points[0];
-  const spawn=firstRoad||{x:0,z:0};
+  const spawn=graph.nearest({x:0,z:0})?.point||firstRoad||{x:0,z:0};
   const safe=(p,r)=>!root.LDOpenWorldCollision.collides(p,model,r);
   const findSpawn=(base,r)=>{
    if(safe(base,r))return base;
