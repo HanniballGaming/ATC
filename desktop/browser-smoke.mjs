@@ -154,7 +154,8 @@ try{
     assert.ok(!deployed.error,deployed.error||"");
     assert.equal(deployed.dispatched,true,"Fahrzeug wurde nicht disponiert");
     assert.equal(deployed.assigned,true,"Fahrzeug ist nicht dem Einsatz zugeordnet");
-    assert.equal(deployed.radioAccepted,true,"Funkspruch wurde abgelehnt");
+    // LDOperations.radio schreibt das Funkprotokoll, liefert aber keinen Erfolgswert zurück.
+    // Der überprüfte Protokolleintrag ist das tatsächliche Erfolgsmerkmal.
     assert.equal(deployed.radioAdded,true,"Funkspruch wurde nicht protokolliert");
    assert.ok(!conversation.error,conversation.error||"");
    assert.ok(conversation.matched&&conversation.answer.length>15,"KI-Rückfrage liefert keine passende Antwort");
