@@ -30,7 +30,7 @@ function generate(model,{cars=6,walkers=8}={}){
    const path=paths[Math.floor(i*paths.length/count)],length=distance(path.points);
    const max=Number.parseFloat(path.properties?.maxspeed)||30;
    const speed=kind==="car"?Math.min(12,Math.max(2,max/3.6*.7)):1.15+(i%3)*.13;
-   result.push({kind,path,length,speed,progress:length*(.08+((i*.29)% .84)),direction:i%2?1:-1,lane:kind==="car"?(i%2?2:-2):(i%2?4.2:-4.2)});
+   result.push({kind,path,length,speed,progress:length*(.08+((i*.29)% .84)),direction:i%2?1:-1,lane:kind==="car"?2:(i%2?4.2:-4.2)});
   }
  }
  return result;
@@ -61,7 +61,8 @@ function create({THREE,scene,model,low=false}={}){
    if(a.progress>=a.length){a.progress=a.length;a.direction=-1;}
    if(a.progress<=0){a.progress=0;a.direction=1;}
    const p=position(a.path.points,a.progress);
-   a.object.position.set(p.x+p.nx*a.lane,0,p.z+p.nz*a.lane);
+   const offset=a.kind==="car"?a.lane*a.direction:a.lane;
+   a.object.position.set(p.x+p.nx*offset,0,p.z+p.nz*offset);
    a.object.rotation.y=-(p.yaw+(a.direction===-1?Math.PI:0));
   }
  }
