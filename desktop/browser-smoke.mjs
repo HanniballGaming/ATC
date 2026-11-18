@@ -25,7 +25,7 @@ try{
  browser=await chromium.launch({headless:true,args:["--enable-webgl","--use-gl=angle","--use-angle=swiftshader"]});
  const page=await browser.newPage({viewport:{width:1365,height:860}});
  const errors=[];
- page.on("pageerror",e=>errors.push(e.message));
+ page.on("pageerror",e=>errors.push(e.stack||e.message));
  await page.goto(base+"/openworld/",{waitUntil:"domcontentloaded",timeout:30000});
  await page.locator("#startNormal").waitFor();
  assert.equal(await page.locator(".mode.locked button").isDisabled(),true,"Zweiter Modus muss gesperrt bleiben");
@@ -69,6 +69,13 @@ try{
      buttons:Array.from(el.querySelectorAll("button")).slice(0,20).map(b=>b.textContent.trim())
    }));
    console.log("ELS-Menü nach Neu:",JSON.stringify(next));
+   const embeddedStatus=await embedded.locator("body").evaluate(()=>({
+     active:document.body.classList.contains("fs-embed-active"),
+     workstationOpen:window.LDWorkstation?.isOpen?.()??null,
+     onDuty:window.LDOperations?.getState?.()?.ld22Completed??null,
+     elsDeskVisible:!!document.querySelector("#elsdesk")
+   }));
+   console.log("ELS-Einbettung:",JSON.stringify(embeddedStatus));
  }
  console.log("Browsertest: First Person, Dienstbeginn, Arbeitsplatz, ELS und gesperrter Modus geprüft.");
  console.log("ELS-Ausschnitt:",embeddedGame.slice(0,170).replace(/\s+/g," "));
