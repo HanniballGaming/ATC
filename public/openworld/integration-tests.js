@@ -27,6 +27,16 @@ async function run(){
   const b=model.buildings[0],ring=b.rings[0],p={x:(ring[0].x+ring[2].x)/2,z:(ring[0].z+ring[2].z)/2};
   if(!root.LDOpenWorldCollision.collides(p,model,0.35))throw Error("Missing collision");
  });
+ test("Leitstelle: Kollision mit Trennwänden",()=>{
+  const indoor=root.LDFunkspruchIndoor.model();
+  if(indoor.buildings.length!==2)throw Error("Trennwände fehlen");
+  const w=root.LDOpenWorldWalker.create({x:-2.7,z:1.5});
+  w.update(.25,{strafe:-1},indoor);
+  if(w.snapshot().x<-3.05)throw Error("Trennwand ist durchlässig");
+  const clear=root.LDOpenWorldWalker.create({x:0,z:2});
+  clear.update(.25,{forward:1},indoor);
+  if(clear.snapshot().z>=2)throw Error("Hauptgang blockiert");
+ });
  test("Fußweg: Bewegung",()=>{
   const w=root.LDOpenWorldWalker.create();
   const before=w.snapshot();w.update(0.1,{forward:1});

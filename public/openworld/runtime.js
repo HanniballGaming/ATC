@@ -15,6 +15,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
  let indoor=false,entryPoint=null,doorPoint=null,chipPoint=null,office=null,officePieces=[],exterior=null,deskPoint={x:1,z:-1.3},atDesk=false,screenTexture=null,screenCanvas=null,screenContext=null,screenMaterialRef=null;
  const life=root.LDOpenWorldLife.create();
  const walker=root.LDOpenWorldWalker.create();
+ const indoorCollisions=root.LDFunkspruchIndoor?.model?.()||{buildings:[]};
  const car=root.LDOpenWorldVehicle.create();
  const scene=new THREE.Scene();scene.background=new THREE.Color(0x9cc9e7);
  // Fiktives Trainingsgebäude: keine Behauptung über reale Rettungsleitstellenstandorte.
@@ -136,7 +137,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
      car.reset({...previous,speed:0,handbrake:true});
    }
   }else{
-   if(indoor){walker.update(dt,input,{buildings:[]});const p=walker.snapshot();walker.teleport(Math.max(-7.1,Math.min(7.1,p.x)),Math.max(-5.1,Math.min(5.1,p.z)));}
+   if(indoor){walker.update(dt,input,indoorCollisions);const p=walker.snapshot();walker.teleport(Math.max(-7.1,Math.min(7.1,p.x)),Math.max(-5.1,Math.min(5.1,p.z)));}
    else walker.update(dt,input,model);
    const p=walker.snapshot();interactionPlayer.x=p.x;interactionPlayer.z=p.z;interactionPlayer.heading=p.heading;
   }
