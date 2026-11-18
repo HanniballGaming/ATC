@@ -1,5 +1,10 @@
 /* FUNKSPRUCH open-world extensions: modular, no external assets. */
 (function(root){"use strict";
+function daylight(minutes){
+ if(!Number.isFinite(minutes))return 0;
+ const normalized=((minutes%1440)+1440)%1440;
+ return Math.max(0,Math.sin((normalized-360)*Math.PI/720));
+}
 function colleagueResponse(name,summary,onDuty){
  const who=name||"Kollege";
  if(!onDuty)return who+": Guten Tag. Melden Sie sich bitte erst zum Dienst an.";
@@ -100,5 +105,5 @@ function install({THREE,scene,camera,life,onMessage=()=>{}}){
  function dispose(){for(const o of owned.reverse()){o.parent?.remove(o);o.geometry?.dispose();if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material.dispose();}}}
  return {addIndoor,update,nearest,interact,shift,dispose,setDispatchSummary(s){dispatchSummary=s&&Number.isInteger(s.open)&&Number.isInteger(s.waiting)?{...s}:null;}};
 }
-root.LDFunkspruchWorld=Object.freeze({install,colleagueResponse});
+root.LDFunkspruchWorld=Object.freeze({install,colleagueResponse,daylight});
 })(typeof window!=="undefined"?window:globalThis);

@@ -71,6 +71,20 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
  host.appendChild(renderer.domElement);
  const ambient=new THREE.HemisphereLight(0xffffff,0x677d58,2);scene.add(ambient);
  const sun=new THREE.DirectionalLight(0xfff3de,1.15);sun.position.set(80,140,50);scene.add(sun);
+ const indoorSky=new THREE.Color(0x1c2835),outdoorSky=new THREE.Color(0x9cc9e7),nightSky=new THREE.Color(0x102138),daySky=new THREE.Color(0x9cc9e7);
+ let lastLightMinute=-1,lastLightIndoors=null;
+ function updateLighting(indoors){
+  const minute=((Math.floor(life.snapshot().minutes)%1440)+1440)%1440;
+  if(minute===lastLightMinute&&indoors===lastLightIndoors)return;
+  lastLightMinute=minute;lastLightIndoors=indoors;
+  const amount=root.LDFunkspruchWorld?.daylight?.(minute)??1;
+  const brightness=Math.min(1,Math.pow(amount,.48));
+  outdoorSky.copy(nightSky).lerp(daySky,brightness);
+  ambient.intensity=indoors?1.8:.45+1.55*amount;
+  sun.intensity=indoors?0:.1+1.25*amount;
+  sun.position.set(90*Math.cos(minute/1440*Math.PI*2),20+130*amount,50);
+ }
+
  const ground=new THREE.Mesh(new THREE.PlaneGeometry(5000,5000),new THREE.MeshStandardMaterial({color:0x718d66,roughness:1}));
  ground.rotation.x=-Math.PI/2;ground.position.y=-0.04;scene.add(ground);
  const vehicleVisual=new THREE.Group();
@@ -154,7 +168,8 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   if(exterior)exterior.visible=!indoor;
   ground.visible=!indoor;
   vehicleVisual.visible=!driving&&!indoor;
-  scene.background.setHex(indoor?0x1c2835:0x9cc9e7);
+  updateLighting(indoor);
+  scene.background.copy(indoor?indoorSky:outdoorSky);
   if(!atDesk)renderer.render(scene,camera); // Der ELS-Bildschirm verdeckt die Szene vollständig.
   raf=root.requestAnimationFrame(frame);
  }
