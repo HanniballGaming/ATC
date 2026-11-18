@@ -50,6 +50,15 @@ try{
  await embedded.locator("body").waitFor({timeout:20000});
  const embeddedGame=await embedded.locator("body").evaluate(node=>node.innerText.slice(0,300));
  assert.ok(embeddedGame.length>0,"Vollständiges ELS nicht geladen");
+ const modules=await embedded.locator("body").evaluate(()=>({
+   operations:typeof window.LDOperations,
+   ai:typeof window.LDAI23,
+   firstPerson:typeof window.LDFirstPerson22,
+   buttons:Array.from(document.querySelectorAll("#app .menu button")).map(b=>b.textContent.trim()).slice(0,15)
+ }));
+ console.log("Hauptspiel-Module und Menü:",JSON.stringify(modules));
+ assert.equal(modules.operations,"object","Einsatzlogik nicht eingebunden");
+ assert.notEqual(modules.ai,"undefined","Notruf- und Team-KI fehlt");
  console.log("Browsertest: First Person, Dienstbeginn, Arbeitsplatz, ELS und gesperrter Modus geprüft.");
  console.log("ELS-Ausschnitt:",embeddedGame.slice(0,170).replace(/\s+/g," "));
  if(errors.length)console.warn("Weitere Browserfehler:",errors.slice(0,8));
