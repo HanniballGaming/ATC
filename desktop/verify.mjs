@@ -25,6 +25,32 @@ assert.match(read("openworld/index.html"),/disabled aria-disabled="true"/);
 assert.match(read("openworld/arbeitsplatz.html"),/fs_embed=1/);
 assert.match(read("openworld/index.html"),/\.\/vendor\/three\.min\.js/);
 assert.ok(fs.statSync(path.join(base,"openworld","vendor","three.min.js")).size>100000);
+const mapTiles=[
+ ["suedwest",[10.888,48.364,10.8985,48.3705]],
+ ["suedost",[10.8985,48.364,10.909,48.3705]],
+ ["nordwest",[10.888,48.3705,10.8985,48.377]],
+ ["nordost",[10.8985,48.3705,10.909,48.377]]
+];
+let packagedTiles=0,roadsFromOSM=0,buildingsFromOSM=0;
+for(const [name,bbox] of mapTiles){
+ const file=path.join(base,"openworld","data","augsburg-"+name+".geojson");
+ if(!fs.existsSync(file))continue;
+ const geojson=JSON.parse(fs.readFileSync(file,"utf8"));
+ assert.equal(geojson.type,"FeatureCollection");
+ assert.equal(geojson.metadata?.source,"OpenStreetMap");
+ assert.equal(geojson.metadata?.real,true);
+ assert.equal(geojson.metadata?.license,"ODbL 1.0");
+ assert.deepEqual(geojson.metadata?.bbox,bbox);
+ const roads=geojson.features.filter(f=>f.properties?.highway);
+ const buildings=geojson.features.filter(f=>f.properties?.building);
+ assert.ok(roads.length>=8&&buildings.length>=8,"Echte Straßen und Gebäude fehlen: "+name);
+ assert.ok(geojson.features.every(f=>typeof f.id==="string"&&f.id.startsWith("way/")&&!f.properties?.synthetic),
+  "Manipulierte oder synthetische OSM-Daten im Paket: "+name);
+ roadsFromOSM+=roads.length;buildingsFromOSM+=buildings.length;packagedTiles++;
+}
+console.log("Authentische Augsburger Offline-OSM-Kacheln:",packagedTiles+"/4",
+ "Straßen-Ways:",roadsFromOSM,"Gebäude-Ways:",buildingsFromOSM);
+
 const serviceWorker=read("sw.js");
 assert.match(serviceWorker,/funkspruch-pwa-[a-f0-9]{14}/,"Versionierter Offline-Cache fehlt");
 for(const file of ["openworld/city-region.js","openworld/geodata-session.js","openworld/traffic-ai.js","openworld/shift-journal.js","openworld/ambient.js","openworld/vendor/three.min.js","vendor/leaflet/leaflet.js"])
