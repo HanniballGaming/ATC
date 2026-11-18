@@ -183,6 +183,10 @@ try{
      g.walker.teleport(-5.5,-4.5);
      g.stamp();
    });
+   const shiftReport=await page.evaluate(()=>window.FunkspruchGame.getShiftJournal?.());
+   assert.equal(shiftReport?.active,null,"Schichtjournal nicht abgeschlossen");
+   assert.ok(shiftReport?.reports?.length>=1,"Abgeschlossener Dienstbericht wurde nicht gespeichert");
+   assert.ok(shiftReport.reports[0].durationMinutes>=0,"Dienstzeit fehlt");
    let offDuty;
    for(let n=0;n<25;n++){
      offDuty=await embedded.locator("body").evaluate(()=>{
@@ -202,6 +206,12 @@ try{
      g.walker.teleport(1,-1.3);
      g.sitDesk();
    });
+   await page.locator("#viewShiftReport").click();
+   await page.locator("#shiftReport").waitFor({state:"visible"});
+   const journalText=await page.locator("#shiftReport").innerText();
+   assert.match(journalText,/Dienstbericht/);
+   assert.match(journalText,/Simulierte Schichtdauer/);
+   await page.locator("#viewShiftReport").click();
    let newDuty;
    for(let n=0;n<25;n++){
      newDuty=await embedded.locator("body").evaluate(()=>{
