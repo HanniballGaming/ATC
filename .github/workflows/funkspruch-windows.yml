@@ -37,6 +37,13 @@ jobs:
       - name: Windows-Setup erstellen
         working-directory: desktop
         run: npm run build:windows
+      - name: Browserfassung als ZIP-Testartefakt bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: FUNKSPRUCH-Browser-Testversion
+          path: desktop/web/
+          if-no-files-found: error
+          retention-days: 14
       - name: Windows-Setup als Test-Artefakt bereitstellen
         uses: actions/upload-artifact@v4
         with:
