@@ -39,6 +39,19 @@ if old_marker in world:
     files["world.js"]=world.encode("utf-8")
 else:
     assert new_marker in world, "Geprüfte Karteninitialisierung fehlt im Hauptspiel"
+# Legacy map.js/world.js used unvalidated incident coordinates and could pass NaN to Leaflet.
+# Preserve all valid incidents; skip only features with no usable latitude/longitude.
+if "world.js" in files:
+    js=files["world.js"].decode("utf-8")
+    old="let lat=c[0]+(i.x-50)*.00025,lon=c[1]+(i.y-50)*.00035;L.circleMarker([lat,lon]"
+    new=("let p=Array.isArray(c)?c:[c?.lat??c?.latitude,c?.lon??c?.lng??c?.longitude];"
+         "let lat=Number(p[0])+(Number.isFinite(i.x)?(i.x-50)*.00025:0),"
+         "lon=Number(p[1])+(Number.isFinite(i.y)?(i.y-50)*.00035:0);"
+         "if(!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180)continue;"
+         "L.circleMarker([lat,lon]")
+    if old in js: js=js.replace(old,new)
+    else: assert "Number.isFinite(lat)" in js, "Legacy map anchor not found"
+    files["world.js"]=js.encode("utf-8")
 sw=files["sw.js"].decode("utf-8")
 sw=re.sub(r"const CACHE='[^']+'","const CACHE='leitstelle-v024-embedded-dispatch-shell'",sw)
 if "'./ai_dispatch_v23.js'" not in sw:
@@ -55,6 +68,7 @@ with ZipFile(archive) as z:
     assert z.testzip() is None
     assert z.read("index.html").count(b"ai_dispatch_v23.js")==1
     assert b"ai_dispatch_v23.js" in z.read("sw.js")
+    assert b"Number.isFinite(lat)" in z.read("world.js")
     assert z.read("index.html").count(b"funkspruch_embed.js")==1
     assert b"funkspruch_embed.js" in z.read("sw.js")
     assert new_marker.encode("utf-8") in z.read("world.js")
