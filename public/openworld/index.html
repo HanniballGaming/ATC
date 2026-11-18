@@ -115,6 +115,7 @@ const worldKey="funkspruch-openworld-save-v1";
 try{
  const raw=localStorage.getItem(worldKey);
  if(raw)game.restoreWorld(JSON.parse(raw));
+ game.reconcileShiftJournal?.();
 }catch(error){console.warn("Gespeicherter Open-World-Spielstand nicht lesbar",error);}
 let importingSave=false;
 const persistLife=()=>{
