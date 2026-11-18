@@ -39,7 +39,10 @@ try{
  await page.locator("#startNormal").click();
  await page.locator("#mainMenu").waitFor({state:"hidden"});
  // E-Taste und WASD werden direkt über die Spieleingabe bedient.
- await page.keyboard.press("e");
+ await page.evaluate(()=>{window.__fsLastKeys=[];window.addEventListener("keydown",e=>window.__fsLastKeys.push(e.code),{capture:true,once:false});});
+ await page.keyboard.press("KeyE");
+ const keyDebug=await page.evaluate(()=>({keys:window.__fsLastKeys,world:window.FunkspruchGame?.status(),activeTag:document.activeElement?.tagName}));
+ console.log("Tastatur und Ausgangsposition:",JSON.stringify(keyDebug).slice(0,2000));
  await page.waitForFunction(()=>window.FunkspruchGame?.status()?.indoor,{timeout:10000});
  const beforeMove=await page.evaluate(()=>window.FunkspruchGame.walker.snapshot());
  await page.keyboard.down("w");
