@@ -22,6 +22,8 @@ jobs:
           python-version: '3.12'
       - name: Vorhandenes Einsatzleitsystem inklusive Embed-Brücke verpacken
         run: python release_v23.py
+      - name: Echte Augsburger OSM-Daten für Offline-Spiel bereitstellen
+        run: python scripts/export_osm_augsburg.py
       - name: Abhängigkeiten installieren
         working-directory: desktop
         run: npm install --no-audit --no-fund
