@@ -32,7 +32,21 @@ try{
  await page.locator("#startNormal").waitFor();
  assert.equal(await page.locator(".mode.locked button").isDisabled(),true,"Zweiter Modus muss gesperrt bleiben");
  await page.locator("#startNormal").click();
- await page.waitForFunction(()=>!!window.FunkspruchGame,{timeout:25000});
+ try{
+  await page.waitForFunction(()=>!!window.FunkspruchGame,null,{timeout:14000});
+ }catch(error){
+  const debug=await page.evaluate(()=>({
+   title:document.title,
+   info:document.getElementById("info")?.textContent?.slice(0,1800),
+   menuHidden:document.getElementById("mainMenu")?.hidden,
+   fatal:document.body.classList.contains("fatal"),
+   three:typeof window.THREE,
+   integration:typeof window.LDOpenWorldIntegrationTests,
+   runtime:typeof window.LDOpenWorldRuntime,
+   game:typeof window.FunkspruchGame
+  }));
+  throw new Error("3D-Initialisierung fehlgeschlagen: "+JSON.stringify(debug)+"; JS-Fehler: "+JSON.stringify(errors.slice(0,6))+"; "+error.message);
+ }
  await page.keyboard.press("Escape");
  await page.locator("#mainMenu").waitFor({state:"visible"});
  assert.match(await page.locator("#startNormal").textContent(),/fortsetzen/i,"Pausenmenü fehlt");
