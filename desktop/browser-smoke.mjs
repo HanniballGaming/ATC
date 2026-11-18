@@ -116,6 +116,7 @@ try{
  }
  await page.reload({waitUntil:"domcontentloaded"});
  await page.locator("#startNormal").waitFor();
+ await page.waitForFunction(()=>!document.getElementById("startNormal")?.disabled,{timeout:30000});
  assert.match(await page.locator("#startNormal").textContent(),/fortsetzen/);
  await page.locator("#startNormal").click();
  await page.waitForFunction(()=>!!window.FunkspruchGame&&window.FunkspruchGame.status().indoor,{timeout:30000});
