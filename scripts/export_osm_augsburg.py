@@ -17,19 +17,25 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "public" / "openworld" / "data" / "augsburg.geojson"
-# Koordinaten des realen Augsburger Innenstadt-Ausschnitts.
-SOUTH, WEST, NORTH, EAST = 48.3675, 10.8945, 48.3740, 10.9050
-BBOX = (SOUTH, WEST, NORTH, EAST)
-USER_AGENT = "FUNSPRUCH-OpenStreetMap-Build/0.24 (+https://github.com/HanniballGaming/ATC)"
+OUT_DIR = ROOT / "public" / "openworld" / "data"
+# Jede Kachel enthält ausschließlich echte OSM-Ways und -Nodes.
+TILES = [
+    ("suedwest", 48.364, 10.888, 48.3705, 10.8985),
+    ("suedost", 48.364, 10.8985, 48.3705, 10.909),
+    ("nordwest", 48.3705, 10.888, 48.377, 10.8985),
+    ("nordost", 48.3705, 10.8985, 48.377, 10.909),
+]
+USER_AGENT = "FUNKSPRUCH-OpenStreetMap-Build/0.26 (+https://github.com/HanniballGaming/ATC)"
 MAX_RESPONSE_BYTES = 20_000_000
-OVERPASS_QUERY = (
-    "[out:json][timeout:25];("
-    f'way["highway"]["area"!="yes"]({SOUTH},{WEST},{NORTH},{EAST});'
-    f'way["building"]({SOUTH},{WEST},{NORTH},{EAST});'
-    ");out body;>;out skel qt;"
-)
 
+
+def overpass_query(south: float, west: float, north: float, east: float) -> str:
+    return (
+        "[out:json][timeout:25];("
+        f'way["highway"]["area"!="yes"]({south},{west},{north},{east});'
+        f'way["building"]({south},{west},{north},{east});'
+        ");out body;>;out skel qt;"
+    )
 
 def get_bytes(url: str, *, data: bytes | None = None, timeout: int = 29) -> bytes:
     headers = {"User-Agent": USER_AGENT, "Accept": "application/json, application/xml;q=0.9"}
@@ -109,26 +115,27 @@ def valid(features: list[dict]) -> bool:
     return roads >= 8 and buildings >= 8 and len(features) <= 50000
 
 
-def main() -> int:
+def fetch_tile(tile: tuple) -> bool:
+    name, south, west, north, east = tile
+    out = OUT_DIR / f"augsburg-{name}.geojson"
     requests = [
-        ("https://overpass.private.coffee/api/interpreter", "json"),
         ("https://ovp.dresel.systems/api/interpreter", "json"),
-        ("https://overpass-api.de/api/interpreter", "json"),
+        ("https://overpass.private.coffee/api/interpreter", "json"),
         ("https://api.openstreetmap.org/api/0.6/map?bbox="
-         + ",".join(str(value) for value in (WEST, SOUTH, EAST, NORTH)), "xml"),
+         + ",".join(str(v) for v in (west, south, east, north)), "xml"),
     ]
     for url, kind in requests:
-        print("Lade echten Augsburger OpenStreetMap-Ausschnitt von", url, flush=True)
+        print(f"Reale Augsburg-Kachel {name}: {url}", flush=True)
         try:
             if kind == "json":
-                payload = get_bytes(url, data=urlencode({"data": OVERPASS_QUERY}).encode())
+                payload = get_bytes(url, data=urlencode({"data": overpass_query(south, west, north, east)}).encode(), timeout=27)
                 elements = json.loads(payload).get("elements", [])
             else:
-                elements = parse_osm_xml(get_bytes(url))
+                elements = parse_osm_xml(get_bytes(url, timeout=27))
             features = osm_elements(elements)
             if not valid(features):
-                raise ValueError("Kartenausschnitt unvollständig")
-            result = {
+                raise ValueError("Zu wenige Straßen oder Gebäude für OSM-Kachel")
+            data = {
                 "type": "FeatureCollection",
                 "features": features,
                 "metadata": {
@@ -138,18 +145,29 @@ def main() -> int:
                     "attribution": "© OpenStreetMap-Mitwirkende",
                     "source_url": url,
                     "retrievedAt": datetime.now(timezone.utc).isoformat(),
-                    "bbox": [WEST, SOUTH, EAST, NORTH],
+                    "bbox": [west, south, east, north],
+                    "tile": name,
                 },
             }
-            OUT.parent.mkdir(parents=True, exist_ok=True)
-            OUT.write_text(json.dumps(result, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-            print(f"Echter Offline-Kartenausschnitt bereitgestellt: {OUT} ({OUT.stat().st_size:,} Bytes)")
-            return 0
-        except (Exception,) as exc:
-            print(f"OSM-Endpunkt nicht erreichbar: {type(exc).__name__}: {exc}", file=sys.stderr, flush=True)
-    print("Warnung: Kein echter OSM-Datensatz abrufbar. Die App erfindet keine Stadt und benötigt beim ersten Start Internet.", file=sys.stderr)
-    return 0
+            OUT_DIR.mkdir(parents=True, exist_ok=True)
+            out.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+            print(f"Authentische OSM-Kachel {name} gespeichert: {out.stat().st_size} Bytes", flush=True)
+            return True
+        except Exception as exc:
+            print(f"OSM-Kachel {name}: {type(exc).__name__}: {exc}", file=sys.stderr, flush=True)
+    print(f"OSM-Kachel {name} fehlt – kein fiktiver Ersatz.", file=sys.stderr, flush=True)
+    return False
 
+
+def main() -> int:
+    completed = 0
+    for tile in TILES:
+        if fetch_tile(tile):
+            completed += 1
+        time.sleep(0.4)
+    print(f"Echte Augsburg-Kacheln: {completed}/{len(TILES)}", flush=True)
+    # Fehlende reale Kacheln können bei Spielstart nachgeladen werden.
+    return 0
 
 if __name__ == "__main__":
     sys.exit(main())
