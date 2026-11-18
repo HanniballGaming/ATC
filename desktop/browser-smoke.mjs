@@ -135,6 +135,8 @@ try{
       return {methods:Object.keys(window.LDLogic||{}),ops:Object.keys(window.LDOperations||{}),active:s?.incidents?.slice(0,1).map(i=>({id:i.id,phase:i.phase,owner:i.owner,assigned:i.units,keys:Object.keys(i)})),vehicle:s?.vehicles?.slice(0,1)};
     });
     console.log("ELS-Dispositionsstruktur:",JSON.stringify(dispatchApi).slice(0,3200));
+    const logicSignatures=await embedded.locator("body").evaluate(()=>({dispatch:window.LDLogic.dispatch.toString().slice(0,3400),radio:window.LDLogic.radio.toString().slice(0,2600),opsDispatch:window.LDOperations.dispatch.toString().slice(0,1800)}));
+    console.log("ELS-Dispositionsfunktionen:",JSON.stringify(logicSignatures).slice(0,7500));
    assert.ok(!conversation.error,conversation.error||"");
    assert.ok(conversation.matched&&conversation.answer.length>15,"KI-Rückfrage liefert keine passende Antwort");
    assert.ok(conversation.turns>=2,"Gesprächsprotokoll wurde nicht angelegt");
