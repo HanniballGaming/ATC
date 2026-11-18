@@ -112,5 +112,6 @@ try{
  console.log("Spielstand: Innenraum und Dienststatus nach Neuladen wiederhergestellt.");
  console.log("Browsertest: First Person, Dienstbeginn, Arbeitsplatz, ELS und gesperrter Modus geprüft.");
  console.log("ELS-Ausschnitt:",embeddedGame.slice(0,170).replace(/\s+/g," "));
+ assert.equal(errors.filter(error=>error.includes("Invalid LatLng object")).length,0,"Fehlerhafte Kartenkoordinaten im Leitstellenmonitor: "+JSON.stringify(errors.slice(0,4)));
  if(errors.length)console.warn("Weitere Browserfehler:",errors.slice(0,8));
 }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}
