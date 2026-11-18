@@ -10,6 +10,12 @@ assert.match(read("index.html"),/funkspruch_embed\.js/);
 assert.match(read("index.html"),/\.\/vendor\/leaflet\/leaflet\.(js|css)/);
 assert.ok(fs.statSync(path.join(base,"vendor","leaflet","leaflet.js")).size>100000);
 assert.match(read("openworld/index.html"),/FUNKSPRUCH/);
+for(const target of ["openworld/index.html","openworld/arbeitsplatz.html"]){
+ const source=read(target),inline=Array.from(source.matchAll(/<script(?![^>]*\\bsrc=)[^>]*>([\\s\\S]*?)<\\/script>/gi));
+ for(let i=0;i<inline.length;i++)
+  new vm.Script(inline[i][1],{filename:target+"#inline-"+i});
+}
+
 assert.match(read("openworld/index.html"),/rel="manifest"/);
 const manifest=JSON.parse(read("manifest.webmanifest"));
 assert.equal(manifest.start_url,"./openworld/");

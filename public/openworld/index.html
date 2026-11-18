@@ -155,15 +155,9 @@ document.getElementById("viewShiftReport").onclick=()=>{
  document.getElementById("viewShiftReport").textContent=visible?"Einsatzleitsystem":"Dienstbericht";
  if(visible){
   const journal=game.getShiftJournal?.();
-  const text=journal?.reports?.[0]?journal.format(journal.reports[0]):"Schichtjournal
-
-Noch keine abgeschlossene Schicht vorhanden.";
-  const current=journal?.active?"
-
-Laufende Schicht seit "+String(Math.floor(journal.active.startMinute/60)%24).padStart(2,"0")+":"+String(journal.active.startMinute%60).padStart(2,"0")+" Uhr.":"";
-  document.getElementById("shiftReport").textContent="FUNKSPRUCH · Dienstbericht
-
-"+text+current;
+  const text=journal?.reports?.[0]?journal.format(journal.reports[0]):"Schichtjournal\n\nNoch keine abgeschlossene Schicht vorhanden.";
+  const current=journal?.active?"\n\nLaufende Schicht seit "+String(Math.floor(journal.active.startMinute/60)%24).padStart(2,"0")+":"+String(journal.active.startMinute%60).padStart(2,"0")+" Uhr.":"";
+  document.getElementById("shiftReport").textContent="FUNKSPRUCH · Dienstbericht\n\n"+text+current;
  }
 };
 document.getElementById("eat").onclick=()=>{try{game.life.action("essen");persistLife()}catch(e){alert(e.message)}info.textContent=JSON.stringify(game.status(),null,2)};
