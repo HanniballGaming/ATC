@@ -69,3 +69,6 @@ jobs:
       - name: Schicht und vollständigen Leitstellenmonitor im Browser prüfen
         working-directory: desktop
         run: node browser-smoke.mjs
+      - name: Mobile First-Person-Touchsteuerung im Browser prüfen
+        working-directory: desktop
+        run: node tablet-smoke.mjs
