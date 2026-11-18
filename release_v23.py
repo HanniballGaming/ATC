@@ -23,6 +23,22 @@ if "funkspruch_embed.js" not in html:
     html=html.replace("</body></html>",'<script src="./funkspruch_embed.js"></script></body></html>')
     files["index.html"]=html.encode("utf-8")
 files["funkspruch_embed.js"]=embed
+# Die alte Kartendarstellung rechnete gelegentlich mit undefinierten Einsatzoffsets
+# und übergab NaN-Koordinaten an Leaflet. Nur valide Geopunkte zeichnen.
+old_marker=("let c=i.coords||window.LDCityCoords?.[i.city]||cities[i.city]||g.areas[area].center;"
+            "let lat=c[0]+(i.x-50)*.00025,lon=c[1]+(i.y-50)*.00035;"
+            "L.circleMarker([lat,lon],")
+new_marker=("let c=i.coords||window.LDCityCoords?.[i.city]||cities[i.city]||g.areas[area].center;"
+            "let x=Number.isFinite(i.x)?i.x:50,y=Number.isFinite(i.y)?i.y:50;"
+            "let lat=Number(c?.[0])+(x-50)*.00025,lon=Number(c?.[1])+(y-50)*.00035;"
+            "if(!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180)continue;"
+            "L.circleMarker([lat,lon],")
+world=files["world.js"].decode("utf-8")
+if old_marker in world:
+    world=world.replace(old_marker,new_marker)
+    files["world.js"]=world.encode("utf-8")
+else:
+    assert new_marker in world, "Geprüfte Karteninitialisierung fehlt im Hauptspiel"
 sw=files["sw.js"].decode("utf-8")
 sw=re.sub(r"const CACHE='[^']+'","const CACHE='leitstelle-v024-embedded-dispatch-shell'",sw)
 if "'./ai_dispatch_v23.js'" not in sw:
@@ -41,4 +57,5 @@ with ZipFile(archive) as z:
     assert b"ai_dispatch_v23.js" in z.read("sw.js")
     assert z.read("index.html").count(b"funkspruch_embed.js")==1
     assert b"funkspruch_embed.js" in z.read("sw.js")
+    assert new_marker.encode("utf-8") in z.read("world.js")
 print("Version 0.23 verpackt und geprüft.")
