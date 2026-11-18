@@ -11,7 +11,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
  for(const key of required)if(!root[key])throw Error("Missing module: "+key);
  if(!origin||!Number.isFinite(origin.lon)||!Number.isFinite(origin.lat))throw Error("WGS84 origin required");
  let model=null,view=null,graph=null,interaction=null,disposed=false,raf=0,last=0,accumulator=0,paused=true;
- let touch=null,keyboard=null,lookInput={x:0,y:0},worldUpgrade=null;
+ let touch=null,keyboard=null,lookInput={x:0,y:0},worldUpgrade=null,traffic=null;
  let indoor=false,entryPoint=null,doorPoint=null,chipPoint=null,office=null,officePieces=[],exterior=null,deskPoint={x:1,z:-1.3},atDesk=false,screenTexture=null,screenCanvas=null,screenContext=null,screenMaterialRef=null;
  const life=root.LDOpenWorldLife.create();
  const journal=root.LDFunkspruchShiftJournal?.create?.()||null;
@@ -182,6 +182,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
    }
   }
   worldUpgrade?.update(dt,{indoor,onDuty:life.snapshot().onDuty});
+  traffic?.update(dt,indoor);
   const driving=interaction.driving;
   const p=driving?car.snapshot():walker.snapshot();
   camera.position.set(atDesk?1:p.x,atDesk?1.3:driving?1.65:1.7,atDesk?-1.05:p.z);
@@ -205,6 +206,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   }
   if(disposed)throw Error("Runtime disposed");
   model=root.LDOpenWorldGeo.loadGeoJSON(geojson,origin);
+  if(root.LDFunkspruchTraffic)traffic=root.LDFunkspruchTraffic.create({THREE,scene,model,low:graphics.renderRadius===1});
   graph=root.LDOpenWorldRoadGraph.create(model);
   view=root.LDOpenWorldRenderer.create(THREE,scene,{radius:graphics.renderRadius===1?1:2});
   view.setModel(model);
@@ -349,7 +351,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   renderer.domElement.removeEventListener("click",requestPointerLock);
   root.document?.removeEventListener("mousemove",pointerMove);
   if(root.document?.pointerLockElement===renderer.domElement)root.document.exitPointerLock?.();
-  keyboard?.dispose();touch?.dispose();view?.dispose();worldUpgrade?.dispose();exterior?.userData?.dispose?.();
+  keyboard?.dispose();touch?.dispose();view?.dispose();traffic?.dispose();worldUpgrade?.dispose();exterior?.userData?.dispose?.();
   officePieces.forEach(mesh=>{mesh.geometry?.dispose();if(mesh.material&&mesh.material!==screenMaterialRef)mesh.material.dispose()});
   screenTexture?.dispose();screenMaterialRef?.dispose();wallClockTexture?.dispose();
   for(const part of vehicleParts){part.geometry.dispose();part.material.dispose();}ground.geometry.dispose();ground.material.dispose();

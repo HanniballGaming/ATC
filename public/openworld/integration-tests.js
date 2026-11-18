@@ -38,6 +38,12 @@ async function run(){
   clear.update(.25,{forward:1},indoor);
   if(clear.snapshot().z>=2)throw Error("Hauptgang blockiert");
  });
+ test("Ziviler Verkehr bewegt sich auf vorhandenen Straßen",()=>{
+  const agents=root.LDFunkspruchTraffic.generate(model,{cars:2,walkers:3});
+  if(!agents.some(a=>a.kind==="car"))throw Error("Kein Verkehr generiert");
+  const a=agents[0],p=root.LDFunkspruchTraffic.position(a.path.points,a.length/2);
+  if(!Number.isFinite(p.x)||!Number.isFinite(p.z)||a.speed<=0||a.speed>15)throw Error("Ungültige Verkehrsbewegung");
+ });
  test("Fußweg: Bewegung",()=>{
   const w=root.LDOpenWorldWalker.create();
   const before=w.snapshot();w.update(0.1,{forward:1});
