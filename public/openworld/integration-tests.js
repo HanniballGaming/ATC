@@ -16,16 +16,13 @@ async function run(){
   {type:"Feature",properties:{building:"yes"},geometry:{type:"Polygon",coordinates:[[[10.901,48.371],[10.9012,48.371],[10.9012,48.3708],[10.901,48.3708],[10.901,48.371]]]}}
  ]};
  const model=geo.loadGeoJSON(data,origin);
- test("Offline-Stadt: vernetztes Viertel und Gebäude",()=>{
-  const fallback=root.LDFunkspruchTrainingTown.create({origin});
-  const streets=fallback.features.filter(f=>f.properties.highway);
-  const buildings=fallback.features.filter(f=>f.properties.building);
-  if(streets.length<18||buildings.length<75)throw Error("Trainingsstadt ist zu klein");
-  if(fallback.metadata.real!==false)throw Error("Fiktive Karte als reale Geodaten ausgewiesen");
-  const map=geo.loadGeoJSON(fallback,origin),graph=root.LDOpenWorldRoadGraph.create(map);
-  const longRoute=graph.route({x:-355,z:-355},{x:355,z:355});
-  if(!longRoute||longRoute.meters<1200)throw Error("Das Trainingsstraßennetz ist nicht verbunden");
-  if(root.LDOpenWorldCollision.collides({x:0,z:-10},map,.4))throw Error("Gebäude blockiert den Leitstellenhof");
+ test("Geodaten: fiktive Stadt ist kein erlaubter Spielstand",()=>{
+  const fake={type:"FeatureCollection",metadata:{source:"Fiktive Trainingsstadt",real:false},features:[]};
+  if(root.LDFunkspruchMap.validData(fake))throw Error("Fiktive Stadt wurde akzeptiert");
+ });
+ test("Geodaten: kleine oder manipulierte Daten dürfen nicht als OSM gelten",()=>{
+  const fake={type:"FeatureCollection",metadata:{source:"OpenStreetMap"},features:[...data.features,{type:"Feature",properties:{synthetic:true,highway:"residential"},geometry:{type:"LineString",coordinates:[[10.9,48.37],[10.901,48.37]]}}]};
+  if(root.LDFunkspruchMap.validData(fake))throw Error("Synthetische Geometrie als OSM akzeptiert");
  });
  test("GeoJSON: Straße und Gebäude",()=>{if(model.roads.length!==1||model.buildings.length!==1)throw Error("Feature count");});
  test("Tile-Index: lange Straße ohne Zwischenpunkte",()=>{
