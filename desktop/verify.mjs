@@ -21,7 +21,7 @@ assert.match(read("openworld/index.html"),/\.\/vendor\/three\.min\.js/);
 assert.ok(fs.statSync(path.join(base,"openworld","vendor","three.min.js")).size>100000);
 const context={console,Math,Date,JSON,Map,Set,Array,Object,Number,String,Boolean,Promise,Intl,setTimeout,clearTimeout};
 context.window=context;vm.createContext(context);
-for(const file of ["geo-core.js","collision-core.js","indoor-collision.js","vehicle-core.js","vehicle-interaction.js","walker-core.js","life-core.js","road-graph.js","osm-loader.js","integration-tests.js","world-upgrades.js","save-manager.js"])
+for(const file of ["geo-core.js","collision-core.js","indoor-collision.js","vehicle-core.js","vehicle-interaction.js","walker-core.js","life-core.js","road-graph.js","osm-loader.js","integration-tests.js","world-upgrades.js","save-manager.js","shift-journal.js"])
  vm.runInContext(read("openworld/"+file),context,{filename:file,timeout:3000});
 const result=await context.LDOpenWorldIntegrationTests.run();
 if(result.passed!==result.total)throw Error("Open-World-Tests fehlgeschlagen: "+JSON.stringify(result.results.filter(x=>!x.ok)));
@@ -53,4 +53,17 @@ assert.match(colleague("Kollegin Meyer",{open:3,waiting:2,free:7,total:24},true)
 assert.match(colleague("Kollege Weber",{open:3,waiting:0,free:5,total:24},true),/3 Einsätze/);
 assert.match(colleague("Kollege Braun",null,true),/Lageübersicht/);
 assert.match(colleague("Kollegin Schulz",{open:1,waiting:1,free:0,total:24},false),/zum Dienst/);
+const memo=new Map();
+const memoStore={getItem:k=>memo.get(k)??null,setItem:(k,v)=>memo.set(k,String(v))};
+const journal=context.LDFunkspruchShiftJournal.create(memoStore);
+const duty=(minutes,onDuty,dispatch)=>({life:{minutes,onDuty},dispatch});
+assert.equal(journal.begin(duty(480,true,{open:2,waiting:1,free:6,total:10})),true);
+journal.record(duty(495,true,{open:3,waiting:2,free:5,total:10}));
+const report=journal.finish(duty(510,false,{open:1,waiting:0,free:8,total:10}));
+assert.equal(report.durationMinutes,30);
+assert.equal(report.peakWaiting,2);
+assert.equal(report.start.open,2);
+assert.equal(report.end.open,1);
+assert.match(journal.format(report),/Simulierte Schichtdauer: 30 Minuten/);
+assert.equal(context.LDFunkspruchShiftJournal.create(memoStore).snapshot().reports.length,1);
 console.log("OK: "+result.passed+"/"+result.total+" Logiktests, vier KI-Kollegenantworten, Speicherstand-Export/-Import, Dienstpausen und Trinkstation, Tag-Nacht-Zyklus, Desktop-Paket und gesperrter zweiter Modus geprüft.");

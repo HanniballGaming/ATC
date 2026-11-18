@@ -14,6 +14,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
  let touch=null,keyboard=null,lookInput={x:0,y:0},worldUpgrade=null;
  let indoor=false,entryPoint=null,doorPoint=null,chipPoint=null,office=null,officePieces=[],exterior=null,deskPoint={x:1,z:-1.3},atDesk=false,screenTexture=null,screenCanvas=null,screenContext=null,screenMaterialRef=null;
  const life=root.LDOpenWorldLife.create();
+ const journal=root.LDFunkspruchShiftJournal?.create?.()||null;
  const walker=root.LDOpenWorldWalker.create();
  const indoorCollisions=root.LDFunkspruchIndoor?.model?.()||{buildings:[]};
  const car=root.LDOpenWorldVehicle.create();
@@ -298,7 +299,10 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   const p=walker.snapshot();if(Math.hypot(p.x-chipPoint.x,p.z-chipPoint.z)>2.5)throw Error("Bitte direkt zur Stechuhr gehen");
   const next=life.snapshot().onDuty?"dienstende":"dienstbeginn";
   if(next==="dienstende"&&atDesk)throw Error("Bitte zuerst den Arbeitsplatz verlassen");
-  life.action(next);drawScreens();drawWallClock();try{life.save()}catch(e){console.warn(e)}
+  life.action(next);
+  if(next==="dienstbeginn")journal?.begin(status());
+  else if(next==="dienstende")journal?.finish(status());
+  drawScreens();drawWallClock();try{life.save()}catch(e){console.warn(e)}
   onStatus({...status(),message:next==="dienstbeginn"?"Eingestempelt – Dienst begonnen":"Ausgestempelt – Dienst beendet"});
   return next;
  }
@@ -343,6 +347,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   };
   if(dispatchSummary.minute!==null)life.syncClock(dispatchSummary.minute);
   worldUpgrade?.setDispatchSummary?.(dispatchSummary);
+  journal?.record(status());
   drawScreens();drawWallClock();return true;
  }
  function saveWorld(){
@@ -371,7 +376,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   drawScreens();onStatus({...status(),message:"Gespeicherter Spielstand geladen"});
   return true;
  }
- const api={start,dispose,interact,toggleDoor,stamp,sitDesk,leaveDesk,routeTo,status,setDispatchSummary,setPaused,setGraphicsProfile,saveWorld,restoreWorld,life,walker,car,scene,camera,renderer,getShift:()=>worldUpgrade?.shift()};
+ const api={start,dispose,interact,toggleDoor,stamp,sitDesk,leaveDesk,routeTo,status,setDispatchSummary,setPaused,setGraphicsProfile,saveWorld,restoreWorld,life,walker,car,scene,camera,renderer,getShift:()=>worldUpgrade?.shift(),getShiftJournal:()=>journal?{...journal.snapshot(),format:journal.format}:null};
  return api;
 }
 root.LDOpenWorldRuntime=Object.freeze({create});
