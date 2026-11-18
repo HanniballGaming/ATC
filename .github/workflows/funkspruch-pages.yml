@@ -68,4 +68,4 @@ jobs:
         id: publish
         uses: actions/deploy-pages@v4
       - name: Link der veröffentlichten Spielversion
-        run: echo "FUNKSPRUCH: ${{ steps.publish.outputs.page_url }}openworld/"
+        run: echo "FUNKSPRUCH URL ${{ steps.publish.outputs.page_url }}openworld/"
