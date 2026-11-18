@@ -28,6 +28,9 @@ jobs:
       - name: Integrations- und Logiktests
         working-directory: desktop
         run: npm run verify
+      - name: Echten Electron-Start und Speicherpersistenz prüfen
+        working-directory: desktop
+        run: node electron-smoke.mjs
       - name: Windows-Setup erstellen
         working-directory: desktop
         run: npm run build:windows
