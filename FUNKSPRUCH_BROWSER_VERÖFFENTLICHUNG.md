@@ -2,9 +2,9 @@
 
 Der iPad-Startlink nach erfolgreichem GitHub Pages-Deploy ist:
 
-https://hanniballgaming.github.io/ATC/openworld/
+https://hanniballgaming.github.io/ATC/funkspruch/openworld/
 
-Der Link wird erst nach einem **erfolgreichen** Pages-Deploy gültig. Falls GitHub Pages noch nicht aktiviert ist, muss der Repository-Administrator unter GitHub → Settings → Pages → Build and deployment die Quelle **GitHub Actions** auswählen. Anschließend den Workflow „FUNKSPRUCH – iPad-Browser-Veröffentlichung“ erneut starten.
+Die Version ist erfolgreich veröffentlicht. Die Produktion läuft über den Workflow `main/.github/workflows/funkspruch-public.yml`. NORDTAL ATC bleibt unter dem Stamm-Pfad des Repositories erhalten.
 
 Die Website wird aus dem FUNKSPRUCH-GitHub-Entwicklungszweig erstellt. Sie enthält das vollständige Browserleitstellensystem, die First-Person-3D-Welt, deutsches UI, die Touchsteuerung, Schichtsimulation und reale OpenStreetMap-Straßen und Gebäude der Augsburger Kartenkacheln.
 
