@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 import AdmZip from "adm-zip";
+import {createHash} from "node:crypto";
 const desktop=path.dirname(fileURLToPath(import.meta.url));
 const root=path.resolve(desktop,"..");
 const output=path.join(desktop,"web");
@@ -57,4 +58,41 @@ Object.assign(manifest,{
  theme_color:"#164b66"
 });
 fs.writeFileSync(manifestPath,JSON.stringify(manifest,null,2)+"\n","utf8");
+// iPad-/Browser-PWA: die vollständigen lokalen Startdateien vorab zwischenspeichern.
+const entries=[];
+const supported=new Set([".html",".js",".css",".json",".webmanifest",".png",".jpg",".jpeg",".svg",".woff",".woff2",".mp3",".ogg",".wav"]);
+function collect(directory){
+ for(const entry of fs.readdirSync(directory,{withFileTypes:true})){
+  const absolute=path.join(directory,entry.name);
+  if(entry.isDirectory()){collect(absolute);continue;}
+  if(!entry.isFile()||absolute===path.join(output,"sw.js"))continue;
+  if(!supported.has(path.extname(absolute).toLowerCase()))continue;
+  entries.push({relative:path.relative(output,absolute).split(path.sep).join("/"),absolute});
+ }
+}
+collect(output);
+entries.sort((a,b)=>a.relative.localeCompare(b.relative));
+const digest=createHash("sha256");
+for(const entry of entries){digest.update(entry.relative);digest.update(fs.readFileSync(entry.absolute));}
+const cache="funkspruch-pwa-"+digest.digest("hex").slice(0,14);
+const assets=["./","./openworld/",...entries.map(entry=>"./"+entry.relative)];
+const swSource=[
+ "/* FUNKSPRUCH: lokal erzeugter, versionierter Offline-Serviceworker. */",
+ "const CACHE="+JSON.stringify(cache)+";",
+ "const ASSETS="+JSON.stringify(assets)+";",
+ 'self.addEventListener("install",event=>{',
+ ' event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting()));',
+ '});',
+ 'self.addEventListener("activate",event=>{',
+ ' event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith("funkspruch-pwa-")&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()));',
+ '});',
+ 'self.addEventListener("fetch",event=>{',
+ ' if(event.request.method!=="GET")return;',
+ ' const url=new URL(event.request.url);',
+ ' if(url.origin!==self.location.origin)return;',
+ ' event.respondWith(caches.match(event.request).then(cached=>cached||fetch(event.request)));',
+ '});'
+].join("\n")+"\n";
+fs.writeFileSync(path.join(output,"sw.js"),swSource,"utf8");
+console.log("PWA-Offline-Cache mit "+assets.length+" Dateien erzeugt.");
 console.log("Hauptspiel, 3D-Welt und Arbeitsplätze für Windows zusammengestellt.");
