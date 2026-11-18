@@ -42,7 +42,7 @@ assert.equal(storage.getItem("ld-openworld-life-v1"),'{"onDuty":true}');
 assert.throws(()=>context.LDFunkspruchSave.validate({format:"invalid",entries:{}}));
 const testLife=context.LDOpenWorldLife.create({location:"leitstelle",onDuty:true,fatigue:70,thirst:50});
 testLife.action("ruhepause");
-assert.equal(testLife.snapshot().fatigue,55);
+assert.ok(testLife.snapshot().fatigue>55&&testLife.snapshot().fatigue<56,"Die Ruhepause soll Müdigkeit trotz Zeitablauf verringern");
 assert.ok(testLife.snapshot().thirst<50);
 testLife.action("trinken");
 assert.ok(testLife.snapshot().thirst<10);
