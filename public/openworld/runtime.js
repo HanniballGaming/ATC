@@ -11,7 +11,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
  for(const key of required)if(!root[key])throw Error("Missing module: "+key);
  if(!origin||!Number.isFinite(origin.lon)||!Number.isFinite(origin.lat))throw Error("WGS84 origin required");
  let model=null,view=null,graph=null,interaction=null,disposed=false,raf=0,last=0,accumulator=0;
- let touch=null,keyboard=null,lookInput={x:0,y:0};
+ let touch=null,keyboard=null,lookInput={x:0,y:0},worldUpgrade=null;
  let indoor=false,entryPoint=null,doorPoint=null,chipPoint=null,office=null,officePieces=[],deskPoint={x:1,z:-1.3},atDesk=false,screenTexture=null,screenCanvas=null,screenContext=null,screenMaterialRef=null;
  const life=root.LDOpenWorldLife.create();
  const walker=root.LDOpenWorldWalker.create();
@@ -56,6 +56,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
   if(atDesk){leaveDesk();return;}
   if(indoor&&!interaction.driving&&Math.hypot(walker.snapshot().x-deskPoint.x,walker.snapshot().z-deskPoint.z)<2.4){try{sitDesk()}catch(e){onStatus({...status(),message:e.message})}return;}
   if(!interaction.driving&&doorPoint){const p=walker.snapshot();if(Math.hypot(p.x-doorPoint.x,p.z-doorPoint.z)<2.6){try{toggleDoor()}catch(e){onStatus({...status(),message:e.message})}return;}}
+  if(indoor&&!interaction.driving&&worldUpgrade?.interact(walker.snapshot()))return;
   if(indoor&&!interaction.driving&&chipPoint){const p=walker.snapshot();if(Math.hypot(p.x-chipPoint.x,p.z-chipPoint.z)<2.5){try{stamp()}catch(e){onStatus({...status(),message:e.message})}return;}}
   try{
    if(interaction.driving){
@@ -92,6 +93,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
   const dt=last?Math.min((time-last)/1000,0.1):0;last=time;
   accumulator=Math.min(accumulator+dt,0.2);
   while(accumulator>=1/60){fixedStep(1/60);accumulator-=1/60;}
+  worldUpgrade?.update(dt,{indoor,onDuty:life.snapshot().onDuty});
   const driving=interaction.driving;
   const p=driving?car.snapshot():walker.snapshot();
   camera.position.set(atDesk?1:p.x,atDesk?1.3:driving?1.65:1.7,atDesk?-1.05:p.z);
@@ -134,6 +136,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
   interaction=root.LDOpenWorldInteraction.create({vehicle:car,player:interactionPlayer});
   entryPoint={...pedestrianSpawn};doorPoint={...pedestrianSpawn};
   office=new THREE.Group();scene.add(office);office.visible=false;
+  if(root.LDFunkspruchWorld){worldUpgrade=root.LDFunkspruchWorld.install({THREE,scene,camera,life,onMessage:message=>onStatus({...status(),message})});worldUpgrade.addIndoor(office);}
   const addBox=(w,h,d,x,y,z,color)=>{const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color}));mesh.position.set(x,y,z);office.add(mesh);officePieces.push(mesh);return mesh;};
   addBox(16,.2,12,0,-.1,0,0x56606b);
   addBox(16,.16,12,0,3.55,0,0xe5e9ec);
@@ -227,14 +230,14 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,onStatus=()=
   renderer.domElement.removeEventListener("click",requestPointerLock);
   root.document?.removeEventListener("mousemove",pointerMove);
   if(root.document?.pointerLockElement===renderer.domElement)root.document.exitPointerLock?.();
-  keyboard?.dispose();touch?.dispose();view?.dispose();
+  keyboard?.dispose();touch?.dispose();view?.dispose();worldUpgrade?.dispose();
   officePieces.forEach(mesh=>{mesh.geometry?.dispose();if(mesh.material&&mesh.material!==screenMaterialRef)mesh.material.dispose()});
   screenTexture?.dispose();screenMaterialRef?.dispose();
   body.geometry.dispose();body.material.dispose();ground.geometry.dispose();ground.material.dispose();
   renderer.dispose();renderer.domElement.remove();
   if(needsPosition)host.style.position=oldPosition;
  }
- const api={start,dispose,interact,toggleDoor,stamp,sitDesk,leaveDesk,routeTo,status,life,walker,car,scene,camera,renderer};
+ const api={start,dispose,interact,toggleDoor,stamp,sitDesk,leaveDesk,routeTo,status,life,walker,car,scene,camera,renderer,getShift:()=>worldUpgrade?.shift()};
  return api;
 }
 root.LDOpenWorldRuntime=Object.freeze({create});
