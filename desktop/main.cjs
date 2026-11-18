@@ -19,7 +19,15 @@ if(!single)app.quit();
 else{
  app.on("second-instance",()=>{if(win){if(win.isMinimized())win.restore();win.focus();}});
  app.whenReady().then(start).catch(err=>{dialog.showErrorBox("FUNKSPRUCH – Startfehler",String(err.stack||err));app.quit();});
- app.on("window-all-closed",()=>app.quit());
+ app.on("window-all-closed",()=>{
+  // Fenster und Seiten sind vollständig entladen; danach den lokalen Spielserver
+  // schließen und den Electron-Prozess zuverlässig beenden. Auf einzelnen
+  // Windows-Systemen bleiben sonst Chromium-/Serviceworker-Handles offen.
+  closeServer();
+  app.quit();
+  const watchdog=setTimeout(()=>app.exit(0),1800);
+  // Nicht unref(): die Absicherung muss auch bei übrigen aktiven Handles auslösen.
+ });
  app.on("before-quit",()=>{
   closeServer();
   // Beenden selbst bei hängendem Renderprozess: normale Schließroutine erhält 3 Sekunden.
