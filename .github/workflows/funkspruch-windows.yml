@@ -3,6 +3,9 @@ on:
   push:
     branches: [funkspruch-v1-integration]
   workflow_dispatch:
+concurrency:
+  group: funkspruch-build-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
