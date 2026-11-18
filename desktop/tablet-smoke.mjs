@@ -34,6 +34,11 @@ try{
  const touch=page.locator('[aria-label="FUNKSPRUCH – Touchsteuerung"]');
  await touch.waitFor({state:"visible"});
  assert.equal(await touch.locator('[role="group"]').count(),2,"Zwei Touchsticks fehlen");
+ await touch.getByRole("button",{name:"Menü"}).tap({timeout:15000});
+ await page.locator("#mainMenu").waitFor({state:"visible"});
+ assert.match(await page.locator("#startNormal").textContent(),/fortsetzen/i,"Touch-Pausenmenü fehlt");
+ await page.locator("#startNormal").tap({timeout:15000});
+ await page.locator("#mainMenu").waitFor({state:"hidden"});
  assert.equal((await page.evaluate(()=>window.FunkspruchGame.status())).nearDoor,true,"Eingang nicht in Reichweite");
  await touch.getByRole("button",{name:"Interagieren"}).tap({timeout:15000});
  await page.waitForFunction(()=>window.FunkspruchGame.status().indoor,null,{timeout:10000});

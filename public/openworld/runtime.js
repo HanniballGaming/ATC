@@ -267,7 +267,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   renderer.domElement.addEventListener("click",requestPointerLock);
   root.document?.addEventListener("mousemove",pointerMove);
   if(root.LDOpenWorldTouch&&("ontouchstart" in root||root.navigator?.maxTouchPoints>0))
-   touch=root.LDOpenWorldTouch.mount(host,{onInteract:interact});
+   touch=root.LDOpenWorldTouch.mount(host,{onInteract:interact,onMenu:()=>root.dispatchEvent?.(new root.Event("funkspruch:toggle-menu"))});
   resize();onStatus(status());raf=root.requestAnimationFrame(frame);
   return api;
  }

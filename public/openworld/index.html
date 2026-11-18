@@ -72,6 +72,7 @@ function togglePause(){
 window.addEventListener("keydown",event=>{
  if(event.code==="Escape"&&!event.repeat){togglePause();event.preventDefault();}
 });
+window.addEventListener("funkspruch:toggle-menu",togglePause);
 const prompt=document.getElementById("firstPersonPrompt");let lastEventText="",lastEventTime=0;
 startButton.addEventListener("click",resumeGame);
 const tests=await LDOpenWorldIntegrationTests.run();
@@ -153,7 +154,10 @@ importFile.onchange=async()=>{
  finally{importFile.value="";}
 };
 window.addEventListener("pagehide",()=>{persistLife();audio.dispose();});
-document.addEventListener("visibilitychange",()=>{if(document.hidden)persistLife();});
+document.addEventListener("visibilitychange",()=>{
+ if(document.hidden){persistLife();game.setPaused(true);}
+ else if(started&&mainMenu.hidden)game.setPaused(false);
+});
 setInterval(persistLife,10000);
 document.getElementById("interact").onclick=()=>game.interact();
 document.getElementById("stand").onclick=()=>{monitor.classList.remove("reportVisible");game.leaveDesk();};
