@@ -5,13 +5,23 @@ const fs=require("node:fs"),path=require("node:path"),http=require("node:http");
 const ROOT=path.resolve(__dirname,"web"),HOST="127.0.0.1",PORT=47821,ORIGIN="http://"+HOST+":"+PORT;
 const MIME={".html":"text/html; charset=utf-8",".js":"text/javascript; charset=utf-8",".css":"text/css; charset=utf-8",".json":"application/json; charset=utf-8",".webmanifest":"application/manifest+json; charset=utf-8",".png":"image/png",".jpg":"image/jpeg",".jpeg":"image/jpeg",".svg":"image/svg+xml",".woff2":"font/woff2",".mp3":"audio/mpeg",".ogg":"audio/ogg",".wav":"audio/wav",".webp":"image/webp",".ico":"image/x-icon"};
 let server=null,win=null;
+const activeSockets=new Set();
+function closeServer(){
+ if(!server)return;
+ const existing=server;server=null;
+ try{existing.closeAllConnections?.();}catch{}
+ try{existing.close();}catch{}
+ for(const socket of activeSockets){try{socket.destroy();}catch{}}
+ activeSockets.clear();
+}
 const single=app.requestSingleInstanceLock();
 if(!single)app.quit();
 else{
  app.on("second-instance",()=>{if(win){if(win.isMinimized())win.restore();win.focus();}});
  app.whenReady().then(start).catch(err=>{dialog.showErrorBox("FUNKSPRUCH – Startfehler",String(err.stack||err));app.quit();});
  app.on("window-all-closed",()=>app.quit());
- app.on("before-quit",()=>{if(server){server.close();server=null;}});
+ app.on("before-quit",closeServer);
+ app.on("will-quit",closeServer);
 }
 function serve(req,res){
  try{
@@ -35,7 +45,13 @@ function serve(req,res){
 async function start(){
  if(!single)return;
  await new Promise((resolve,reject)=>{
-  server=http.createServer(serve);server.once("error",reject);server.listen(PORT,HOST,resolve);
+  server=http.createServer(serve);
+  server.on("connection",socket=>{
+   activeSockets.add(socket);
+   socket.on("close",()=>activeSockets.delete(socket));
+  });
+  server.once("error",reject);
+  server.listen(PORT,HOST,resolve);
  });
  session.defaultSession.setPermissionRequestHandler((webContents,permission,callback,details)=>{
   const origin=details?.requestingUrl||webContents.getURL();
