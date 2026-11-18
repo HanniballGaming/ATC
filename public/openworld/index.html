@@ -44,6 +44,8 @@ function resumeGame(){
  gameInstance?.setGraphicsProfile(lowerGraphics());
  gameInstance?.setPaused(false);
  mainMenu.hidden=true;startButton.textContent="Spiel fortsetzen";
+ const canvas=gameInstance?.renderer?.domElement;
+ if(canvas){canvas.tabIndex=0;canvas.focus({preventScroll:true});}
  window.dispatchEvent(new Event("resize"));
 }
 function togglePause(){
@@ -118,7 +120,7 @@ document.getElementById("sleep").onclick=()=>{try{game.life.action("schlafen");p
 window.addEventListener("keydown",e=>{if(e.code==="KeyE"&&!e.repeat)game.interact()});
 setInterval(()=>{
  const s=game.status();
- const context=s.atDesk?"":s.nearChip?"E · An der Stechuhr einstempeln oder ausstempeln":s.nearDesk?"E · Am Disponentenarbeitsplatz Platz nehmen":s.indoor?"Schichtdienst · Stechuhr links hinten / Arbeitsplatz mittig":s.driving?"WASD · Fahrzeug steuern · E zum Aussteigen":"E · Trainingsleitstelle betreten · WASD bewegen";
+ const context=s.atDesk?"":s.nearChip?"E · An der Stechuhr einstempeln oder ausstempeln":s.nearDesk?"E · Am Disponentenarbeitsplatz Platz nehmen":s.indoor?"Schichtdienst · Stechuhr links hinten / Arbeitsplatz mittig":s.driving?"WASD · Fahrzeug steuern · E zum Aussteigen":s.nearDoor?"E · Trainingsleitstelle betreten":"WASD · Zum Eingang der Trainingsleitstelle gehen";
  prompt.textContent=Date.now()-lastEventTime<3000?lastEventText:context;
  prompt.style.display=s.atDesk?"none":"";
  document.getElementById("clock").textContent=(s.life.onDuty?"Im Dienst":"Dienstfrei")+(s.indoor?" · Im Leitstellengebäude":" · Draußen")+(s.nearChip?" · E: Stempeln":s.nearDesk?" · E: Arbeitsplatz":"")},500);

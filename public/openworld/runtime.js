@@ -92,7 +92,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
  const body=new THREE.Mesh(new THREE.BoxGeometry(1.9,1.2,4.5),new THREE.MeshStandardMaterial({color:0x285c88}));
  body.position.y=0.85;vehicleVisual.add(body);scene.add(vehicleVisual);
  let frameInput={forward:0,strafe:0,lookX:0,lookY:0,run:false},dispatchSummary=null,clockAccumulator=0,wallClockTexture=null,wallClockCanvas=null;
- const status=()=>({indoor,atDesk,nearDesk:indoor&&!interaction?.driving&&Math.hypot(walker.snapshot().x-deskPoint.x,walker.snapshot().z-deskPoint.z)<2.4,nearChip:indoor&&!!chipPoint&&!interaction?.driving&&Math.hypot(walker.snapshot().x-chipPoint.x,walker.snapshot().z-chipPoint.z)<2.5,walking:walker.snapshot(),vehicle:car.snapshot(),driving:interaction?.driving||false,life:life.snapshot(),loadedTiles:view?.loadedTiles||0,dispatch:dispatchSummary?{...dispatchSummary}:null});
+ const status=()=>({indoor,atDesk,nearDoor:!interaction?.driving&&!!doorPoint&&Math.hypot(walker.snapshot().x-doorPoint.x,walker.snapshot().z-doorPoint.z)<2.6,nearDesk:indoor&&!interaction?.driving&&Math.hypot(walker.snapshot().x-deskPoint.x,walker.snapshot().z-deskPoint.z)<2.4,nearChip:indoor&&!!chipPoint&&!interaction?.driving&&Math.hypot(walker.snapshot().x-chipPoint.x,walker.snapshot().z-chipPoint.z)<2.5,walking:walker.snapshot(),vehicle:car.snapshot(),driving:interaction?.driving||false,life:life.snapshot(),loadedTiles:view?.loadedTiles||0,dispatch:dispatchSummary?{...dispatchSummary}:null});
  function resize(){
   const width=Math.max(1,host.clientWidth),height=Math.max(1,host.clientHeight);
   camera.aspect=width/height;camera.updateProjectionMatrix();renderer.setSize(width,height,false);
