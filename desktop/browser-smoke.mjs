@@ -5,6 +5,7 @@ import http from "node:http";
 import assert from "node:assert/strict";
 import {fileURLToPath} from "node:url";
 import {chromium} from "playwright";
+import {mockOsmRoute} from "./osm-test-fixture.mjs";
 const root=path.join(path.dirname(fileURLToPath(import.meta.url)),"web");
 const server=http.createServer((req,res)=>{
  try{
@@ -27,7 +28,7 @@ try{
  const errors=[];
  page.on("pageerror",e=>errors.push(e.stack||e.message));
  // Testet den vollständigen Kernbetrieb auch ohne Verbindung zu externen CDNs.
- await page.route(/^https?:\/\/(?!127\.0\.0\.1[:\/])[^/]+/i,route=>route.abort());
+ await page.route(/^https?:\/\/(?!127\.0\.0\.1[:\/])[^/]+/i,mockOsmRoute);
  await page.goto(base+"/openworld/",{waitUntil:"domcontentloaded",timeout:30000});
  await page.locator("#startNormal").waitFor();
  assert.equal(await page.locator(".mode.locked button").isDisabled(),true,"Zweiter Modus muss gesperrt bleiben");
@@ -244,6 +245,7 @@ try{
  console.log("Spielstand: Innenraum und Dienststatus nach Neuladen wiederhergestellt.");
  console.log("Browsertest: First Person, Dienstbeginn, Arbeitsplatz, ELS und gesperrter Modus geprüft.");
  const tablet=await browser.newPage({viewport:{width:820,height:1180},isMobile:true,hasTouch:true,deviceScaleFactor:2});
+  await tablet.route(/^https?:\/\/(?!127\.0\.0\.1[:\/])[^/]+/i,mockOsmRoute);
  try{
   await tablet.goto(base+"/openworld/",{waitUntil:"domcontentloaded",timeout:30000});
   await tablet.locator("#startNormal").click({timeout:30000});

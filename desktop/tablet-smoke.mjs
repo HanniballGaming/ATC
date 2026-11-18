@@ -5,6 +5,7 @@ import http from "node:http";
 import assert from "node:assert/strict";
 import {fileURLToPath} from "node:url";
 import {chromium} from "playwright";
+import {mockOsmRoute} from "./osm-test-fixture.mjs";
 const root=path.join(path.dirname(fileURLToPath(import.meta.url)),"web");
 const server=http.createServer((req,res)=>{
  try{
@@ -26,7 +27,7 @@ try{
  const page=await browser.newPage({viewport:{width:820,height:1180},hasTouch:true,isMobile:true,deviceScaleFactor:1});
  const errors=[];
  page.on("pageerror",e=>errors.push(e.message));
- await page.route(/^https?:\/\/(?!127\.0\.0\.1[:\/])[^/]+/i,route=>route.abort());
+ await page.route(/^https?:\/\/(?!127\.0\.0\.1[:\/])[^/]+/i,mockOsmRoute);
  await page.goto(origin+"/openworld/",{waitUntil:"domcontentloaded",timeout:30000});
  await page.locator("#startNormal").click({timeout:30000});
  await page.waitForFunction(()=>!!window.FunkspruchGame,null,{timeout:30000});
