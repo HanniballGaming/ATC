@@ -60,6 +60,20 @@ jobs:
       - name: Webfassung vorbereiten
         working-directory: desktop
         run: npm run prepare:web
+      - name: Diagnose der alten Karteninitialisierung
+        run: |
+          python - <<'PY'
+          from zipfile import ZipFile
+          import re
+          with ZipFile('LEITSTELLE_DEUTSCHLAND_v0_21.zip') as z:
+              js=z.read('world.js').decode('utf-8')
+          print('world.js size',len(js))
+          for token in ('circleMarker','updateRealMap','lat','lon'):
+              matches=list(re.finditer(token,js))
+              print('TOKEN',token,'HITS',len(matches))
+              for m in matches[:10]:
+                  print('CONTEXT',repr(js[max(0,m.start()-240):min(len(js),m.end()+280)]))
+          PY
       - name: Chromium für Browsertest installieren
         working-directory: desktop
         run: npx playwright install --with-deps chromium
