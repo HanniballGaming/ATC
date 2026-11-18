@@ -67,7 +67,12 @@ try{
  const newGame=embedded.locator("#app .menu button",{hasText:"Neuen Spielstand starten"});
  if(await newGame.count()){
    await newGame.click();
-   await page.waitForTimeout(800);
+   const checks=embedded.locator("#ld22-briefing.open input[data-check]");
+   await checks.first().waitFor({state:"visible",timeout:15000});
+   for(const name of ["login","phone","radio","handover"])
+     await embedded.locator('#ld22-briefing input[data-check="'+name+'"]').check();
+   await embedded.locator('#ld22-briefing [data-brief="begin"]').click();
+   await embedded.locator("body.fs-embed-active").waitFor({state:"visible",timeout:15000});
    const next=await embedded.locator("#app").evaluate(el=>({
      preview:el.innerText.slice(0,1100),
      inputs:Array.from(el.querySelectorAll("select, input")).map(i=>({type:i.tagName,id:i.id,options:i.tagName==="SELECT"?Array.from(i.options).slice(0,5).map(o=>o.textContent):[]})).slice(0,10),
@@ -81,6 +86,9 @@ try{
      elsDeskVisible:!!document.querySelector("#elsdesk")
    }));
    console.log("ELS-Einbettung:",JSON.stringify(embeddedStatus));
+   assert.equal(embeddedStatus.active,true,"Monitor nicht als Spielbildschirm eingebettet");
+   assert.equal(embeddedStatus.workstationOpen,true,"ELS-Monitor nicht geöffnet");
+   assert.equal(embeddedStatus.onDuty,true,"Leitplatzprüfung nicht abgeschlossen");
  }
  console.log("Browsertest: First Person, Dienstbeginn, Arbeitsplatz, ELS und gesperrter Modus geprüft.");
  console.log("ELS-Ausschnitt:",embeddedGame.slice(0,170).replace(/\s+/g," "));

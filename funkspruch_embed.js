@@ -42,19 +42,18 @@ function update(){
    report("dienstfrei","Vorher in der 3D-Leitstelle einstempeln");
    return;
  }
- // Die Schicht wurde bereits an der physischen Stechuhr übernommen.
- // Das ELS stellt keine zweite, unabhängige Schichtprüfung.
- if(!s.ld22Completed){
-   s.ld22Init=true;s.ld22Completed=true;s.ld22WasPaused=false;
-   s.ld22Checks={login:true,phone:true,radio:true,handover:true};
-   s.ld22StartedAt=s.minute;
-   s.paused=false;
-   ops?.save?.();
- }
+ // Physisch einstempeln und danach die vier Leitplatzprüfungen persönlich abschließen.
+ // Die bestehende Schichtübergabe wird nicht automatisch übersprungen.
  if(!context.synced&&context.minutes!==null&&Number.isFinite(s.minute)){
    s.minute=((Math.round(context.minutes)%1440)+1440)%1440;
    context.synced=true;
    ops?.save?.();
+ }
+ if(!s.ld22Completed){
+   document.body.classList.remove("fs-embed-active");
+   context.opened=false;
+   report("uebergabe","Arbeitsplatzprüfung und Dienstübergabe abschließen");
+   return;
  }
  if(typeof window.openWorkstation!=="function"){
    report("initialisierung","Das Einsatzleitsystem wird geladen");
