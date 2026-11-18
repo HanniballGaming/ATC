@@ -1,0 +1,40 @@
+{
+  "name": "funkspruch-desktop",
+  "version": "0.24.0",
+  "private": true,
+  "description": "FUNKSPRUCH – Windows-App",
+  "main": "main.cjs",
+  "scripts": {
+    "prepare:web": "node prepare-web.mjs",
+    "verify": "node verify.mjs",
+    "build:windows": "electron-builder --win nsis --x64 --publish never"
+  },
+  "devDependencies": {
+    "adm-zip": "0.5.16",
+    "electron": "37.3.1",
+    "electron-builder": "26.0.12",
+    "three": "0.149.0"
+  },
+  "build": {
+    "appId": "de.funkspruch.simulator",
+    "productName": "FUNKSPRUCH",
+    "artifactName": "FUNKSPRUCH-Setup-${version}.${ext}",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.cjs",
+      "package.json",
+      "web/**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    }
+  }
+}

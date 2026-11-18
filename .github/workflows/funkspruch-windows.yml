@@ -1,0 +1,40 @@
+name: FUNKSPRUCH – Windows-Installationspaket
+on:
+  push:
+    branches: [funkspruch-v1-integration]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Vorhandenes Einsatzleitsystem inklusive Embed-Brücke verpacken
+        run: python release_v23.py
+      - name: Abhängigkeiten installieren
+        working-directory: desktop
+        run: npm install --no-audit --no-fund
+      - name: Gemeinsame Web-Codebasis bauen
+        working-directory: desktop
+        run: npm run prepare:web
+      - name: Integrations- und Logiktests
+        working-directory: desktop
+        run: npm run verify
+      - name: Windows-Setup erstellen
+        working-directory: desktop
+        run: npm run build:windows
+      - name: Windows-Setup als Test-Artefakt bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: FUNKSPRUCH-Windows-Testversion
+          path: desktop/release/*.exe
+          if-no-files-found: error
+          retention-days: 14
