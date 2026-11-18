@@ -36,9 +36,17 @@ try{
  assert.match(await page.locator("#startNormal").textContent(),/fortsetzen/i,"Pausenmenü fehlt");
  await page.locator("#startNormal").click();
  await page.locator("#mainMenu").waitFor({state:"hidden"});
+ // E-Taste und WASD werden direkt über die Spieleingabe bedient.
+ await page.keyboard.press("e");
+ await page.waitForFunction(()=>window.FunkspruchGame?.status()?.indoor,{timeout:10000});
+ const beforeMove=await page.evaluate(()=>window.FunkspruchGame.walker.snapshot());
+ await page.keyboard.down("w");
+ await page.waitForTimeout(420);
+ await page.keyboard.up("w");
+ const afterMove=await page.evaluate(()=>window.FunkspruchGame.walker.snapshot());
+ assert.ok(Math.hypot(afterMove.x-beforeMove.x,afterMove.z-beforeMove.z)>.04,"WASD-Fortbewegung funktioniert nicht");
  const state=await page.evaluate(()=>{
   const g=window.FunkspruchGame;
-  g.toggleDoor();
   g.walker.teleport(-5.5,-4.5);
   g.stamp();
   g.walker.teleport(1,-1.3);
