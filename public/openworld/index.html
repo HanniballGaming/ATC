@@ -36,7 +36,7 @@ if("serviceWorker" in navigator&&location.protocol==="https:"){
 <script src="./vehicle-interaction.js"></script><script src="./walker-core.js"></script>
 <script src="./life-core.js"></script><script src="./road-graph.js"></script>
 <script src="./osm-loader.js"></script><script src="./city-region.js"></script><script src="./geodata-session.js"></script><script src="./touch-controls.js"></script>
-<script src="./world-upgrades.js"></script><script src="./traffic-ai.js"></script><script src="./save-manager.js"></script><script src="./shift-journal.js"></script><script src="./ambient.js"></script>
+<script src="./world-upgrades.js"></script><script src="./traffic-ai.js"></script><script src="./save-manager.js"></script><script src="./shift-journal.js"></script><script src="./ambient.js"></script><script src="./preferences.js"></script>
 <script src="./runtime.js"></script><script src="./integration-tests.js"></script>
 <script>
 (async()=>{
@@ -47,6 +47,17 @@ const startButton=document.getElementById("startNormal");
 const initialResume=(()=>{try{return !!localStorage.getItem("funkspruch-openworld-save-v1")}catch{return false}})();
 startButton.disabled=true;startButton.textContent="Spielwelt wird vorbereitet …";
 const audio=LDFunkspruchAmbient.create();
+ const settingsControls={graphics:document.getElementById("graphicsQuality"),ambient:document.getElementById("ambientEnabled"),voice:document.getElementById("voiceEnabled")};
+ const userSettings=LDFunkspruchPreferences.load();
+ settingsControls.graphics.value=userSettings.graphics;
+ settingsControls.ambient.checked=userSettings.ambient;
+ settingsControls.voice.checked=userSettings.voice;
+ function savePreferences(){
+  try{LDFunkspruchPreferences.save({graphics:settingsControls.graphics.value,ambient:settingsControls.ambient.checked,voice:settingsControls.voice.checked});}
+  catch(error){console.warn("Einstellungen konnten nicht gespeichert werden",error);}
+  audio.setEnabled(settingsControls.ambient.checked);
+ }
+ Object.values(settingsControls).forEach(control=>control.addEventListener("change",savePreferences));
 const betaErrors=[];
 function betaRecord(message){betaErrors.push({at:new Date().toISOString(),message:String(message).slice(0,600)});if(betaErrors.length>15)betaErrors.shift();}
 window.addEventListener("error",event=>betaRecord(event.message||"Unbekannter Laufzeitfehler"));
@@ -133,15 +144,15 @@ document.getElementById("downloadDiagnostics").onclick=()=>{const blob=new Blob(
 document.getElementById("resetSave").onclick=()=>{if(!confirm("Wirklich alle lokalen FUNKSPRUCH-Spielstände und Dienstberichte dieses Geräts zurücksetzen? Vorher möglichst exportieren."))return;try{const keys=[];for(let j=0;j<localStorage.length;j++){const key=localStorage.key(j);if(key&&(/^(funkspruch-|ld-openworld-|ld-operations|ld21-|ld22-)/.test(key))&&!key.startsWith("funkspruch-osm-cache-"))keys.push(key);}for(const key of keys)localStorage.removeItem(key);location.reload();}catch(error){betaRecord(error);alert("Zurücksetzen fehlgeschlagen: "+error.message);}};
 try{
  const raw=localStorage.getItem(worldKey);
- if(raw)game.restoreWorld(JSON.parse(raw));
+ if(raw&&!game.restoreWorld(JSON.parse(raw)))throw Error("Gespeicherte Spielwelt beschädigt oder inkompatibel");
  game.reconcileShiftJournal?.();
 }catch(error){betaRecord(error);saveFeedback("Gespeicherter Spielstand konnte nicht geladen werden. Bitte Sicherung exportieren oder zurücksetzen.");console.warn("Gespeicherter Open-World-Spielstand nicht lesbar",error);}
 let importingSave=false;
 const persistLife=()=>{
  if(importingSave)return;
  try{
-  game.life.save();
   const world=game.saveWorld();if(world)localStorage.setItem(worldKey,JSON.stringify(world));
+  game.life.save();
   if(window.parent!==window)window.parent.postMessage({type:"ld-life-updated"},location.origin);
   saveFeedback("Automatisch gespeichert: "+new Date().toLocaleTimeString("de-DE"));
  }catch(error){betaRecord(error);saveFeedback("Speichern fehlgeschlagen – bitte Speicherplatz und Browserrechte prüfen.");console.warn("Speichern fehlgeschlagen",error);}
