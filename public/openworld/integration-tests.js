@@ -158,6 +158,20 @@ async function run(){
   if(report.events[0]?.minute!==1442)throw Error("Funkereignis nach Mitternacht falsch einsortiert");
   if(!j.format(report).includes("00:12"))throw Error("Dienstende nicht im 24h-Format");
  });
+ test("Dienstjournal: Manipulierte Ereignisse und Berichtsdauer werden verworfen",()=>{
+  const data=new Map();
+  const storage={getItem:key=>data.get(key)||null,setItem:(key,value)=>data.set(key,value)};
+  const j=root.LDFunkspruchShiftJournal.create(storage);
+  const state={life:{minutes:450,onDuty:true},dispatch:{open:1,waiting:0,free:2,total:2}};
+  j.begin(state);j.recordEvent({kind:"funk",minute:451});j.finish({...state,life:{minutes:460,onDuty:false}});
+  const key=root.LDFunkspruchShiftJournal.key;
+  const corrupted=JSON.parse(data.get(key));
+  corrupted.reports[0].durationMinutes=999999;
+  corrupted.active={startMinute:460,updatedMinute:470,events:[{kind:"funk",minute:470,text:{malicious:true}}]};
+  data.set(key,JSON.stringify(corrupted));
+  const restored=root.LDFunkspruchShiftJournal.create(storage).snapshot();
+  if(restored.active!==null||restored.reports.length!==0)throw Error("Beschädigte Schichtdaten nicht verworfen");
+ });
  test("Fahrzeug: Beschleunigung",()=>{
   const v=root.LDOpenWorldVehicle.create();v.reset({handbrake:false});
   for(let i=0;i<30;i++)v.step(1/60,{throttle:1,handbrake:false});
