@@ -184,6 +184,38 @@ async function run(){
   const restored=root.LDFunkspruchShiftJournal.create(storage).snapshot();
   if(restored.active!==null||restored.reports.length!==0)throw Error("Beschädigte Schichtdaten nicht verworfen");
  });
+ test("Geräteeinstellungen: Grafik- und Audioauswahl überlebt Neustart",()=>{
+  const map=new Map(),storage={getItem:key=>map.get(key)||null,setItem:(key,val)=>map.set(key,val)};
+  const prefs=root.LDFunkspruchPreferences;
+  if(prefs.load(storage).graphics!=="auto")throw Error("Standardprofil nicht geladen");
+  prefs.save({graphics:"low",ambient:false,voice:false},storage);
+  const restored=prefs.load(storage);
+  if(restored.graphics!=="low"||restored.ambient||restored.voice)throw Error("Einstellungen nicht wiederhergestellt");
+  map.set(prefs.key,'{"version":1,"graphics":"ultra","ambient":55,"voice":null}');
+  if(prefs.load(storage).graphics!=="auto"||prefs.load(storage).ambient!==true)throw Error("Defekte Einstellungen übernommen");
+ });
+ test("Stadtmöblierung: nur kartierte Straßen und keine Hauskollisionen",()=>{
+  const spots=root.LDFunkspruchWorld.streetFurnitureSpots;
+  if(spots({roads:[],buildings:[]}).length!==0)throw Error("Möblierung ohne echte Straßen");
+  const road={points:[{x:0,z:0},{x:80,z:0},{x:160,z:0}],properties:{highway:"residential"}};
+  const points=spots({roads:[road],buildings:[]},{exclude:{x:0,z:0}});
+  if(!points.length||points.some(p=>!Number.isFinite(p.x)||!Number.isFinite(p.z)))throw Error("Kartierte Straßen wurden nicht verwendet");
+  const block={rings:[[{x:35,z:-20},{x:110,z:-20},{x:110,z:20},{x:35,z:20}]]};
+  const withoutBuildings=spots({roads:[road],buildings:[block]});
+  if(withoutBuildings.some(p=>root.LDOpenWorldCollision.collides(p,{buildings:[block]},.5)))throw Error("Baum in Gebäude platziert");
+ });
+ test("Straßenverkehr: Sicherheitsabstand und Wiederanfahren",()=>{
+  const traffic=root.LDFunkspruchTraffic;
+  const graph=traffic.buildNetwork({roads:[{points:[{x:0,z:0},{x:100,z:0}],properties:{highway:"residential",maxspeed:"30"}}]}).car;
+  const edge=graph.edges[0],follower={kind:"car",edge,graph,progress:10,seed:1,transitions:0,speed:8};
+  const lead={kind:"car",edge,graph,progress:15,seed:2,transitions:0,speed:0};
+  if(traffic.leadClearance(follower,[follower,lead])!==5)throw Error("Abstand nicht erkannt");
+  traffic.stepAgents([follower,lead],.12);
+  if(follower.progress!==10)throw Error("Auffahrunfall zwischen KI-Fahrzeugen");
+  lead.progress=40;lead.speed=8;
+  traffic.stepAgents([follower,lead],.12);
+  if(follower.progress<=10||follower.progress>=lead.progress)throw Error("KI folgt nicht bei freiem Abstand");
+ });
  test("Fahrzeug: Beschleunigung",()=>{
   const v=root.LDOpenWorldVehicle.create();v.reset({handbrake:false});
   for(let i=0;i<30;i++)v.step(1/60,{throttle:1,handbrake:false});
