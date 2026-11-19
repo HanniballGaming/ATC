@@ -29,7 +29,7 @@ body.playing:not(.fatal) #crosshair{display:block}body.playing #monitor.active~#
 <small>Reale Geodaten: © OpenStreetMap-Mitwirkende (ODbL 1.0). Ungeprüfte Details werden nicht als echt ausgegeben.</small></div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
 <script>
-if("serviceWorker" in navigator&&location.protocol==="https:"){
+if("serviceWorker" in navigator&&(location.protocol==="https:"||["localhost","127.0.0.1"].includes(location.hostname))){
  window.addEventListener("load",()=>navigator.serviceWorker.register("../sw.js").catch(error=>console.warn("Offline-Dienst nicht verfügbar",error)));
 }
 </script>

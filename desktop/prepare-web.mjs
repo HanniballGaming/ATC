@@ -90,7 +90,17 @@ const swSource=[
  ' if(event.request.method!=="GET")return;',
  ' const url=new URL(event.request.url);',
  ' if(url.origin!==self.location.origin)return;',
- ' event.respondWith(caches.match(event.request).then(cached=>cached||fetch(event.request)));',
+ ' event.respondWith(caches.match(event.request).then(async cached=>{',
+ '  if(cached)return cached;',
+ '  // The embedded dispatcher uses index.html?fs_embed=1; reuse its cached',
+ '  // base document while preserving the actual URL and query in the client.',
+ '  if(event.request.mode==="navigate"&&url.search){',
+ '   const canonical=new URL(url);canonical.search="";',
+ '   const offline=await caches.match(canonical.href);',
+ '   if(offline)return offline;',
+ '  }',
+ '  return fetch(event.request);',
+ ' }));',
  '});'
 ].join("\n")+"\n";
 fs.writeFileSync(path.join(output,"sw.js"),swSource,"utf8");
