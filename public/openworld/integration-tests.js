@@ -184,6 +184,21 @@ async function run(){
   const restored=root.LDFunkspruchShiftJournal.create(storage).snapshot();
   if(restored.active!==null||restored.reports.length!==0)throw Error("Beschädigte Schichtdaten nicht verworfen");
  });
+ test("Spielstände: zwei Generationen und Wiederherstellung nach Beschädigung",()=>{
+  const map=new Map(),storage={getItem:key=>map.get(key)||null,setItem:(key,val)=>map.set(key,val)};
+  const checkpoints=root.LDFunkspruchCheckpoints;
+  const first={version:2,indoor:true,player:{x:0,z:0,heading:0,pitch:0},life:{minutes:500,onDuty:true}};
+  const second={...first,player:{x:1,z:1,heading:0,pitch:0}};
+  checkpoints.save(first,storage);
+  checkpoints.save(second,storage);
+  if(checkpoints.candidates(storage).length!==2)throw Error("Sicherungsrotation fehlt");
+  map.set(checkpoints.key,"{beschädigte-json");
+  const recovered=checkpoints.candidates(storage);
+  if(recovered.length!==1||recovered[0].source!=="backup"||recovered[0].world.player.x!==0)
+   throw Error("Vorheriger Stand nicht wiederherstellbar");
+  checkpoints.save(second,storage);
+  if(checkpoints.candidates(storage)[0].world.player.x!==1)throw Error("Neue Speicherung fehlgeschlagen");
+ });
  test("Geräteeinstellungen: Grafik- und Audioauswahl überlebt Neustart",()=>{
   const map=new Map(),storage={getItem:key=>map.get(key)||null,setItem:(key,val)=>map.set(key,val)};
   const prefs=root.LDFunkspruchPreferences;
