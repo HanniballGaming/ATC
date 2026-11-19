@@ -1,4 +1,4 @@
-name: FUNKSPRUCH – Windows-Installationspaket
+name: FUNKSPRUCH – Browserabnahme / Windows optional
 on:
   push:
     branches: [funkspruch-v1-integration]
@@ -10,6 +10,7 @@ permissions:
   contents: read
 jobs:
   windows:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: windows-latest
     timeout-minutes: 35
     steps:
