@@ -68,3 +68,21 @@ Geprüfter Entwicklungsstand: `8b672e381dab64233108955c9e7c9eb18ef405e2`.
 - Browser- und Windows-Testjobs erfolgreich: https://github.com/HanniballGaming/ATC/actions/runs/44627829504
 
 Diese Aktualisierung ist weiterhin eine Beta. Eine vollständige 1.0-Abnahme und Erweiterung aller ursprünglich geplanten Inhalte steht aus.
+
+## Größere Stabilitäts- und Spielweltrunde (19.11.2026)
+
+**Automatisch erfolgreich abgenommener Entwicklungsstand:** `b6612c8fea9a227938bf9d1958230e76b5668fe1`.
+
+- Einstellungen für Grafik, Umgebungsgeräusche und Kollegenstimmen sind pro Gerät dauerhaft gespeichert.
+- Welt- und Schichtdaten werden zusammen in einem neuen, rückwärtskompatiblen Speicherformat gesichert.
+- Automatische Sicherungsrotation mit vorheriger Version; beschädigte aktuelle Welt-Spielstände können aus der zweiten Generation wiederhergestellt werden.
+- KI-Straßenverkehr hält Abstand zu vorausfahrenden Fahrzeugen anstelle von Überlappung.
+- Dekorative Straßenlaternen und Bäume werden aus kartierten OSM-Straßensegmenten abgeleitet und bei Gebäudekollisionen ausgelassen. Frühere künstliche Parkplatzreihen sind entfernt.
+- Automatische Grafikqualität passt bei anhaltenden FPS-Abweichungen Pixelauflösung und Kartensichtweite an. Manuelle Grafikprofile bleiben fest.
+- Arbeitsplatz-Monitor besitzt einen eigenen Menüausstieg für Maus und Tablet-Touch.
+- Beim Export wird ein fehlgeschlagenes Speichern gemeldet, statt stillschweigend einen möglicherweise veralteten Stand auszugeben.
+- Zusätzliche Browser-, Mobil-, Integrations- und Windows-Regressionstests, inklusive längerem Weg über Dienstbeginn, KI-Notruf, Alarmierung, Funk und Dienstende.
+
+**Prüfnachweis:** https://github.com/HanniballGaming/ATC/actions/runs/44631522925 – Browser und Windows einschließlich Installationspaket erfolgreich.
+
+**Status:** weiterhin öffentlich spielbare Beta; nicht als vollständig abgenommene Releaseversion 1.0 zu verstehen. Der OSM-Ausschnitt ist begrenzt, KI und 3D-Grafik erreichen noch nicht alle geplanten Qualitätsziele. Es erfolgte kein physischer iPad-Test.
