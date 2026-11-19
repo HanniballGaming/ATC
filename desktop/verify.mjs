@@ -99,6 +99,21 @@ storage.setItem("ld-openworld-life-v1",'{"onDuty":false}');
 assert.equal(context.LDFunkspruchSave.restore(backup,storage),2);
 assert.equal(storage.getItem("ld-openworld-life-v1"),'{"onDuty":true}');
 assert.throws(()=>context.LDFunkspruchSave.validate({format:"invalid",entries:{}}));
+storage.setItem("funkspruch-shift-journal-v1",'{"stale":true}');
+storage.setItem("ld-old-dispatch-state",'{"stale":true}');
+const imported={format:backup.format,entries:{"ld-openworld-life-v1":'{"onDuty":false}'}};
+assert.equal(context.LDFunkspruchSave.restore(imported,storage),1);
+assert.equal(storage.getItem("funkspruch-shift-journal-v1"),null,"Altes Schichtjournal nach Import vorhanden");
+assert.equal(storage.getItem("ld-old-dispatch-state"),null,"Alte Einsatzdaten nach Import vorhanden");
+assert.equal(storage.getItem("funkspruch-osm-cache-v1:xyz"),"huge-map","OSM-Cache darf nicht gelöscht werden");
+assert.equal(storage.getItem("unrelated-data"),"unrelated","Fremde Browserdaten dürfen nicht gelöscht werden");
+// Simulierter Speicherausfall nach dem Löschen alter Schlüssel: vollständiger Rollback.
+storage.setItem("funkspruch-shift-journal-v1","previous-journal");
+const failing={key:i=>storage.key(i),getItem:k=>storage.getItem(k),removeItem:k=>storage.removeItem(k),get length(){return storage.length;},setItem:(k,v)=>{if(k==="ld-new-state")throw Error("QuotaExceededError");storage.setItem(k,v);}};
+assert.throws(()=>context.LDFunkspruchSave.restore({format:backup.format,entries:{"ld-new-state":"new"}},failing),/konnte nicht importiert/);
+assert.equal(storage.getItem("funkspruch-shift-journal-v1"),"previous-journal","Rollback muss entfernte Schlüssel wiederherstellen");
+assert.equal(storage.getItem("ld-openworld-life-v1"),'{"onDuty":false}',"Rollback muss vorherige Spielstände erhalten");
+
 const testLife=context.LDOpenWorldLife.create({location:"leitstelle",onDuty:true,fatigue:70,thirst:50});
 testLife.action("ruhepause");
 assert.ok(testLife.snapshot().fatigue>55&&testLife.snapshot().fatigue<56,"Die Ruhepause soll Müdigkeit trotz Zeitablauf verringern");
