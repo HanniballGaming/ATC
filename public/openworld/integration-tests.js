@@ -241,6 +241,19 @@ async function run(){
   traffic.stepAgents([follower,lead],.12);
   if(follower.progress<=10||follower.progress>=lead.progress)throw Error("KI folgt nicht bei freiem Abstand");
  });
+ test("Dienstjournal: echte Fall- und Ereigniszahlen ohne doppelte Alarmierungen",()=>{
+  const data=new Map(),storage={getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v)};
+  const journal=root.LDFunkspruchShiftJournal.create(storage);
+  const state={life:{minutes:480,onDuty:true},dispatch:{open:1,waiting:1,free:5,total:6}};
+  journal.begin(state);
+  for(const [kind,minute] of [["notruf",481],["annahme",482],["alarmierung",483],["alarmierung",483],["funk",484],["abschluss",485]])
+   journal.recordEvent({kind,incidentId:"E1",minute});
+  const report=journal.finish({...state,life:{minutes:490,onDuty:false}});
+  const stats=journal.summarize(report);
+  if(stats.cases!==1||stats.notruf!==1||stats.annahme!==1||stats.alarmierung!==1||stats.abschluss!==1||stats.funk!==1)
+   throw Error("Unbelegte Kennzahlen: "+JSON.stringify(stats));
+  if(!journal.format(report).includes("Dokumentierte Vorgänge"))throw Error("Fallzahlen fehlen im Bericht");
+ });
  test("Fahrzeug: Beschleunigung",()=>{
   const v=root.LDOpenWorldVehicle.create();v.reset({handbrake:false});
   for(let i=0;i<30;i++)v.step(1/60,{throttle:1,handbrake:false});

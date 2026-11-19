@@ -92,20 +92,35 @@ function create(storage=root.localStorage){
   return false;
  }
  function snapshot(){return JSON.parse(JSON.stringify(state));}
+ function summarize(report){
+  const counts={notruf:0,annahme:0,alarmierung:0,abschluss:0,funk:0},cases=new Set(),seen=new Set();
+  for(const event of Array.isArray(report?.events)?report.events:[]){
+   if(!event||!Object.prototype.hasOwnProperty.call(counts,event.kind))continue;
+   const id=typeof event.text==="string"?event.text.match(/ · #([\\w-]{1,55})$/)?.[1]:null;
+   if(id)cases.add(id);
+   const identifier=id&&event.kind!=="funk"?event.kind+":"+id:null;
+   if(identifier&&seen.has(identifier))continue;
+   if(identifier)seen.add(identifier);
+   counts[event.kind]++;
+  }
+  return {...counts,cases:cases.size};
+ }
  function format(report){
   if(!report)return "Noch keine abgeschlossene Schicht vorhanden.";
   const span=(v)=>v?("Offene Einsätze: "+v.open+" · Wartende Notrufe: "+v.waiting+" · Einsatzmittel frei: "+v.free+"/"+v.total):"Noch keine Verbindung zum Einsatzleitsystem";
   const time=m=>String(Math.floor(m/60)%24).padStart(2,"0")+":"+String(Math.floor(m%60)).padStart(2,"0");
   const eventLines=Array.isArray(report.events)&&report.events.length?report.events.slice(-30).map(e=>time(e.minute)+" · "+e.text).join("\n"):"Keine einzelnen Funk- oder Einsatzereignisse protokolliert";
+  const stats=summarize(report);
   return "Beginn: "+time(report.startMinute)+" · Ende: "+time(report.endMinute)+
    "\nSimulierte Schichtdauer: "+report.durationMinutes+" Minuten"+
    "\n\nEinsatzlage bei Beginn:\n"+span(report.start)+
    "\n\nEinsatzlage bei Ende:\n"+span(report.end)+
    "\n\nMaximal gleichzeitig wartende Notrufe: "+(report.peakWaiting??"nicht erfasst")+
+   "\n\nDokumentierte Vorgänge: "+stats.cases+" Fallnummern · "+stats.notruf+" Notrufe · "+stats.annahme+" Annahmen · "+stats.alarmierung+" Alarmierungen · "+stats.abschluss+" Abschlüsse · "+stats.funk+" Funkmeldungen"+
    "\n\nEinsatz- und Funkchronik:\n"+eventLines+
    "\n\nHinweis: Dies sind protokollierte Lagewerte, keine erfundenen Einsatz- oder Leistungsbewertungen.";
  }
- return {begin,record,recordEvent,finish,reconcile,snapshot,format};
+ return {begin,record,recordEvent,finish,reconcile,snapshot,format,summarize};
 }
 root.LDFunkspruchShiftJournal=Object.freeze({create,location,key:KEY});
 })(typeof window!=="undefined"?window:globalThis);

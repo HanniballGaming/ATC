@@ -268,6 +268,9 @@ try{
    const journalText=await page.locator("#shiftReport").innerText();
    assert.match(journalText,/Dienstbericht/);
    assert.match(journalText,/Simulierte Schichtdauer/);
+   assert.match(journalText,/Dokumentierte Vorgänge/);
+   const [download]=await Promise.all([page.waitForEvent("download",{timeout:10000}),page.locator("#exportShiftReport").click()]);
+   assert.equal(download.suggestedFilename(),"FUNKSPRUCH-Dienstjournal.txt");
    await page.locator("#viewShiftReport").click();
    let newDuty;
    for(let n=0;n<25;n++){
