@@ -281,6 +281,11 @@ try{
    assert.equal(newDuty.byDuty,false,"Dienstsimulation nicht wiederaufgenommen");
    assert.equal(newDuty.paused,false,"Simulation nach neuer Schicht weiterhin pausiert");
    console.log("Dienstende und erneute Schichtübernahme: Einsatzsimulation pausiert und setzt korrekt fort.");
+    await page.locator("#dispatchMenu").click();
+    await page.locator("#mainMenu").waitFor({state:"visible"});
+    assert.equal((await page.evaluate(()=>window.FunkspruchGame.status())).atDesk,false,"Menü am Arbeitsplatz funktioniert nicht");
+    await page.locator("#startNormal").click();
+    await page.locator("#mainMenu").waitFor({state:"hidden"});
 
  }
  await page.reload({waitUntil:"domcontentloaded"});
@@ -311,6 +316,9 @@ try{
   assert.equal(mobileDesk.active,true,"Tablet-Monitor nicht geöffnet");
   assert.ok(mobileDesk.width>=mobileDesk.viewport*.94,"Tablet-Monitor ist nicht bildschirmfüllend");
   console.log("Tablet: Touchsteuerung und bildschirmfüllender Arbeitsplatz geprüft.");
+   await tablet.locator("#dispatchMenu").tap();
+   await tablet.locator("#mainMenu").waitFor({state:"visible"});
+   assert.equal((await tablet.evaluate(()=>window.FunkspruchGame.status())).atDesk,false,"Tablet kann Arbeitsplatz nicht ins Menü verlassen");
  }finally{await tablet.close();}
  console.log("ELS-Ausschnitt:",embeddedGame.slice(0,170).replace(/\s+/g," "));
  assert.equal(errors.filter(error=>error.includes("Invalid LatLng object")).length,0,"Fehlerhafte Kartenkoordinaten im Leitstellenmonitor: "+JSON.stringify(errors.slice(0,4)));
