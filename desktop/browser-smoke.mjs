@@ -139,10 +139,12 @@ try{
      const issue=s.incidents.find(i=>["Anruf","Unversorgt"].includes(i.phase));
      if(!issue)return {error:"Kein übernehmbarer Übungsnotruf im Spielstand"};
      window.LDLogic.accept(s,issue.id,()=>{},"Eigenplatz");
-     const response=window.LDLogic.converse(s,issue.id,"Wo genau ist der Einsatzort?",()=>{});
+     const before=window.LDAI23.triage(issue);
+      const response=window.LDLogic.converse(s,issue.id,"Wo genau ist der Einsatzort?",()=>{});
+      const after=window.LDAI23.triage(issue);
      window.LDOperations.save?.();
      window.refreshWorkstation?.();
-     return {phase:issue.phase,answer:response?.answer||"",matched:!!response?.matched,turns:issue.transcript?.length||0};
+     return {phase:issue.phase,answer:response?.answer||"",matched:!!response?.matched,turns:issue.transcript?.length||0,required:after.required,asked:after.asked,next:after.next,whereAsked:after.asked.includes("where"),startedUnasked:before.pending.includes("where")};
    });
    console.log("KI-Notrufannahme:",JSON.stringify(conversation));
     const dispatchApi=await embedded.locator("body").evaluate(()=>{
@@ -175,6 +177,9 @@ try{
    assert.ok(!conversation.error,conversation.error||"");
    assert.ok(conversation.matched&&conversation.answer.length>15,"KI-Rückfrage liefert keine passende Antwort");
    assert.ok(conversation.turns>=2,"Gesprächsprotokoll wurde nicht angelegt");
+    assert.ok(conversation.required.includes("where")&&conversation.required.includes("hazard"),"Strukturierte Notruf-Checkliste fehlt");
+    assert.ok(conversation.whereAsked,"Einsatzort-Rückfrage wurde nicht dokumentiert");
+    assert.notEqual(conversation.next,"where","Nächste Rückfrage wiederholt ohne Grund dieselbe Frage");
    assert.ok(!["Anruf","Unversorgt"].includes(conversation.phase),"Notruf konnte nicht angenommen werden");
    await page.waitForFunction(()=>window.FunkspruchGame.status().dispatch?.waiting===0,null,{timeout:12000});
    // Ereignisse müssen den kompletten Weg vom ELS über beide Frames bis ins Dienstjournal nehmen.
