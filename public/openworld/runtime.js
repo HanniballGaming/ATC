@@ -12,6 +12,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
  if(!origin||!Number.isFinite(origin.lon)||!Number.isFinite(origin.lat))throw Error("WGS84 origin required");
  let model=null,view=null,graph=null,walkingGraph=null,interaction=null,disposed=false,raf=0,last=0,accumulator=0,paused=true;
  let touch=null,keyboard=null,lookInput={x:0,y:0},worldUpgrade=null,traffic=null;
+ let streetDestinations=[],activeRoute=null,routeVisual=null;
  const performance=root.LDFunkspruchPerformance?.create?.()||null;
  let adaptiveGraphics=false,lowGraphics=graphics.renderRadius===1;
  let indoor=false,entryPoint=null,doorPoint=null,chipPoint=null,office=null,officePieces=[],exterior=null,deskPoint={x:1,z:-1.3},atDesk=false,screenTexture=null,screenCanvas=null,screenContext=null,screenMaterialRef=null;
@@ -196,6 +197,13 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   vehicleVisual.visible=!driving;
   view.update(indoor?entryPoint.x:p.x,indoor?entryPoint.z:p.z);
   if(office)office.visible=indoor;
+   if(routeVisual)routeVisual.visible=!indoor&&!atDesk;
+   if(activeRoute&&!indoor&&!atDesk){
+    const target=activeRoute.destination;
+    if(Math.hypot(p.x-target.x,p.z-target.z)<12){
+     const label=activeRoute.name;clearRoute();onStatus({...status(),message:"Navigationsziel "+label+" erreicht"});
+    }
+   }
   if(exterior)exterior.visible=!indoor;
   ground.visible=!indoor;
   vehicleVisual.visible=!driving&&!indoor;
@@ -211,6 +219,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   }
   if(disposed)throw Error("Runtime disposed");
   model=root.LDOpenWorldGeo.loadGeoJSON(geojson,origin);
+   streetDestinations=root.LDFunkspruchNavigation?.destinations?.(model,{limit:120})||[];
   if(root.LDFunkspruchTraffic)traffic=root.LDFunkspruchTraffic.create({THREE,scene,model,low:graphics.renderRadius===1});
   graph=root.LDOpenWorldRoadGraph.create(model,{mode:"car"});
   walkingGraph=root.LDOpenWorldRoadGraph.create(model,{mode:"walk"});
@@ -337,9 +346,36 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   onStatus({...status(),message:next==="dienstbeginn"?"Eingestempelt – Dienst begonnen":"Ausgestempelt – Dienst beendet"});
   return next;
  }
+ function clearRoute(){
+  if(routeVisual){scene.remove(routeVisual);routeVisual.geometry.dispose();routeVisual.material.dispose();routeVisual=null;}
+  activeRoute=null;
+ }
+ function planStreetRoute(name){
+  if(!model)throw Error("Karte noch nicht geladen");
+  const destination=streetDestinations.find(x=>x.name===name);
+  if(!destination)throw Error("Diese Straße ist nicht in den geladenen OSM-Daten enthalten.");
+  const result=routeTo(destination.x,destination.z);
+  const summary=root.LDFunkspruchNavigation?.estimate?.(result);
+  if(!result||!summary||result.path.length<2)throw Error("Keine durchgehend kartierte Verbindung zu dieser Straße gefunden.");
+  clearRoute();
+  const geometry=new THREE.BufferGeometry().setFromPoints(result.path.map(p=>new THREE.Vector3(p.x,.13,p.z)));
+  const material=new THREE.LineBasicMaterial({color:0x63dcf0,depthTest:false,transparent:true,opacity:.88});
+  routeVisual=new THREE.Line(geometry,material);routeVisual.name="FUNKSPRUCH OSM-Navigationsroute";
+  scene.add(routeVisual);
+  activeRoute={name,destination,result,summary};
+  onStatus({...status(),message:"OSM-Route zur "+name+": "+summary.meters+" m · ca. "+summary.minutes+" Min. ("+summary.mode+")"});
+  return {name,...summary};
+ }
+ function routeStatus(){
+  if(!activeRoute)return null;
+  const p=indoor?entryPoint:interaction?.driving?car.snapshot():walker.snapshot();
+  const d=activeRoute.destination;
+  const waypoint=root.LDFunkspruchNavigation?.nearestWaypoint?.(p,activeRoute.result);
+  return {name:activeRoute.name,...activeRoute.summary,airMeters:Math.round(Math.hypot(p.x-d.x,p.z-d.z)),waypoint};
+ }
  function routeTo(x,z){
   if(!graph)throw Error("World not loaded");
-  const p=interaction.driving?car.snapshot():walker.snapshot();
+  const p=indoor?entryPoint:interaction.driving?car.snapshot():walker.snapshot();
   return (interaction.driving?graph:walkingGraph||graph).route(p,{x,z});
  }
  function requestPointerLock(){
@@ -357,7 +393,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   renderer.domElement.removeEventListener("click",requestPointerLock);
   root.document?.removeEventListener("mousemove",pointerMove);
   if(root.document?.pointerLockElement===renderer.domElement)root.document.exitPointerLock?.();
-  keyboard?.dispose();touch?.dispose();view?.dispose();traffic?.dispose();worldUpgrade?.dispose();exterior?.userData?.dispose?.();
+  keyboard?.dispose();touch?.dispose();view?.dispose();traffic?.dispose();worldUpgrade?.dispose();exterior?.userData?.dispose?.();clearRoute();
   officePieces.forEach(mesh=>{mesh.geometry?.dispose();if(mesh.material&&mesh.material!==screenMaterialRef)mesh.material.dispose()});
   screenTexture?.dispose();screenMaterialRef?.dispose();wallClockTexture?.dispose();
   for(const part of vehicleParts){part.geometry.dispose();part.material.dispose();}ground.geometry.dispose();ground.material.dispose();
@@ -386,7 +422,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
  }
  function saveWorld(){
   if(!model)return null;
-  return {version:2,indoor,player:walker.snapshot(),vehicle:car.snapshot(),onDuty:!!life.snapshot().onDuty,life:life.snapshot()};
+  return {version:2,indoor,player:walker.snapshot(),vehicle:car.snapshot(),onDuty:!!life.snapshot().onDuty,life:life.snapshot(),destinationStreet:activeRoute?.name||null};
  }
  function restoreWorld(saved){
   if(!model||!entryPoint||!saved||![1,2].includes(saved.version)||!saved.player)return false;
@@ -416,10 +452,13 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   atDesk=false;
   if(c&&[c.x,c.z,c.heading].every(Number.isFinite)&&Math.hypot(c.x-entryPoint.x,c.z-entryPoint.z)<1000)
    car.reset({x:c.x,z:c.z,heading:c.heading,speed:0,handbrake:true});
-  drawScreens();onStatus({...status(),message:"Gespeicherter Spielstand geladen"});
+  if(typeof saved.destinationStreet==="string"&&saved.destinationStreet.length<=90){
+    try{planStreetRoute(saved.destinationStreet);}catch(error){console.warn("Gespeicherte Navigation nicht verfügbar",error);}
+   }
+   drawScreens();onStatus({...status(),message:"Gespeicherter Spielstand geladen"});
   return true;
  }
- const api={start,dispose,interact,toggleDoor,stamp,sitDesk,leaveDesk,routeTo,status,setDispatchSummary,setPaused,setGraphicsProfile,saveWorld,restoreWorld,life,walker,car,scene,camera,renderer,getShift:()=>worldUpgrade?.shift(),getShiftJournal:()=>journal?{...journal.snapshot(),format:journal.format,summarize:journal.summarize}:null,reconcileShiftJournal:()=>journal?.reconcile(status()),recordDispatchEvent:event=>journal?.recordEvent(event)||false};
+ const api={start,dispose,interact,toggleDoor,stamp,sitDesk,leaveDesk,routeTo,planStreetRoute,routeStatus,clearRoute,listStreets:()=>streetDestinations.map(x=>x.name),status,setDispatchSummary,setPaused,setGraphicsProfile,saveWorld,restoreWorld,life,walker,car,scene,camera,renderer,getShift:()=>worldUpgrade?.shift(),getShiftJournal:()=>journal?{...journal.snapshot(),format:journal.format,summarize:journal.summarize}:null,reconcileShiftJournal:()=>journal?.reconcile(status()),recordDispatchEvent:event=>journal?.recordEvent(event)||false};
  return api;
 }
 root.LDOpenWorldRuntime=Object.freeze({create});
