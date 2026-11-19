@@ -378,13 +378,21 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
  }
  function saveWorld(){
   if(!model)return null;
-  return {version:1,indoor,player:walker.snapshot(),vehicle:car.snapshot(),onDuty:!!life.snapshot().onDuty};
+  return {version:2,indoor,player:walker.snapshot(),vehicle:car.snapshot(),onDuty:!!life.snapshot().onDuty,life:life.snapshot()};
  }
  function restoreWorld(saved){
-  if(!model||!entryPoint||!saved||saved.version!==1||!saved.player)return false;
+  if(!model||!entryPoint||!saved||![1,2].includes(saved.version)||!saved.player)return false;
   const p=saved.player,c=saved.vehicle;
   if(![p.x,p.z,p.heading,p.pitch].every(Number.isFinite))return false;
   if(Math.abs(p.x)>100000||Math.abs(p.z)>100000)return false;
+  // World and life snapshots from version 2 must match before restoring either.
+  if(saved.version===2){
+   const l=saved.life,limits={minutes:[0,10000000],money:[0,100000000],hunger:[0,100],thirst:[0,100],fatigue:[0,100],hygiene:[0,100],shiftStart:[0,1439],shiftEnd:[0,1439]};
+   if(!l||typeof l!=="object"||Array.isArray(l)||typeof l.onDuty!=="boolean"||l.onDuty!==saved.onDuty||
+      !["wohnung","leitstelle","restaurant","stadt"].includes(l.location))return false;
+   for(const [key,[min,max]] of Object.entries(limits))
+    if(!Number.isFinite(l[key])||l[key]<min||l[key]>max)return false;
+  }
   if(saved.indoor){
    if(p.x < -7.1||p.x>7.1||p.z < -5.1||p.z>5.1)return false;
    indoor=true;doorPoint={x:0,z:4.3};
@@ -396,6 +404,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
    walker.teleport(p.x,p.z,p.heading,p.pitch);
    life.moveTo("stadt");
   }
+  if(saved.version===2)life.load({getItem:()=>JSON.stringify(saved.life)});
   atDesk=false;
   if(c&&[c.x,c.z,c.heading].every(Number.isFinite)&&Math.hypot(c.x-entryPoint.x,c.z-entryPoint.z)<1000)
    car.reset({x:c.x,z:c.z,heading:c.heading,speed:0,handbrake:true});
