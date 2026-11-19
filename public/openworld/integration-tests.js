@@ -137,6 +137,20 @@ async function run(){
   life.syncClock(6*60+3);
   if(life.snapshot().minutes!==before)throw Error("Clock went backwards");
  });
+ test("Nachtschicht: Dienstbericht und Funkereignisse über Mitternacht",()=>{
+  const data=new Map();
+  const storage={getItem:key=>data.get(key)||null,setItem:(key,value)=>data.set(key,value)};
+  const j=root.LDFunkspruchShiftJournal.create(storage);
+  const state=(minutes)=>({life:{minutes,onDuty:true},dispatch:{open:2,waiting:1,free:4,total:6}});
+  if(!j.begin(state(23*60+50)))throw Error("Nachtschicht nicht begonnen");
+  j.record(state(23*60+59));
+  j.recordEvent({kind:"funk",minute:2,incidentId:"15"});
+  j.record(state(24*60+12));
+  const report=j.finish(state(24*60+12));
+  if(report.durationMinutes!==22)throw Error("Mitternacht hat die Schichtdauer verfälscht: "+report.durationMinutes);
+  if(report.events[0]?.minute!==1442)throw Error("Funkereignis nach Mitternacht falsch einsortiert");
+  if(!j.format(report).includes("00:12"))throw Error("Dienstende nicht im 24h-Format");
+ });
  test("Fahrzeug: Beschleunigung",()=>{
   const v=root.LDOpenWorldVehicle.create();v.reset({handbrake:false});
   for(let i=0;i<30;i++)v.step(1/60,{throttle:1,handbrake:false});
