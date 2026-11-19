@@ -184,6 +184,16 @@ async function run(){
   const restored=root.LDFunkspruchShiftJournal.create(storage).snapshot();
   if(restored.active!==null||restored.reports.length!==0)throw Error("Beschädigte Schichtdaten nicht verworfen");
  });
+ test("Adaptive Grafik: langsame Bildraten reduzieren die Last, schnelle erhöhen sie",()=>{
+  const governor=root.LDFunkspruchPerformance.create({windowSeconds:.5,minFps:20,maxFps:50,slowWindows:2,fastWindows:2});
+  let reduced=false;
+  for(let i=0;i<12;i++)if(governor.sample(.1)===true)reduced=true;
+  if(!reduced||!governor.stats().low)throw Error("Überlastung nicht erkannt");
+  let restored=false;
+  for(let i=0;i<130;i++)if(governor.sample(.01)===false)restored=true;
+  if(!restored||governor.stats().low)throw Error("Hohe Bildrate nicht erkannt");
+  if(governor.sample(.1,false)!==null)throw Error("Pausierte Frames wurden verarbeitet");
+ });
  test("Spielstände: zwei Generationen und Wiederherstellung nach Beschädigung",()=>{
   const map=new Map(),storage={getItem:key=>map.get(key)||null,setItem:(key,val)=>map.set(key,val)};
   const checkpoints=root.LDFunkspruchCheckpoints;
