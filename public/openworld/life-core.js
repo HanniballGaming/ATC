@@ -52,8 +52,12 @@ function create(initial={}){
  function save(storage=root.localStorage){storage.setItem(KEY,JSON.stringify(s));return snapshot();}
  function load(storage=root.localStorage){
   const raw=storage.getItem(KEY);if(!raw)return snapshot();
-  const data=JSON.parse(raw);
-  if(!data||typeof data!=="object"||Array.isArray(data))throw Error("Ungültiger Dienst-Spielstand");
+  let data;
+  try{data=JSON.parse(raw);}catch(e){console.warn("Beschädigter Dienst-Spielstand wird ignoriert",e);return snapshot();}
+  if(!data||typeof data!=="object"||Array.isArray(data)){
+   console.warn("Ungültiger Dienst-Spielstand wird ignoriert");
+   return snapshot();
+  }
   const bounds={minutes:[0,10000000],money:[0,100000000],hunger:[0,100],thirst:[0,100],fatigue:[0,100],hygiene:[0,100],shiftStart:[0,1439],shiftEnd:[0,1439]};
   const places=["wohnung","leitstelle","restaurant","stadt"];
   const next={...s};
