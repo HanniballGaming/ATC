@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 concurrency:
   group: funkspruch-v025-acceptance-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
