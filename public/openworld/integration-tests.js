@@ -74,11 +74,47 @@ async function run(){
   clear.update(.25,{forward:1},indoor);
   if(clear.snapshot().z>=2)throw Error("Hauptgang blockiert");
  });
- test("Ziviler Verkehr bewegt sich auf vorhandenen Straßen",()=>{
-  const agents=root.LDFunkspruchTraffic.generate(model,{cars:2,walkers:3});
-  if(!agents.some(a=>a.kind==="car"))throw Error("Kein Verkehr generiert");
-  const a=agents[0],p=root.LDFunkspruchTraffic.position(a.path.points,a.length/2);
-  if(!Number.isFinite(p.x)||!Number.isFinite(p.z)||a.speed<=0||a.speed>15)throw Error("Ungültige Verkehrsbewegung");
+ test("OSM-Verkehr: nur befahrbare Straßen und Rechtsverkehr",()=>{
+  const example={roads:[
+    {points:[{x:0,z:0},{x:40,z:0},{x:80,z:0}],properties:{highway:"residential",oneway:"yes",maxspeed:"30"}},
+    {points:[{x:40,z:-40},{x:40,z:0},{x:40,z:40}],properties:{highway:"residential"}},
+    {points:[{x:0,z:40},{x:40,z:40}],properties:{highway:"footway"}}
+  ]};
+  const nets=root.LDFunkspruchTraffic.buildNetwork(example);
+  if(nets.car.edges.some(e=>e.props.highway==="footway"))throw Error("Auto fährt auf dem Fußweg");
+  if(nets.car.edges.filter(e=>e.props.oneway==="yes").length!==2)throw Error("Einbahnstraße hat Gegenrichtung");
+  if(!nets.walker.edges.some(e=>e.props.highway==="footway"))throw Error("Fußweg nicht erkannt");
+  const cars=root.LDFunkspruchTraffic.generate(example,{cars:3,walkers:2});
+  if(cars.filter(a=>a.kind==="car").length!==3)throw Error("Stadtverkehr fehlt");
+  if(!cars.some(a=>a.kind==="walker"&&a.edge.props.highway==="footway"))throw Error("Fußgänger laufen nicht auf kartierten Wegen");
+ });
+ test("OSM-Verkehr: Kreuzungen verwenden verbundene echte Segmente",()=>{
+  const network=root.LDFunkspruchTraffic.buildNetwork({roads:[
+    {points:[{x:-20,z:0},{x:0,z:0},{x:20,z:0}],properties:{highway:"residential"}},
+    {points:[{x:0,z:-20},{x:0,z:0},{x:0,z:20}],properties:{highway:"residential"}}
+  ]}).car;
+  const edge=network.edges.find(e=>e.a.x===-20&&e.b.x===0);
+  if(!edge)throw Error("Teststraße fehlt");
+  const a={kind:"car",edge,graph:network,progress:edge.length-1,seed:2,transitions:0};
+  root.LDFunkspruchTraffic.advance(a,5,network);
+  if(a.edge.from!==edge.to)throw Error("Fahrzeug überspringt Kreuzung");
+  if(a.edge.to===edge.from)throw Error("Fahrzeug wendet ohne Not an Kreuzung");
+ });
+ test("OSM-Verkehr: Rückwärtsfahrt auf Einbahnstraße unterbunden",()=>{
+  const road={points:[{x:0,z:0},{x:25,z:0}],properties:{highway:"residential",oneway:"-1"}};
+  const graph=root.LDFunkspruchTraffic.buildNetwork({roads:[road]}).car;
+  if(graph.edges.length!==1||graph.edges[0].a.x!==25)throw Error("Rückwärts-Einbahnstraße missachtet");
+  const agent={edge:graph.edges[0],progress:24,seed:3,transitions:0};
+  root.LDFunkspruchTraffic.advance(agent,8,graph);
+  if(agent.edge.a.x!==25||agent.edge.b.x!==0)throw Error("Unerlaubte Gegenrichtung");
+ });
+ test("OSM-Verkehr: plausible Tempoangaben und kein eigener Straßenbau",()=>{
+  const t=root.LDFunkspruchTraffic;
+  if(!(t.speedFor({maxspeed:"30"})<t.speedFor({maxspeed:"50"})))throw Error("Tempolimit ignoriert");
+  if(t.allowed({highway:"construction"},"car"))throw Error("Fahrt über Baustelle erlaubt");
+  if(t.allowed({highway:"motorway"},"walker"))throw Error("Fußgänger auf Autobahn");
+  const agents=t.generate(model,{cars:2,walkers:2});
+  if(!agents.some(a=>a.kind==="car")||!Number.isFinite(agents[0].progress))throw Error("Fahrzeugdaten fehlen");
  });
  test("Fußweg: Bewegung",()=>{
   const w=root.LDOpenWorldWalker.create();
