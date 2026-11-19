@@ -13,7 +13,29 @@ function colleagueResponse(name,summary,onDuty){
  if(summary.open>0)return who+": Derzeit laufen "+summary.open+" "+(summary.open===1?"Einsatz":"Einsätze")+". Von "+summary.total+" Einsatzmitteln sind "+summary.free+" frei. Prüfen Sie die offenen Vorgänge.";
  return who+": Die aktuelle Lage ist ruhig. "+summary.free+" von "+summary.total+" Fahrzeugen sind einsatzbereit.";
 }
-function install({THREE,scene,camera,life,onMessage=()=>{}}){
+function streetFurnitureSpots(model,{limit=16,radius=420,exclude=null}={}){
+ const spots=[];
+ for(const road of model?.roads||[]){
+  const p=road.properties||{},pts=road.points||[];
+  if(!["residential","tertiary","secondary","primary","living_street","unclassified"].includes(p.highway))continue;
+  if(p.area==="yes"||pts.length<2)continue;
+  for(let i=1;i<pts.length;i++){
+   const a=pts[i-1],b=pts[i],dx=b.x-a.x,dz=b.z-a.z,meters=Math.hypot(dx,dz);
+   if(!Number.isFinite(meters)||meters<8)continue;
+   const half=(root.LDOpenWorldRenderer?.roadWidth?.(p)||5)/2+1.4;
+   const side=(i+spots.length)%2?1:-1;
+   const point={x:(a.x+b.x)/2-side*dz/meters*half,z:(a.z+b.z)/2+side*dx/meters*half};
+   if(Math.hypot(point.x,point.z)>radius)continue;
+   if(exclude&&Math.hypot(point.x-exclude.x,point.z-exclude.z)<24)continue;
+   if(spots.some(v=>Math.hypot(v.x-point.x,v.z-point.z)<23))continue;
+   if(root.LDOpenWorldCollision?.collides(point,model,.5))continue;
+   spots.push(point);
+   if(spots.length>=limit)return spots;
+  }
+ }
+ return spots;
+}
+function install({THREE,scene,camera,life,model,stationPosition,onMessage=()=>{}}){
  const owned=[],actors=[],interactables=[];let elapsed=0,shiftSeconds=0,ambientPhase=0,dispatchSummary=null;
  const material=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:.78,...extra});
  function box(parent,name,x,y,z,w,h,d,color){
@@ -53,18 +75,18 @@ function install({THREE,scene,camera,life,onMessage=()=>{}}){
  }
  function addOutdoor(){
   const g=new THREE.Group();scene.add(g);owned.push(g);
-  // Street props stay outside the office and use inexpensive primitive geometry.
-  for(let i=-4;i<=4;i++){
-   const z=i*18;
-   box(g,"Straßenlaterne",12,2.5,z,.15,5,.15,0x69777c);
-   box(g,"Leuchtkopf",11.65,4.96,z,.8,.15,.3,0xffedbb);
-   if(i%2===0){box(g,"Baumstamm",-12,1.25,z,.42,2.5,.42,0x6a4c35);
-    const tree=new THREE.Mesh(new THREE.ConeGeometry(1.9,4,7),material(0x346d43));tree.position.set(-12,4,z);g.add(tree);owned.push(tree);}
-  }
-  for(let i=0;i<7;i++){
-   const z=-55+i*17;
-   box(g,"Parkendes Fahrzeug",18,.8,z,1.75,1.2,3.5,i%2?0x475b6b:0x9eaaa9);
-  }
+  // Requisiten ausschließlich an echten OSM-Straßen, nie auf erfundenen
+  // geraden Parkplatzreihen oder in kartierten Häusern.
+  streetFurnitureSpots(model,{exclude:stationPosition}).forEach((p,i)=>{
+   if(i%3===2){
+    box(g,"Baumstamm",p.x,1.1,p.z,.35,2.2,.35,0x67503c);
+    const tree=new THREE.Mesh(new THREE.ConeGeometry(1.5,3.3,7),material(0x365d40));
+    tree.position.set(p.x,3.65,p.z);g.add(tree);owned.push(tree);
+   }else{
+    box(g,"Straßenlaterne",p.x,2.45,p.z,.14,4.9,.14,0x69777c);
+    box(g,"Leuchtkopf",p.x,4.9,p.z,.63,.14,.28,0xffe7b2);
+   }
+  });
   return g;
  }
  const outdoor=addOutdoor();
@@ -116,5 +138,5 @@ function install({THREE,scene,camera,life,onMessage=()=>{}}){
  function dispose(){for(const o of owned.reverse()){o.parent?.remove(o);o.geometry?.dispose();if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material.dispose();}}}
  return {addIndoor,update,nearest,interact,shift,dispose,setDispatchSummary(s){dispatchSummary=s&&Number.isInteger(s.open)&&Number.isInteger(s.waiting)?{...s}:null;}};
 }
-root.LDFunkspruchWorld=Object.freeze({install,colleagueResponse,daylight});
+root.LDFunkspruchWorld=Object.freeze({install,colleagueResponse,daylight,streetFurnitureSpots});
 })(typeof window!=="undefined"?window:globalThis);
