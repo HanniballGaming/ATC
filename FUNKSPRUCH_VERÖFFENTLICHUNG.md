@@ -1,33 +1,35 @@
 # FUNKSPRUCH – öffentliche Browser-Beta
 
-Veröffentlichung: 19. November 2026
-Getesteter Entwicklungsstand: 9dd3fcec096ef91d626028cf8b9caa127d504ef4
-Abnahme: GitHub Actions 44475444043 – Browser und Windows erfolgreich
+Veröffentlichungsaktualisierung: 19. November 2026
+Getesteter FUNKSPRUCH-Entwicklungsstand: `3b164c0288276e2dfdb584d2fc6dcad40d0e3d79`
+Abnahme: GitHub Actions [44557510510](https://github.com/HanniballGaming/ATC/actions/runs/44557510510) – Browser, iPad-Browsersteuerung und Windows erfolgreich
 
-Direkt spielbar: https://hanniballgaming.github.io/ATC/funkspruch/openworld/
+**Direkt spielbar:** https://hanniballgaming.github.io/ATC/funkspruch/openworld/
 
-## Neu in dieser Aktualisierung
+## Neue Funktionen
 
-- Simulierte zivile Fahrzeuge nutzen Verbindungen zwischen realen OSM-Straßen
-  und können an erfassten Kreuzungen abbiegen, statt an Ways pauschal zu wenden.
-- Einbahnstraßen, Fahrverbote und Kreisverkehrsrichtungen werden berücksichtigt.
-- Fußweg- und Fahrzeugrouten sind getrennt: keine Autonavigation auf Fußwegen.
-- Geschätzte Routenzeit anhand der OSM-Geschwindigkeitsangaben,
-  keine garantierten echten BOS-Anfahrtszeiten.
-- Verbesserte Auswertung der OSM-Gebäudehöhen, auch Stockwerke und Fuß-Einheiten.
-- Bessere iPad-Leistung: Kachel-Updates nur bei Wechsel des Kartenquadranten.
-- Regressionstests direkt auf echten Augsburger OSM-Daten.
-- Normaler Singleplayer-Leitstellenmodus samt Schicht, Funk und Notrufen.
-  Modus zwei bleibt gesperrt und als in Entwicklung gekennzeichnet.
+- Strukturierte, fallbezogene Notruf-Checkliste: Einsatzort, Ereignis, Anzahl der Betroffenen und Gefahren sowie passende Zusatzangaben zu Atmung, Bewusstsein, Zugang und Beginn.
+- Anzeige, welche Gesprächsangaben geklärt, noch offen oder unsicher sind; passende nächste Rückfrage direkt am Einsatzleitsystem.
+- Regelbasierte KI-Anrufer erfinden nicht mehr automatisch ein Alter. Vorliegende Adressdaten werden bei Rückfragen wiedergegeben, fehlende Hausnummern ausdrücklich als unklar gekennzeichnet.
+- KI-Kollegen können nach dokumentierter Einsatzaufnahme passende, tatsächlich freie Fahrzeuge aus der gemeinsamen Einsatzmittelliste selbst disponieren, wenn ein Fall an sie übertragen wurde.
+- Schutz vor Zugriff auf fremde Fälle, Doppelalarmierung und unrealistischen zusätzlichen Einsatzmitteln.
+- Windows-Fehler beim Beenden nach dem zweiten Start behoben; Start- und Persistenztest sowie tatsächlicher Start des gepackten Windows-Programms bestanden.
+
+## Bereits enthalten
+
+- Normaler Singleplayer-Leitstellenmodus mit First-Person-Schichtbeginn, Einsatzleitsystem am Arbeitsplatz, KI-Anrufen, Funk und Dienstjournal.
+- Zweiter Modus „Apokalypse & Überleben“ sichtbar, aber als **in Entwicklung** gekennzeichnet und nicht startbar.
+- Echte OpenStreetMap-Straßen und Gebäude eines begrenzten Augsburger Kartenausschnitts mit getrennter Fußgänger-/Fahrzeugnavigation, Einbahnstraßen, Fahrverboten und Kreisverkehrsrichtungen.
+- iPad-Touchsteuerung und installierbare Browser-PWA.
 
 ## Grenzen
 
-Öffentliche Beta, keine vollständig veröffentlichungsreife Version 1.0.
-Die echte OpenStreetMap-Spielwelt deckt noch nicht ganz Augsburg ab.
-Gebäudedarstellung und Verkehrsverhalten sind teilweise simulierte Näherungen.
-Straßenkarten werden nicht durch fiktive Stadtgeometrie ersetzt.
-Ein Test auf einem physischen iPad steht noch aus.
-Spielstände liegen lokal im Browser.
+FUNKSPRUCH bleibt eine öffentliche Beta und ist keine vollständig veröffentlichungsreife Version 1.0.
+Die Open-World-Karte umfasst bislang nur einen Teil von Augsburg.
+Einige Gebäude, KI-Reaktionen, Verkehrsabläufe und Anfahrtszeiten sind simulierte Näherungen.
+Es gibt **keine** Verbindung zu echten Notrufen oder BOS-Funkstellen.
+Ein Test auf einem physischen iPad steht noch aus; die automatische iPad-Browseremulation wurde bestanden.
+Spielstände werden lokal gespeichert.
 
 NORDTAL ATC bleibt am bisherigen Hauptpfad des Repositories erreichbar.
-FUNKSPRUCH wird getrennt unter /funkspruch/ veröffentlicht.
+FUNKSPRUCH wird getrennt unter `/funkspruch/` veröffentlicht.
