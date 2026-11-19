@@ -412,7 +412,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
    walker.teleport(p.x,p.z,p.heading,p.pitch);
    life.moveTo("stadt");
   }
-  if(saved.version===2)life.load({getItem:()=>JSON.stringify(saved.life)});
+  if(saved.version===2){life.load({getItem:()=>JSON.stringify(saved.life)});life.moveTo(indoor?"leitstelle":"stadt");}
   atDesk=false;
   if(c&&[c.x,c.z,c.heading].every(Number.isFinite)&&Math.hypot(c.x-entryPoint.x,c.z-entryPoint.z)<1000)
    car.reset({x:c.x,z:c.z,heading:c.heading,speed:0,handbrake:true});
