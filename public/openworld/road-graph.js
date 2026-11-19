@@ -54,17 +54,40 @@ function create(model,{precision=0.5,mode="car"}={}){
  function route(start,end){
   const from=nearest(start),to=nearest(end);
   if(!from||!to)return null;
-  const pending=new Map([[from.key,0]]),scores=new Map([[from.key,0]]),previous=new Map(),done=new Set();
-  while(pending.size){
-   let current=null,cost=Infinity;
-   for(const [k,v] of pending)if(v<cost){current=k;cost=v;}
-   pending.delete(current);
+  const pending=[],scores=new Map([[from.key,0]]),previous=new Map(),done=new Set();
+  function push(key,cost){
+   const item={key,cost};let i=pending.length;pending.push(item);
+   while(i>0){
+    const p=(i-1)>>1;
+    if(pending[p].cost<=cost)break;
+    pending[i]=pending[p];i=p;
+   }
+   pending[i]=item;
+  }
+  function pop(){
+   const first=pending[0],last=pending.pop();
+   if(pending.length){
+    let i=0;
+    while(2*i+1<pending.length){
+     let c=2*i+1;
+     if(c+1<pending.length&&pending[c+1].cost<pending[c].cost)c++;
+     if(pending[c].cost>=last.cost)break;
+     pending[i]=pending[c];i=c;
+    }
+    pending[i]=last;
+   }
+   return first;
+  }
+  push(from.key,0);
+  while(pending.length){
+   const {key:current,cost}=pop();
+   if(cost!==(scores.get(current)??Infinity))continue;
    if(current===to.key)break;
    if(done.has(current))continue;done.add(current);
    for(const edge of edges.get(current)){
     const next=cost+edge.seconds;
     if(next<(scores.get(edge.to)??Infinity)){
-     scores.set(edge.to,next);previous.set(edge.to,{key:current,edge});pending.set(edge.to,next);
+     scores.set(edge.to,next);previous.set(edge.to,{key:current,edge});push(edge.to,next);
     }
    }
   }
