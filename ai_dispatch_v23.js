@@ -107,6 +107,21 @@ function callerUpdate(s,i,log){if(i.callEnded||!['Disponierung','Unterwegs'].inc
 // Verbesserte Teamsteuerung: Arbeitsplätze übernehmen eigene, priorisierte Warteschlangenfälle.
 function ensureTeam(s){if(!s)return;window.LDColleagueControl?.ensure?.(s);s.teamAI23??={messages:[],lastAutoTake:-100,lastMinute:-1};for(const c of s.colleagueRoster||[])c.ai23??={lastProgress:-10,questions:0};}
 function teamMessage(s,author,text,id){ensureTeam(s);const message={minute:s.minute,from:author,text,id:id||null};s.teamAI23.messages.unshift(message);s.teamAI23.messages=s.teamAI23.messages.slice(0,60);s.logs??=[];s.logs.unshift(`[${clock(s.minute)}] ${author}: ${text}`);s.logs=s.logs.slice(0,120)}
+/* KI-Kollegen disponieren nur ihre eigenen dokumentierten Fälle; kein erfundenes Fahrzeug. */
+function dispatchColleague(s,i,c,send=(id,type,unit)=>ops.dispatch?.(id,type,unit)){
+ if(!s||!i||!c||i.owner!==c.id||i.phase!=='Disponierung'||!i.intake?.where||!i.intake?.what)return null;
+ if(!Array.isArray(s.vehicles)||!Array.isArray(i.need)||!Number.isFinite(s.minute))return null;
+ c.ai23??={lastProgress:-10,questions:0};
+ if(s.minute-(c.ai23.lastDispatch??-100)<2)return null;
+ const already=(Array.isArray(i.assigned)?i.assigned:[]).map(id=>s.vehicles.find(v=>v.id===id)?.type).filter(Boolean);
+ for(const type of i.need){
+  if(typeof type!=='string'||!type)continue;
+  const found=already.indexOf(type);if(found!==-1){already.splice(found,1);continue;}
+  const unit=s.vehicles.find(v=>v.status==='frei'&&v.type===type);if(!unit)continue;
+  try{if(send(i.id,unit.type,unit.id)===true){c.ai23.lastDispatch=s.minute;return unit;}}catch(e){console.warn('KI-Disposition nicht möglich:',e);}
+ }
+ return null;
+}
 function teamTick(s){if(!s||s.paused)return;ensureTeam(s);if(s.teamAI23.lastMinute===s.minute)return;s.teamAI23.lastMinute=s.minute;
  const pending=s.incidents.filter(i=>['Anruf','Unversorgt'].includes(i.phase)).sort((a,b)=>(a.prio-b.prio)||(b.age-a.age));
  const assigned=new Set(s.incidents.filter(i=>i.phase!=='Abgeschlossen'&&s.colleagueRoster?.some(c=>c.id===i.owner)).map(i=>i.owner));
@@ -120,6 +135,7 @@ function teamTick(s){if(!s||s.paused)return;ensureTeam(s);if(s.teamAI23.lastMinu
  const keys=['where','what','howmany','safety','who'];const key=keys.find(k=>!i.intake?.[k]);
  if(key&&!i.callEnded){const answered=window.LDProcedures?.ask?.(s,i.id,key,()=>{});if(answered){c.ai23.questions++;i.history??=[];i.history.unshift({minute:s.minute,text:`${c.name}: Rückfrage ${key} dokumentiert`});if(i.transcript?.length>=2)i.transcript[i.transcript.length-2]=`${clock(s.minute)} · ${c.name.toUpperCase()}: ${answered.question}`;}}
  if(i.need?.length&&!s.vehicles.some(v=>v.status==='frei'&&i.need.includes(v.type))&&!i.ai23Warned){i.ai23Warned=true;teamMessage(s,c.name,`Für Vorgang #${i.id} fehlt aktuell ein geeignetes freies Einsatzmittel.`,i.id);}
+ const sent=dispatchColleague(s,i,c);if(sent)teamMessage(s,c.name,`Einsatzmittel ${sent.id} (${sent.type}) für Vorgang #${i.id} alarmiert.`,i.id);
  }}
  for(const i of s.incidents)callerUpdate(s,i,()=>{});
 }
@@ -149,5 +165,5 @@ document.addEventListener('click',e=>{const btn=e.target.closest('[data-ai23]');
 });
 // Erstes "Hallo" beim wirklichen Annehmen der Verbindung, ohne automatisches Hintergrundaudio.
 document.addEventListener('click',e=>{if(!e.target.closest('#elsdesk [data-action="accept"]'))return;const s=ops.getState?.(),id=window.LDWorkstation?.active?.();const i=s?.incidents.find(i=>i.id===id);if(!i||i.phase!=='Disponierung'||i.owner!=='Eigenplatz')return;const p=state(i);if(!p.spokeIntro){p.spokeIntro=true;speak(i.intro||'Hallo, ich brauche dringend Hilfe.',id)}},false);
-window.LDAI23={intents,state,response,converse,triage,teamTick,teamMessage,ensureTeam,inject};inject();
+window.LDAI23={intents,state,response,converse,triage,dispatchColleague,teamTick,teamMessage,ensureTeam,inject};inject();
 })();

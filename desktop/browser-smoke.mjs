@@ -133,7 +133,28 @@ try{
    const summary=await page.evaluate(()=>window.FunkspruchGame.status().dispatch);
    assert.ok(Number.isInteger(summary.open)&&Number.isInteger(summary.waiting)&&Number.isInteger(summary.free),"ELS-Lage nicht an 3D-Monitore übergeben");
    console.log("3D-Monitore mit echter ELS-Lage synchronisiert:",JSON.stringify(summary));
-   // End-to-End-Fallbearbeitung: Notruf, Rückfrage, dokumentierte KI-Antwort.
+       // Geprüft: KI-Disposition nur für eigene Vorgänge, mit echter Fahrzeugliste.
+    const teammate=await embedded.locator("body").evaluate(()=>{
+      const issue={id:808,owner:"KI-A",phase:"Disponierung",need:["RTW","NEF"],intake:{where:{answer:"Ort"},what:{answer:"Ereignis"}},assigned:[]};
+      const c={id:"KI-A",name:"Kollegin",ai23:{lastDispatch:-100}};
+      const s={minute:20,vehicles:[{id:"R1",type:"RTW",status:"frei"},{id:"N1",type:"NEF",status:"frei"},{id:"P1",type:"FuStW",status:"frei"}]};
+      const sent=[];
+      const send=(id,type,unit)=>{sent.push({id,type,unit});issue.assigned.push(unit);s.vehicles.find(v=>v.id===unit).status="alarmiert";return true;};
+      const first=window.LDAI23.dispatchColleague(s,issue,c,send)?.id||null;
+      const repeated=window.LDAI23.dispatchColleague(s,issue,c,send)?.id||null;
+      s.minute+=3;
+      const second=window.LDAI23.dispatchColleague(s,issue,c,send)?.id||null;
+      issue.owner="Eigenplatz";s.minute+=3;
+      const own=window.LDAI23.dispatchColleague(s,issue,c,send)?.id||null;
+      return {first,repeated,second,own,sent};
+    });
+    assert.equal(teammate.first,"R1","KI disponiert nicht den benötigten Rettungswagen");
+    assert.equal(teammate.repeated,null,"KI-Disposition muss zeitlich begrenzt sein");
+    assert.equal(teammate.second,"N1","KI disponiert das zweite erforderliche Einsatzmittel nicht");
+    assert.equal(teammate.own,null,"KI darf keinen Fall des menschlichen Disponenten übernehmen");
+    assert.deepEqual(teammate.sent.map(a=>a.type),["RTW","NEF"],"Fremde oder doppelte Fahrzeugtypen alarmiert");
+
+    // End-to-End-Fallbearbeitung: Notruf, Rückfrage, dokumentierte KI-Antwort.
    const conversation=await embedded.locator("body").evaluate(()=>{
      const s=window.LDOperations.getState();
      const issue=s.incidents.find(i=>["Anruf","Unversorgt"].includes(i.phase));
