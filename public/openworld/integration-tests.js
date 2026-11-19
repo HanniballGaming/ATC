@@ -254,6 +254,24 @@ async function run(){
    throw Error("Unbelegte Kennzahlen: "+JSON.stringify(stats));
   if(!journal.format(report).includes("Dokumentierte Vorgänge"))throw Error("Fallzahlen fehlen im Bericht");
  });
+ test("OSM-Straßennavigation: echte Straßennamen, Routenmeter, Wegpunkte",()=>{
+  const nav=root.LDFunkspruchNavigation;
+  const streets={roads:[
+   {points:[{x:0,z:0},{x:30,z:0},{x:60,z:0}],properties:{highway:"residential",name:"Bürgerstraße"}},
+   {points:[{x:30,z:0},{x:30,z:40}],properties:{highway:"residential",name:"Bahnhofstraße"}},
+   {points:[{x:0,z:100},{x:30,z:100}],properties:{highway:"construction",name:"Unfertige Straße"}}
+  ]};
+  const choices=nav.destinations(streets,{radius:400});
+  if(choices.length!==2||choices.some(x=>x.name==="Unfertige Straße"))throw Error("Nicht begehbare Straßen als Ziel angeboten");
+  const end=choices.find(x=>x.name==="Bahnhofstraße");
+  const graph=root.LDOpenWorldRoadGraph.create(streets,{mode:"walk"});
+  const route=graph.route({x:0,z:0},end);
+  const estimate=nav.estimate(route);
+  if(!estimate||estimate.meters<25||estimate.minutes<1||estimate.mode!=="Zu Fuß")throw Error("Route oder Dauer falsch");
+  const waypoint=nav.nearestWaypoint({x:0,z:0},route);
+  if(!waypoint||!Number.isFinite(waypoint.x)||!Number.isFinite(waypoint.z))throw Error("Wegpunktnavigation fehlt");
+  if(nav.estimate(null)!==null||nav.destinations({roads:[]}).length!==0)throw Error("Erfundene Navigation ohne OSM-Daten");
+ });
  test("Fahrzeug: Beschleunigung",()=>{
   const v=root.LDOpenWorldVehicle.create();v.reset({handbrake:false});
   for(let i=0;i<30;i++)v.step(1/60,{throttle:1,handbrake:false});

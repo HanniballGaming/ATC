@@ -53,11 +53,11 @@ console.log("Authentische Augsburger Offline-OSM-Kacheln:",packagedTiles+"/4",
 
 const serviceWorker=read("sw.js");
 assert.match(serviceWorker,/funkspruch-pwa-[a-f0-9]{14}/,"Versionierter Offline-Cache fehlt");
-for(const file of ["openworld/city-region.js","openworld/geodata-session.js","openworld/traffic-ai.js","openworld/shift-journal.js","openworld/ambient.js","openworld/preferences.js","openworld/checkpoints.js","openworld/performance-budget.js","openworld/vendor/three.min.js","vendor/leaflet/leaflet.js"])
+for(const file of ["openworld/city-region.js","openworld/geodata-session.js","openworld/traffic-ai.js","openworld/shift-journal.js","openworld/ambient.js","openworld/preferences.js","openworld/checkpoints.js","openworld/performance-budget.js","openworld/navigation-core.js","openworld/vendor/three.min.js","vendor/leaflet/leaflet.js"])
  assert.ok(serviceWorker.includes("./"+file),"Offline-Cache enthält "+file+" nicht");
 const context={console,Math,Date,JSON,Map,Set,Array,Object,Number,String,Boolean,Promise,Intl,setTimeout,clearTimeout};
 context.window=context;vm.createContext(context);
-for(const file of ["geo-core.js","three-city.js","collision-core.js","indoor-collision.js","vehicle-core.js","vehicle-interaction.js","walker-core.js","life-core.js","road-graph.js","osm-loader.js","city-region.js","geodata-session.js","integration-tests.js","world-upgrades.js","traffic-ai.js","save-manager.js","shift-journal.js","ambient.js","preferences.js","checkpoints.js","performance-budget.js"])
+for(const file of ["geo-core.js","three-city.js","collision-core.js","indoor-collision.js","vehicle-core.js","vehicle-interaction.js","walker-core.js","life-core.js","road-graph.js","osm-loader.js","city-region.js","geodata-session.js","integration-tests.js","world-upgrades.js","traffic-ai.js","save-manager.js","shift-journal.js","ambient.js","preferences.js","checkpoints.js","performance-budget.js","navigation-core.js"])
  vm.runInContext(read("openworld/"+file),context,{filename:file,timeout:3000});
 // Regressionstest mit den tatsächlich abgefragten Augsburger OSM-Ways:
 const authenticTiles=mapTiles.map(([name])=>{

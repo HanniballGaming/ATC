@@ -32,6 +32,8 @@ try{
  await page.goto(base+"/openworld/",{waitUntil:"domcontentloaded",timeout:30000});
  await page.locator("#startNormal").waitFor();
  await page.locator("#betaHelp summary").click();
+ assert.equal(await page.locator("#streetNavigation").count(),1,"Straßennavigation nicht im Menü");
+ assert.equal(await page.locator("#routeHud").count(),1,"Navigationsanzeige in First Person fehlt");
  assert.equal(await page.locator("#downloadDiagnostics").isVisible(),true,"Beta-Fehlerbericht nicht zugänglich");
  assert.equal(await page.locator("#resetSave").isVisible(),true,"Spielstand-Reset nicht zugänglich");
  assert.match(await page.locator("#betaHelp").innerText(),/Stechuhr/);
@@ -68,6 +70,9 @@ try{
  assert.ok(!("localStorage" in beta)&&!("transcript" in beta),"Fehlerbericht darf keine Gesprächs- oder Speicherinhalte enthalten");
  await page.keyboard.press("Escape");
  await page.locator("#mainMenu").waitFor({state:"visible"});
+ assert.ok(await page.locator("#streetSelect option").count()>0,"Keine echten Straßennamen im OSM-Planer");
+ await page.locator("#planStreetRoute").click();
+ assert.match(await page.locator("#routeInfo").innerText(),/Route|Straße|OSM|Verbindung/);
  assert.match(await page.locator("#startNormal").textContent(),/fortsetzen/i,"Pausenmenü fehlt");
  await page.locator("#startNormal").click();
  await page.locator("#mainMenu").waitFor({state:"hidden"});
