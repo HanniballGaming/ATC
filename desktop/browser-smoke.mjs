@@ -281,6 +281,34 @@ try{
    assert.equal(newDuty.byDuty,false,"Dienstsimulation nicht wiederaufgenommen");
    assert.equal(newDuty.paused,false,"Simulation nach neuer Schicht weiterhin pausiert");
    console.log("Dienstende und erneute Schichtübernahme: Einsatzsimulation pausiert und setzt korrekt fort.");
+    // Ein kompletter Notruf vom Telefon bis zum Einsatzabschluss im Ersatz-ELS.
+    await outer.locator("#backup").click();
+    const fallback=outer.frameLocator("#els");
+    await fallback.locator("#call").waitFor({state:"visible",timeout:20000});
+    await fallback.locator("#scenario").selectOption("0");
+    await fallback.locator("#call").click();
+    assert.match(await fallback.locator("#activeCall").innerText(),/Notruf wartet/);
+    await fallback.locator("#answer").click();
+    await fallback.locator("#question").fill("Wo genau ist der Einsatzort?");
+    await fallback.locator("#ask").click();
+    assert.match(await fallback.locator("#reply").innerText(),/Augsburg/);
+    await fallback.locator("#register").click();
+    await fallback.locator("#unit").selectOption("RTW 1");
+    await fallback.locator("#dispatch").click();
+    assert.match(await fallback.locator("#situation").innerText(),/Freie Fahrzeuge: 6\\/7/);
+    for(let step=0;step<4;step++)
+      await fallback.locator('#units button[data-unit="RTW 1"]').click();
+    await fallback.locator("#close").click();
+    const fallbackState=await fallback.locator("body").evaluate(()=>window.FunkspruchFallbackApp.engine.snapshot());
+    assert.equal(fallbackState.incidents[0].phase,"abgeschlossen","Ersatz-ELS kann Einsatz nicht abschließen");
+    assert.equal(fallbackState.vehicles[0].status,"frei","Fahrzeug nach Einsatz nicht wieder verfügbar");
+    await outer.locator("#reload").click();
+    await fallback.locator("#call").waitFor({state:"visible",timeout:20000});
+    const restoredFallback=await fallback.locator("body").evaluate(()=>window.FunkspruchFallbackApp.engine.snapshot());
+    assert.equal(restoredFallback.incidents[0].phase,"abgeschlossen","Ersatz-ELS-Spielstand nach Neuladen verloren");
+    await page.waitForFunction(()=>window.FunkspruchGame?.getShiftJournal?.()?.active?.events?.some(e=>e.kind==="abschluss"),null,{timeout:10000});
+    console.log("Ersatz-ELS: Notruf, Rückfrage, Alarm, Statusmeldung, Abschluss und Wiederherstellung bestanden.");
+
     await page.locator("#dispatchMenu").click();
     await page.locator("#mainMenu").waitFor({state:"visible"});
     assert.equal((await page.evaluate(()=>window.FunkspruchGame.status())).atDesk,false,"Menü am Arbeitsplatz funktioniert nicht");
