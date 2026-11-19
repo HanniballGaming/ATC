@@ -31,6 +31,12 @@ try{
  await page.route(/^https?:\/\/(?!127\.0\.0\.1[:\/])[^/]+/i,mockOsmRoute);
  await page.goto(base+"/openworld/",{waitUntil:"domcontentloaded",timeout:30000});
  await page.locator("#startNormal").waitFor();
+ await page.locator("#betaHelp summary").click();
+ assert.equal(await page.locator("#downloadDiagnostics").isVisible(),true,"Beta-Fehlerbericht nicht zugänglich");
+ assert.equal(await page.locator("#resetSave").isVisible(),true,"Spielstand-Reset nicht zugänglich");
+ assert.match(await page.locator("#betaHelp").innerText(),/Stechuhr/);
+ assert.match(await page.locator("#saveState").innerText(),/Speicherung|Spielstand/);
+ await page.locator("#betaHelp summary").click();
  assert.equal(await page.locator(".mode.locked button").isDisabled(),true,"Zweiter Modus muss gesperrt bleiben");
  await page.locator("#startNormal").click();
  try{
@@ -48,6 +54,11 @@ try{
   }));
   throw new Error("3D-Initialisierung fehlgeschlagen: "+JSON.stringify(debug)+"; JS-Fehler: "+JSON.stringify(errors.slice(0,6))+"; "+error.message);
  }
+
+ const beta=await page.evaluate(()=>window.FunkspruchBeta?.diagnostics?.());
+ assert.equal(beta?.product,"FUNKSPRUCH","Beta-Diagnostik fehlt");
+ assert.equal(beta?.game?.initialized,true,"Diagnostik erkennt das Spiel nicht");
+ assert.ok(!("localStorage" in beta)&&!("transcript" in beta),"Fehlerbericht darf keine Gesprächs- oder Speicherinhalte enthalten");
  await page.keyboard.press("Escape");
  await page.locator("#mainMenu").waitFor({state:"visible"});
  assert.match(await page.locator("#startNormal").textContent(),/fortsetzen/i,"Pausenmenü fehlt");
