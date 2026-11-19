@@ -86,12 +86,13 @@ async function start(){
   },5000);
  });
  win.on("closed",()=>{
+  // Das Fenster hat die close/pagehide-Phase bereits durchlaufen.
+  // Ein zweites app.quit() kann auf Windows an Chromium-Handles hängen;
+  // app.exit() schließt auch beim zweiten Start zuverlässig den Hauptprozess.
   win=null;
   closeServer();
-  app.quit();
   if(windowCloseWatchdog){clearTimeout(windowCloseWatchdog);windowCloseWatchdog=null;}
-  // Auch beim zweiten Programmstart kann Electron noch interne Handles halten.
-  setTimeout(()=>app.exit(0),2200);
+  app.exit(0);
  });
  win.webContents.setWindowOpenHandler(({url})=>{
   if(/^https?:\/\//i.test(url)&&!url.startsWith(ORIGIN+"/"))shell.openExternal(url).catch(()=>{});
