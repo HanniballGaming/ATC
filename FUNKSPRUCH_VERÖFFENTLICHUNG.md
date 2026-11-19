@@ -46,3 +46,14 @@ Entwicklungsstand: `9f3071bf3f45785dd6ed7b75a2f6dd463787bd4c`.
 - Zusätzliche Browser-Abnahmetests für die Beta-Bedienelemente.
 
 Diese Beta enthält weiterhin einen geografisch begrenzten Ausschnitt und simulierte KI-/Einsatzabläufe. Sie ist keine vollumfängliche 1.0.
+
+## Release-Qualitätsrunde: Spielstand und Nachtschicht (19.11.2026)
+
+Verifizierter Entwicklungsstand: `f798dbeb8337387e578b8730e745870390ea8db7`.
+
+- Nachtschichten und Funkereignisse über Mitternacht bleiben chronologisch und in der Dauer korrekt.
+- Beschädigte lokale Dienstwerte werden beim Laden validiert.
+- Spielstandimport ersetzt alte, nicht zur Sicherung gehörende FUNKSPRUCH-Daten vollständig und rollt bei Speicherfehlern zurück; fremde Browserdaten und OSM-Cache bleiben erhalten.
+- Automatische Browser-, Tablet-, Einsatzleitstellen- und Windows-Installations-/Starttests erfolgreich: https://github.com/HanniballGaming/ATC/actions/runs/44561214575
+
+Release-Qualität der gesamten Simulation ist damit noch nicht bewiesen; die Abnahme belegt die getesteten Kernpfade.
