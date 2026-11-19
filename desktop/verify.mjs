@@ -134,6 +134,17 @@ const memo=new Map();
 const memoStore={getItem:k=>memo.get(k)??null,setItem:(k,v)=>memo.set(k,String(v))};
 const journal=context.LDFunkspruchShiftJournal.create(memoStore);
 const duty=(minutes,onDuty,dispatch)=>({life:{minutes,onDuty},dispatch});
+const orphanStorage=new Map();
+const orphanStore={getItem:k=>orphanStorage.get(k)??null,setItem:(k,v)=>orphanStorage.set(k,String(v))};
+const orphan=context.LDFunkspruchShiftJournal.create(orphanStore);
+assert.equal(orphan.begin(duty(500,true,{open:1,waiting:0,free:3,total:3})),true);
+assert.equal(orphan.reconcile(duty(520,false,{open:0,waiting:0,free:3,total:3})),true);
+assert.equal(orphan.snapshot().active,null,"Abgebrochene Schicht bleibt aktiv");
+assert.equal(orphan.snapshot().reports.length,1,"Abgebrochene Schicht nicht abgeschlossen");
+assert.equal(orphan.begin(duty(540,true,{open:0,waiting:0,free:3,total:3})),true,"Neue Schicht nach Wiederherstellung blockiert");
+const invalidJournal=context.LDFunkspruchShiftJournal.create({getItem:()=>JSON.stringify({version:1,active:{startMinute:500,updatedMinute:NaN,events:[]},reports:[]}),setItem(){}});
+assert.equal(invalidJournal.snapshot().active,null,"Ungültige Schichtdaten übernommen");
+
 assert.equal(journal.begin(duty(480,true,{open:2,waiting:1,free:6,total:10})),true);
 journal.record(duty(495,true,{open:3,waiting:2,free:5,total:10}));
 assert.equal(journal.recordEvent({kind:"annahme",incidentId:"E12",minute:496}),true);
