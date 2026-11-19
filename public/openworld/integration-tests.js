@@ -52,6 +52,14 @@ async function run(){
   if(Math.abs(width({highway:"residential",width:"6.75"})-6.75)>1e-8)throw Error("OSM-Originalbreite nicht übernommen");
   if(width({highway:"secondary",lanes:"2"})<6)throw Error("Anzahl Fahrstreifen ignoriert");
  });
+ test("Echte OSM-Gebäudehöhen: metrisch, Fuß und Stockwerke",()=>{
+  const g=root.LDOpenWorldRenderer;
+  if(Math.abs(g.buildingHeight({height:"40 ft"})-12.192)>.001)throw Error("OSM-Höhen in Fuß falsch");
+  if(Math.abs(g.buildingHeight({height:"12,5 m"})-12.5)>.001)throw Error("OSM-Meterangabe falsch");
+  if(g.buildingHeight({"building:levels":"4"})!==12)throw Error("OSM-Stockwerkszahl fehlt");
+  if(g.buildingBaseHeight({min_height:"3.2 m"})!==3.2)throw Error("OSM-Höhe über Grund falsch");
+  if(g.buildingHeight({})!==9)throw Error("Schätzhöhe ohne OSM-Tag fehlt");
+ });
  test("GeoJSON: Straße und Gebäude",()=>{if(model.roads.length!==1||model.buildings.length!==1)throw Error("Feature count");});
  test("Tile-Index: lange Straße ohne Zwischenpunkte",()=>{
   const tiles=geo.tilesFor(model,32);

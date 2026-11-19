@@ -27,6 +27,30 @@ function roadWidth(properties={},fallback=5){
  return defaults[highway]||fallback;
 }
 const roadWidthByClass=roadWidth;
+// OSM gibt Höhen als Meter oder gelegentlich in Fuß an. Nur aus Tags
+// abgeleitete Höhen verwenden; fehlen Tags, bleibt der Wert eine Schätzung.
+function readMeters(value){
+ const text=String(value??"").trim().replace(",",".");
+ const hit=text.match(/^(\d+(?:\.\d+)?)\s*(m|meter|metres?|ft|feet|foot|'|cm)?$/i);
+ if(!hit)return null;
+ let m=Number(hit[1]),unit=(hit[2]||"m").toLowerCase();
+ if(unit==="ft"||unit==="feet"||unit==="foot"||unit==="'")m*=.3048;
+ else if(unit==="cm")m/=100;
+ return Number.isFinite(m)&&m>=0&&m<500?m:null;
+}
+function buildingHeight(props={},fallback=9){
+ const tagged=readMeters(props.height);
+ if(tagged!==null&&tagged>.25)return tagged;
+ const levels=Number(String(props["building:levels"]||"").replace(",","."));
+ if(Number.isFinite(levels)&&levels>0&&levels<150)return levels*3;
+ return fallback;
+}
+function buildingBaseHeight(props={}){
+ const tagged=readMeters(props.min_height);
+ if(tagged!==null)return tagged;
+ const levels=Number(String(props["building:min_level"]||"").replace(",","."));
+ return Number.isFinite(levels)&&levels>=0&&levels<150?levels*3:0;
+}
 function create(THREE,scene,options={}){
  if(!THREE||!scene)throw Error("THREE and scene required");
  const tileSize=options.tileSize||256;let radius=options.radius??2;
@@ -39,13 +63,7 @@ function create(THREE,scene,options={}){
  const wallMat=new THREE.MeshStandardMaterial({color:0xa6a9a4,roughness:0.9});
  const roofMat=new THREE.MeshStandardMaterial({color:0x555c61,roughness:1});
  let model=null,tiles=null,active=new Map();
- function height(props){
-  const raw=Number.parseFloat(props.height);
-  if(Number.isFinite(raw)&&raw>0&&raw<500)return raw;
-  const levels=Number.parseFloat(props["building:levels"]);
-  if(Number.isFinite(levels)&&levels>0&&levels<150)return levels*3;
-  return defaultHeight;
- }
+ function height(props){return buildingHeight(props,defaultHeight);}
  function ringShape(ring){
   if(ring.length<3)return null;
   const s=new THREE.Shape();s.moveTo(ring[0].x,-ring[0].z);
@@ -59,10 +77,11 @@ function create(THREE,scene,options={}){
    for(let i=1;i<hole.length;i++)path.lineTo(hole[i].x,-hole[i].z);
    path.closePath();outer.holes.push(path);
   }
-  const geom=new THREE.ExtrudeGeometry(outer,{depth:height(item.properties),bevelEnabled:false,steps:1});
+  const totalHeight=height(item.properties),baseHeight=Math.min(Math.max(0,buildingBaseHeight(item.properties)),totalHeight-.3);
+  const geom=new THREE.ExtrudeGeometry(outer,{depth:Math.max(.3,totalHeight-baseHeight),bevelEnabled:false,steps:1});
   // Shape lies in XY; extrude local Z into world Y, local Y becomes world -Z.
   geom.rotateX(-Math.PI/2);
-  const mesh=new THREE.Mesh(geom,[roofMat,wallMat]);mesh.receiveShadow=true;return mesh;
+  const mesh=new THREE.Mesh(geom,[roofMat,wallMat]);mesh.position.y=baseHeight;mesh.receiveShadow=true;return mesh;
  }
  function makeRoad(item){
   const points=item.points;if(points.length<2)return null;
@@ -121,5 +140,5 @@ function create(THREE,scene,options={}){
   get loadedTiles(){return active.size;}
  };
 }
-root.LDOpenWorldRenderer=Object.freeze({create,roadWidth});
+root.LDOpenWorldRenderer=Object.freeze({create,roadWidth,readMeters,buildingHeight,buildingBaseHeight});
 })(typeof window!=="undefined"?window:globalThis);
