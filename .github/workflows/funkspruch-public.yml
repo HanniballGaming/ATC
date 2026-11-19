@@ -48,6 +48,12 @@ jobs:
       - name: Leitstellenbetrieb, Notrufe und Funk vollständig testen
         working-directory: funkspruch-source/desktop
         run: node browser-smoke.mjs
+      - name: Vollständiges Offline-ELS als Singleplayer-Ablauf prüfen
+        working-directory: funkspruch-source/desktop
+        run: node fallback-verify.mjs
+      - name: PWA mit 3D-Welt und ELS ohne Netzwerk prüfen
+        working-directory: funkspruch-source/desktop
+        run: node offline-smoke.mjs
       - name: NORDTAL am Stamm-Pfad beibehalten und FUNKSPRUCH separat veröffentlichen
         run: |
           mkdir -p publish/funkspruch

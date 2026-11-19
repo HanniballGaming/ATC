@@ -86,3 +86,18 @@ Diese Aktualisierung ist weiterhin eine Beta. Eine vollständige 1.0-Abnahme und
 **Prüfnachweis:** https://github.com/HanniballGaming/ATC/actions/runs/44631522925 – Browser und Windows einschließlich Installationspaket erfolgreich.
 
 **Status:** weiterhin öffentlich spielbare Beta; nicht als vollständig abgenommene Releaseversion 1.0 zu verstehen. Der OSM-Ausschnitt ist begrenzt, KI und 3D-Grafik erreichen noch nicht alle geplanten Qualitätsziele. Es erfolgte kein physischer iPad-Test.
+
+## Browser-Release-Ausbau: Einsatzleitsystem, Navigation, Offline und Bedienung (19.11.2026)
+
+**Mit automatisierter Browser- und Tablet-Abnahme geprüft:** Entwicklungscommit `adfbf71e441d0f23c0ecfdfb322cd0be0d5b93a8`.
+
+- Acht ausgearbeitete, ausdrücklich fiktive Übungsnotrufszenarien in einer funktionsfähigen Offline-Ersatzleitstelle: Annahme, dokumentierte Rückfragen, Einsatzakte, Fahrzeugdisposition, mehrere Statusschritte, Funkprotokoll und ordnungsgemäßer Einsatzabschluss.
+- Notruf- und Fahrzeugereignisse des Offline-Leitplatzes werden an das Schichtjournal der 3D-Welt weitergereicht; dessen Berichte enthalten nur protokollierte Ereigniszahlen und können als Textdatei exportiert werden.
+- Straßenplanung anhand realer OSM-Straßennamen mit berechneten Fuß- oder Fahrzeugrouten, sichtbarer Streckenlinie und Zielanzeige. Es werden keine frei erfundenen Straßen oder amtlichen Zuständigkeitsgrenzen behauptet.
+- Installierbare Browser-PWA: Offline-Cache unterstützt auch das ELS mit URL-Parameter `?fs_embed=1`. Tatsächlicher Offline-Browser-Test des 3D-Einstiegs, Schichtbeginns und vollständigen ELS erfolgreich.
+- Frei einstellbares und lokal gespeichertes Sichtfeld (60–95°) sowie Blickempfindlichkeit für Maus und Touch (0,5–2,0×), neben Grafik-/Audioeinstellungen.
+- Erweitertes automatisiertes Browser-Testszenario mit dem realen ELS, Offline-ELS, Journalexport, Navigation, Touchbedienung, Speicher-Wiederherstellung und PWA-Offlineprüfung.
+
+**Testnachweis:** https://github.com/HanniballGaming/ATC/actions/runs/44636014481 – Browser erfolgreich, Windows auf Wunsch nicht ausgeführt. Die öffentliche Pages-Pipeline prüft bei jeder Veröffentlichung zusätzlich die Offline-Funktion.
+
+**Freigabegrenze:** Dies ist eine erweiterte öffentliche Browser-Beta, keine vollständige Version 1.0. Die deutschlandweite Karte, vollständig verifizierte Leitstellen-/Fahrzeugdaten, produktionsreife Grafikinhalte und die reale Geräte- und Langzeitabnahme fehlen weiterhin. Es gibt keine Verbindung zu echten Notrufdiensten.
