@@ -62,7 +62,7 @@ function create(THREE,scene,options={}){
  const gravelMat=new THREE.MeshStandardMaterial({color:0x777367,roughness:1,side:THREE.DoubleSide});
  const wallMat=new THREE.MeshStandardMaterial({color:0xa6a9a4,roughness:0.9});
  const roofMat=new THREE.MeshStandardMaterial({color:0x555c61,roughness:1});
- let model=null,tiles=null,active=new Map();
+ let model=null,tiles=null,active=new Map(),lastTileCenter=null;
  function height(props){return buildingHeight(props,defaultHeight);}
  function ringShape(ring){
   if(ring.length<3)return null;
@@ -112,11 +112,16 @@ function create(THREE,scene,options={}){
    scene.remove(mesh);
    if(mesh.geometry)mesh.geometry.dispose();
   }
-  featureMeshes.clear();active.clear();
+  featureMeshes.clear();active.clear();lastTileCenter=null;
  }
  function setModel(next){clear();model=next;tiles=root.LDOpenWorldGeo.tilesFor(next,tileSize);}
  function update(x,z){
   if(!tiles)return;
+  const center=root.LDOpenWorldGeo.tileKey(x,z,tileSize);
+  // Im selben Kartenquadranten keine tausenden OSM-Objekte neu durchlaufen.
+  // Auf iPads reduziert das die CPU- und Garbage-Collection-Last erheblich.
+  if(center===lastTileCenter)return;
+  lastTileCenter=center;
   const wanted=root.LDOpenWorldGeo.nearbyTiles(tiles,x,z,radius,tileSize);
   const visible=new Set();
   for(const tile of wanted){
@@ -136,7 +141,7 @@ function create(THREE,scene,options={}){
  }
  function dispose(){clear();roadMat.dispose();footMat.dispose();bikeMat.dispose();gravelMat.dispose();wallMat.dispose();roofMat.dispose();model=null;tiles=null;}
  return {setModel,update,dispose,
-  setRadius(next){if(!Number.isInteger(next)||next<1||next>5)throw Error("Ungültiger Sichtradius");radius=next;},
+  setRadius(next){if(!Number.isInteger(next)||next<1||next>5)throw Error("Ungültiger Sichtradius");radius=next;lastTileCenter=null;},
   get loadedTiles(){return active.size;}
  };
 }
