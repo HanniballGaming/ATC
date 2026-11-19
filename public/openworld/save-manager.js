@@ -30,11 +30,19 @@ function validate(data){
 }
 function restore(data,storage=root.localStorage){
  const items=validate(data);
- const prior=items.map(([k])=>[k,storage.getItem(k)]);
+ // Import replaces the complete saved game, rather than mixing two different
+ // shifts and dispatch states. OSM caches and unrelated app data remain intact.
+ const existing=[];
+ for(let i=0;i<storage.length;i++){const key=storage.key(i);if(typeof key==="string"&&accepted(key))existing.push(key);}
+ const before=new Map(existing.map(key=>[key,storage.getItem(key)]));
+ const incoming=new Map(items);
  try{
-  for(const [k,v] of items)storage.setItem(k,v);
+  for(const key of existing)if(!incoming.has(key))storage.removeItem(key);
+  for(const [key,value] of incoming)storage.setItem(key,value);
  }catch(error){
-  for(const [k,v] of prior)try{if(v===null)storage.removeItem(k);else storage.setItem(k,v);}catch{}
+  // Restore all previously saved keys, including ones deleted during import.
+  for(const key of incoming.keys())if(!before.has(key))try{storage.removeItem(key);}catch{}
+  for(const [key,value] of before)try{storage.setItem(key,value);}catch{}
   throw Error("Spielstand konnte nicht importiert werden: "+(error.message||error));
  }
  return items.length;
