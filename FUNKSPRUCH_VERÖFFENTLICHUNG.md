@@ -33,3 +33,16 @@ Spielstände werden lokal gespeichert.
 
 NORDTAL ATC bleibt am bisherigen Hauptpfad des Repositories erreichbar.
 FUNKSPRUCH wird getrennt unter `/funkspruch/` veröffentlicht.
+
+## Beta-Bedienung und Fehlerbehebung (19.11.2026)
+
+Entwicklungsstand: `9f3071bf3f45785dd6ed7b75a2f6dd463787bd4c`.
+
+- Aufklappbare Schritt-für-Schritt-Hilfe für den Schichtbeginn und den Arbeitsplatz.
+- Lokale Speicherstatusanzeige sowie verständliche Meldung bei Speicherproblemen.
+- Technischen Fehlerbericht lokal als JSON exportieren (keine automatische Übertragung, keine Gesprächsinhalte).
+- Lokale Spielstände nach ausdrücklicher Bestätigung zurücksetzen; zuvor wird ein Export empfohlen.
+- Fehlerbehandlung bei beschädigten Spielständen und fehlgeschlagenem Spielstart.
+- Zusätzliche Browser-Abnahmetests für die Beta-Bedienelemente.
+
+Diese Beta enthält weiterhin einen geografisch begrenzten Ausschnitt und simulierte KI-/Einsatzabläufe. Sie ist keine vollumfängliche 1.0.
