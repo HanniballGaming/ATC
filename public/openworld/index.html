@@ -36,7 +36,7 @@ if("serviceWorker" in navigator&&location.protocol==="https:"){
 <script src="./vehicle-interaction.js"></script><script src="./walker-core.js"></script>
 <script src="./life-core.js"></script><script src="./road-graph.js"></script>
 <script src="./osm-loader.js"></script><script src="./city-region.js"></script><script src="./geodata-session.js"></script><script src="./touch-controls.js"></script>
-<script src="./world-upgrades.js"></script><script src="./traffic-ai.js"></script><script src="./save-manager.js"></script><script src="./shift-journal.js"></script><script src="./ambient.js"></script><script src="./preferences.js"></script>
+<script src="./world-upgrades.js"></script><script src="./traffic-ai.js"></script><script src="./save-manager.js"></script><script src="./shift-journal.js"></script><script src="./ambient.js"></script><script src="./preferences.js"></script><script src="./checkpoints.js"></script>
 <script src="./runtime.js"></script><script src="./integration-tests.js"></script>
 <script>
 (async()=>{
@@ -143,15 +143,23 @@ window.FunkspruchBeta={diagnostics:betaDiagnostics};
 document.getElementById("downloadDiagnostics").onclick=()=>{const blob=new Blob([JSON.stringify(betaDiagnostics(),null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),link=document.createElement("a");link.href=url;link.download="FUNKSPRUCH-Beta-Fehlerbericht.json";link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
 document.getElementById("resetSave").onclick=()=>{if(!confirm("Wirklich alle lokalen FUNKSPRUCH-Spielstände und Dienstberichte dieses Geräts zurücksetzen? Vorher möglichst exportieren."))return;try{const keys=[];for(let j=0;j<localStorage.length;j++){const key=localStorage.key(j);if(key&&(/^(funkspruch-|ld-openworld-|ld-operations|ld21-|ld22-)/.test(key))&&!key.startsWith("funkspruch-osm-cache-"))keys.push(key);}for(const key of keys)localStorage.removeItem(key);location.reload();}catch(error){betaRecord(error);alert("Zurücksetzen fehlgeschlagen: "+error.message);}};
 try{
- const raw=localStorage.getItem(worldKey);
- if(raw&&!game.restoreWorld(JSON.parse(raw)))throw Error("Gespeicherte Spielwelt beschädigt oder inkompatibel");
+ const saved=LDFunkspruchCheckpoints.candidates();
+ let restored=false;
+ for(const item of saved){
+  if(game.restoreWorld(item.world)){
+   restored=true;
+   if(item.source==="backup")saveFeedback("Beschädigten Spielstand aus der vorherigen Sicherung wiederhergestellt.");
+   break;
+  }
+ }
+ if(!restored&&(saved.length||localStorage.getItem(worldKey)))throw Error("Beide Welt-Sicherungen sind ungültig");
  game.reconcileShiftJournal?.();
 }catch(error){betaRecord(error);saveFeedback("Gespeicherter Spielstand konnte nicht geladen werden. Bitte Sicherung exportieren oder zurücksetzen.");console.warn("Gespeicherter Open-World-Spielstand nicht lesbar",error);}
 let importingSave=false;
 const persistLife=()=>{
  if(importingSave)return;
  try{
-  const world=game.saveWorld();if(world)localStorage.setItem(worldKey,JSON.stringify(world));
+  const world=game.saveWorld();if(world)LDFunkspruchCheckpoints.save(world);
   game.life.save();
   if(window.parent!==window)window.parent.postMessage({type:"ld-life-updated"},location.origin);
   saveFeedback("Automatisch gespeichert: "+new Date().toLocaleTimeString("de-DE"));
