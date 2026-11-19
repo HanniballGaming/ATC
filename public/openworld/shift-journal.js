@@ -31,7 +31,10 @@ function create(storage=root.localStorage){
    active.last=snap.dispatch;
    active.peakWaiting=Math.max(active.peakWaiting??0,snap.dispatch.waiting);
   }
-  active.updatedMinute=Math.max(active.updatedMinute??active.startMinute,snap.minute);
+  const previous=active.updatedMinute??active.startMinute;
+  let current=Math.floor(previous/1440)*1440+(snap.minute%1440);
+  if(current<previous&&previous-current>720)current+=1440;
+  active.updatedMinute=Math.max(previous,current);
   persist();return true;
  }
  function recordEvent(raw){
@@ -46,7 +49,14 @@ function create(storage=root.localStorage){
   if(!Object.prototype.hasOwnProperty.call(messages,raw.kind))return false;
   const id=typeof raw.incidentId==="string"&&/^[\w\-#]{1,55}$/.test(raw.incidentId)?raw.incidentId:null;
   const minute=Number.isFinite(raw.minute)&&raw.minute>=0?Math.round(raw.minute):state.active.updatedMinute;
-  const clock=Math.max(state.active.startMinute,minute);
+  // ELS-Zeit ist eine Tagesuhr (0–1439). Bei Mitternacht nicht auf den
+  // Schichtbeginn zurückspringen; Ereignisse monoton fortschreiben.
+  const previous=state.active.updatedMinute??state.active.startMinute;
+  const day=Math.floor(previous/1440);
+  let clock=minute<1440?day*1440+minute:minute;
+  if(clock<previous&&previous-clock>720)clock+=1440;
+  clock=Math.max(previous,clock);
+  state.active.updatedMinute=clock;
   const events=state.active.events||(state.active.events=[]);
   const text=messages[raw.kind]+(id?" · #"+id:"");
   if(events.length>=120)events.shift();
@@ -60,8 +70,8 @@ function create(storage=root.localStorage){
   const report={
    id:Math.floor(Date.now())+"-"+state.reports.length,
    startMinute:a.startMinute,
-   endMinute:Math.max(final.minute,a.updatedMinute??0),
-   durationMinutes:Math.max(0,Math.max(final.minute,a.updatedMinute??0)-a.startMinute),
+   endMinute:Math.max(a.updatedMinute??a.startMinute,final.minute),
+   durationMinutes:Math.max(0,Math.max(a.updatedMinute??a.startMinute,final.minute)-a.startMinute),
    start:a.start,end:a.last,peakWaiting:a.peakWaiting,events:(a.events||[]).slice(-120)
   };
   state.reports.unshift(report);state.reports=state.reports.slice(0,LIMIT);state.active=null;
