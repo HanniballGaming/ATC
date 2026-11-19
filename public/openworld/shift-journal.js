@@ -15,9 +15,11 @@ function create(storage=root.localStorage){
  let state={version:VERSION,active:null,reports:[]};
  try{
   const raw=storage?.getItem(KEY),saved=raw?JSON.parse(raw):null;
-  const validActive=a=>a===null||(a&&typeof a==="object"&&finite(a.startMinute)&&a.startMinute>=0&&a.startMinute<=10000000&&finite(a.updatedMinute)&&a.updatedMinute>=a.startMinute&&a.updatedMinute<=10000000&&Array.isArray(a.events)&&a.events.length<=120);
+  const validEvent=e=>e&&typeof e==="object"&&["notruf","annahme","alarmierung","abschluss","funk"].includes(e.kind)&&finite(e.minute)&&e.minute>=0&&e.minute<=10000000&&typeof e.text==="string"&&e.text.length<=180;
+  const validActive=a=>a===null||(a&&typeof a==="object"&&finite(a.startMinute)&&a.startMinute>=0&&a.startMinute<=10000000&&finite(a.updatedMinute)&&a.updatedMinute>=a.startMinute&&a.updatedMinute<=10000000&&Array.isArray(a.events)&&a.events.length<=120&&a.events.every(validEvent));
+  const validReport=r=>r&&typeof r==="object"&&finite(r.startMinute)&&r.startMinute>=0&&finite(r.endMinute)&&r.endMinute>=r.startMinute&&r.endMinute<=10000000&&finite(r.durationMinutes)&&r.durationMinutes===r.endMinute-r.startMinute&&Array.isArray(r.events)&&r.events.length<=120&&r.events.every(validEvent);
   if(saved?.version===VERSION&&Array.isArray(saved.reports)&&saved.reports.length<=LIMIT&&validActive(saved.active??null))
-   state={version:VERSION,active:saved.active??null,reports:saved.reports.filter(r=>r&&finite(r.startMinute)&&finite(r.endMinute)&&r.endMinute>=r.startMinute)};
+   state={version:VERSION,active:saved.active??null,reports:saved.reports.filter(validReport)};
  }catch(e){console.warn("Schichtjournal konnte nicht geladen werden",e);}
  function persist(){try{storage?.setItem(KEY,JSON.stringify(state));}catch(e){console.warn("Schichtjournal konnte nicht gespeichert werden",e);}}
  function begin(s){
