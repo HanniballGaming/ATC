@@ -157,17 +157,18 @@ try{
 }catch(error){betaRecord(error);saveFeedback("Gespeicherter Spielstand konnte nicht geladen werden. Bitte Sicherung exportieren oder zurücksetzen.");console.warn("Gespeicherter Open-World-Spielstand nicht lesbar",error);}
 let importingSave=false;
 const persistLife=()=>{
- if(importingSave)return;
+ if(importingSave)return false;
  try{
   const world=game.saveWorld();if(world)LDFunkspruchCheckpoints.save(world);
   game.life.save();
   if(window.parent!==window)window.parent.postMessage({type:"ld-life-updated"},location.origin);
   saveFeedback("Automatisch gespeichert: "+new Date().toLocaleTimeString("de-DE"));
- }catch(error){betaRecord(error);saveFeedback("Speichern fehlgeschlagen – bitte Speicherplatz und Browserrechte prüfen.");console.warn("Speichern fehlgeschlagen",error);}
+  return true;
+ }catch(error){betaRecord(error);saveFeedback("Speichern fehlgeschlagen – bitte Speicherplatz und Browserrechte prüfen.");console.warn("Speichern fehlgeschlagen",error);return false;}
 };
 window.addEventListener("message",e=>{if(e.origin===location.origin&&e.data?.type==="ld-life-reload"){try{game.life.load()}catch(err){console.warn(err)}}});
 document.getElementById("exportSave").onclick=()=>{
- try{persistLife();LDFunkspruchSave.download(LDFunkspruchSave.capture());}
+ try{if(!persistLife())throw Error("Aktueller Fortschritt konnte nicht gespeichert werden");LDFunkspruchSave.download(LDFunkspruchSave.capture());}
  catch(error){alert("Export fehlgeschlagen: "+(error.message||error));}
 };
 const importFile=document.getElementById("saveImportFile");
