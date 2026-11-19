@@ -35,7 +35,7 @@ function normalize(data){
 }
 function classify(question){
  const q=String(question||"").toLocaleLowerCase("de-DE");
- if(/\b(wo|adresse|hausnummer|einsatzort|straße|standort|befindet|genau)\b/.test(q))return"address";
+ if(/\b(wo|adresse|hausnummer|einsatzort|straße|standort|befindet)\b/.test(q))return"address";
  if(/\b(atmet|atmung|atmen|luft|atem)\b/.test(q))return"breathing";
  if(/\b(bewusst|ansprechbar|wach|reagiert|reagieren)\b/.test(q))return"consciousness";
  if(/\b(wie viele|anzahl|personen|beteiligte|betroffene)\b/.test(q))return"people";

@@ -295,7 +295,7 @@ try{
     await fallback.locator("#register").click();
     await fallback.locator("#unit").selectOption("RTW 1");
     await fallback.locator("#dispatch").click();
-    assert.match(await fallback.locator("#situation").innerText(),/Freie Fahrzeuge: 6\\/7/);
+    assert.ok((await fallback.locator("#situation").innerText()).includes("Freie Fahrzeuge: 6/7"),"Disposition spiegelt Fahrzeugstatus nicht wider");
     for(let step=0;step<4;step++)
       await fallback.locator('#units button[data-unit="RTW 1"]').click();
     await fallback.locator("#close").click();
