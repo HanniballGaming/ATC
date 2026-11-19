@@ -96,7 +96,7 @@ function create(storage=root.localStorage){
   const counts={notruf:0,annahme:0,alarmierung:0,abschluss:0,funk:0},cases=new Set(),seen=new Set();
   for(const event of Array.isArray(report?.events)?report.events:[]){
    if(!event||!Object.prototype.hasOwnProperty.call(counts,event.kind))continue;
-   const id=typeof event.text==="string"?event.text.match(/ · #([\\w-]{1,55})$/)?.[1]:null;
+   const id=typeof event.text==="string"?event.text.match(/ · #([A-Za-z0-9_-]{1,55})$/)?.[1]:null;
    if(id)cases.add(id);
    const identifier=id&&event.kind!=="funk"?event.kind+":"+id:null;
    if(identifier&&seen.has(identifier))continue;
