@@ -29,7 +29,7 @@ function position(points,meters){
  return {x:points[0]?.x||0,z:points[0]?.z||0,yaw:0,nx:1,nz:0};
 }
 function speedFor(props={},kind="car"){
- if(kind==="walker")return props.highway==="steps"?.7:1.17;
+ if(kind==="walker")return props.highway==="steps" ? 0.7 : 1.17;
  const match=String(props.maxspeed||"").match(/(\d+(?:\.\d+)?)/);
  let speed=match?Number(match[1]):(["living_street","service"].includes(props.highway)?20:30);
  if(/mph/i.test(String(props.maxspeed)))speed*=1.609344;
@@ -172,7 +172,7 @@ function create({THREE,scene,model,low=false}={}){
   for(const a of agents){
    // Einfahrten und Knoten vorsichtiger passieren; ohne erfundene Ampelphasen.
    const remain=a.edge.length-a.progress;
-   const slow=a.kind==="car"&&remain<9?.62:1;
+   const slow=a.kind==="car"&&remain<9 ? 0.62 : 1;
    advance(a,delta*a.speed*slow,a.graph);
    a.speed=a.edge.speed;
    a.lane=laneOffset(a.edge,a.seed,a.kind);
