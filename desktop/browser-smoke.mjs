@@ -38,6 +38,13 @@ try{
  assert.match(await page.locator("#saveState").innerText(),/Speicherung|Spielstand/);
  await page.locator("#betaHelp summary").click();
  assert.equal(await page.locator(".mode.locked button").isDisabled(),true,"Zweiter Modus muss gesperrt bleiben");
+ await page.locator("#ambientEnabled").uncheck();
+ await page.locator("#voiceEnabled").uncheck();
+ await page.locator("#graphicsQuality").selectOption("low");
+ const settings=await page.evaluate(()=>JSON.parse(localStorage.getItem("funkspruch-settings-v1")));
+ assert.equal(settings?.graphics,"low","Grafikprofil wurde nicht gespeichert");
+ assert.equal(settings?.ambient,false,"Ambient-Schalter wurde nicht gespeichert");
+ assert.equal(settings?.voice,false,"Stimmen-Schalter wurde nicht gespeichert");
  await page.locator("#startNormal").click();
  try{
   await page.waitForFunction(()=>!!window.FunkspruchGame,null,{timeout:14000});
@@ -72,10 +79,14 @@ try{
  await page.waitForFunction(()=>window.FunkspruchGame?.status()?.indoor,{timeout:10000});
  const beforeMove=await page.evaluate(()=>window.FunkspruchGame.walker.snapshot());
  await page.keyboard.down("w");
- await page.waitForTimeout(420);
- await page.keyboard.up("w");
+ try{
+  await page.waitForFunction(before=>{
+   const p=window.FunkspruchGame?.walker?.snapshot?.();
+   return p&&Math.hypot(p.x-before.x,p.z-before.z)>.05;
+  },beforeMove,{timeout:14000,polling:100});
+ }finally{await page.keyboard.up("w");}
  const afterMove=await page.evaluate(()=>window.FunkspruchGame.walker.snapshot());
- assert.ok(Math.hypot(afterMove.x-beforeMove.x,afterMove.z-beforeMove.z)>.04,"WASD-Fortbewegung funktioniert nicht");
+ assert.ok(Math.hypot(afterMove.x-beforeMove.x,afterMove.z-beforeMove.z)>.05,"WASD-Fortbewegung funktioniert nicht");
  const state=await page.evaluate(()=>{
   const g=window.FunkspruchGame;
   g.walker.teleport(-5.5,-4.5);
@@ -91,6 +102,8 @@ try{
   localStorage.setItem("funkspruch-openworld-save-v1",JSON.stringify(g.saveWorld()));
  });
  const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem("funkspruch-openworld-save-v1")));
+ assert.equal(saved.version,2,"Version-2-Speicherung fehlt");
+ assert.equal(saved.life.onDuty,true,"Dienstzustand in Weltsicherung fehlt");
  assert.equal(saved.indoor,true,"Innenraum nicht speicherbar");
  assert.equal(saved.onDuty,true,"Dienststatus nicht speicherbar");
  await page.waitForFunction(()=>document.getElementById("dispatchMonitor")?.getAttribute("src")!==null);
