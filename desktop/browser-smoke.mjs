@@ -43,10 +43,14 @@ try{
  await page.locator("#ambientEnabled").uncheck();
  await page.locator("#voiceEnabled").uncheck();
  await page.locator("#graphicsQuality").selectOption("low");
+ await page.locator("#cameraFov").evaluate(el=>{el.value="80";el.dispatchEvent(new Event("change",{bubbles:true}));});
+ await page.locator("#lookSensitivity").evaluate(el=>{el.value="1.25";el.dispatchEvent(new Event("change",{bubbles:true}));});
  const settings=await page.evaluate(()=>JSON.parse(localStorage.getItem("funkspruch-settings-v1")));
  assert.equal(settings?.graphics,"low","Grafikprofil wurde nicht gespeichert");
  assert.equal(settings?.ambient,false,"Ambient-Schalter wurde nicht gespeichert");
  assert.equal(settings?.voice,false,"Stimmen-Schalter wurde nicht gespeichert");
+ assert.equal(settings?.fov,80,"Ego-Sichtfeld wurde nicht gespeichert");
+ assert.equal(settings?.sensitivity,1.25,"Maus-/Touch-Empfindlichkeit wurde nicht gespeichert");
  await page.locator("#startNormal").click();
  try{
   await page.waitForFunction(()=>!!window.FunkspruchGame,null,{timeout:14000});
@@ -64,6 +68,8 @@ try{
   throw new Error("3D-Initialisierung fehlgeschlagen: "+JSON.stringify(debug)+"; JS-Fehler: "+JSON.stringify(errors.slice(0,6))+"; "+error.message);
  }
 
+ const cameraFov=await page.evaluate(()=>window.FunkspruchGame?.camera?.fov);
+ assert.equal(cameraFov,80,"Gespeichertes Ego-Sichtfeld nicht auf die Kamera angewandt");
  const beta=await page.evaluate(()=>window.FunkspruchBeta?.diagnostics?.());
  assert.equal(beta?.product,"FUNKSPRUCH","Beta-Diagnostik fehlt");
  assert.equal(beta?.game?.initialized,true,"Diagnostik erkennt das Spiel nicht");

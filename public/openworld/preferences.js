@@ -1,13 +1,15 @@
 /* FUNKSPRUCH – persistent device preferences with safe defaults. */
 (function(root){"use strict";
 const KEY="funkspruch-settings-v1";
-const defaults=Object.freeze({graphics:"auto",ambient:true,voice:true});
+const defaults=Object.freeze({graphics:"auto",ambient:true,voice:true,fov:70,sensitivity:1});
 function normalize(value){
  const data=value&&typeof value==="object"&&!Array.isArray(value)?value:{};
  return {
   graphics:["auto","low","medium"].includes(data.graphics)?data.graphics:defaults.graphics,
   ambient:typeof data.ambient==="boolean"?data.ambient:defaults.ambient,
-  voice:typeof data.voice==="boolean"?data.voice:defaults.voice
+  voice:typeof data.voice==="boolean"?data.voice:defaults.voice,
+  fov:Number.isFinite(data.fov)&&data.fov>=60&&data.fov<=95?Math.round(data.fov):defaults.fov,
+  sensitivity:Number.isFinite(data.sensitivity)&&data.sensitivity>=.5&&data.sensitivity<=2?Math.round(data.sensitivity*100)/100:defaults.sensitivity
  };
 }
 function load(storage=root.localStorage){

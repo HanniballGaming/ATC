@@ -14,7 +14,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
  let touch=null,keyboard=null,lookInput={x:0,y:0},worldUpgrade=null,traffic=null;
  let streetDestinations=[],activeRoute=null,routeVisual=null;
  const performance=root.LDFunkspruchPerformance?.create?.()||null;
- let adaptiveGraphics=false,lowGraphics=graphics.renderRadius===1;
+ let adaptiveGraphics=false,lowGraphics=graphics.renderRadius===1,lookSensitivity=1;
  let indoor=false,entryPoint=null,doorPoint=null,chipPoint=null,office=null,officePieces=[],exterior=null,deskPoint={x:1,z:-1.3},atDesk=false,screenTexture=null,screenCanvas=null,screenContext=null,screenMaterialRef=null;
  const life=root.LDOpenWorldLife.create();
  const journal=root.LDFunkspruchShiftJournal?.create?.()||null;
@@ -132,7 +132,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   const t=touch?.read()||{};
   return {forward:Math.max(-1,Math.min(1,(k.forward||0)+(t.forward||0))),
    strafe:Math.max(-1,Math.min(1,(k.strafe||0)+(t.strafe||0))),
-   lookX:(t.lookX||0)+lookInput.x,lookY:(t.lookY||0)+lookInput.y,run:!!(k.run||t.run)};
+   lookX:(t.lookX||0)*lookSensitivity+lookInput.x,lookY:(t.lookY||0)*lookSensitivity+lookInput.y,run:!!(k.run||t.run)};
  }
  function interact(){
   if(!interaction)return;
@@ -383,8 +383,8 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
  }
  function pointerMove(event){
   if(root.document?.pointerLockElement!==renderer.domElement||interaction?.driving)return;
-  lookInput.x+=(event.movementX||0)*0.002;
-  lookInput.y-=(event.movementY||0)*0.002;
+  lookInput.x+=(event.movementX||0)*0.002*lookSensitivity;
+  lookInput.y-=(event.movementY||0)*0.002*lookSensitivity;
  }
  function dispose(){
   if(disposed)return;disposed=true;
@@ -401,6 +401,14 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   if(needsPosition)host.style.position=oldPosition;
  }
  function setPaused(value){paused=!!value;return paused;}
+ function setInputProfile(sensitivity=1,fov=70){
+  if(Number.isFinite(sensitivity))lookSensitivity=Math.max(.5,Math.min(2,sensitivity));
+  if(Number.isFinite(fov)){
+   camera.fov=Math.max(60,Math.min(95,fov));
+   camera.updateProjectionMatrix();
+  }
+  return {sensitivity:lookSensitivity,fov:camera.fov};
+ }
  function setGraphicsProfile(low,adaptive=false){
   lowGraphics=!!low;adaptiveGraphics=!!adaptive;
   renderer.setPixelRatio(Math.min(root.devicePixelRatio||1,lowGraphics?1:1.5));
@@ -458,7 +466,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
    drawScreens();onStatus({...status(),message:"Gespeicherter Spielstand geladen"});
   return true;
  }
- const api={start,dispose,interact,toggleDoor,stamp,sitDesk,leaveDesk,routeTo,planStreetRoute,routeStatus,clearRoute,listStreets:()=>streetDestinations.map(x=>x.name),status,setDispatchSummary,setPaused,setGraphicsProfile,saveWorld,restoreWorld,life,walker,car,scene,camera,renderer,getShift:()=>worldUpgrade?.shift(),getShiftJournal:()=>journal?{...journal.snapshot(),format:journal.format,summarize:journal.summarize}:null,reconcileShiftJournal:()=>journal?.reconcile(status()),recordDispatchEvent:event=>journal?.recordEvent(event)||false};
+ const api={start,dispose,interact,toggleDoor,stamp,sitDesk,leaveDesk,routeTo,planStreetRoute,routeStatus,clearRoute,listStreets:()=>streetDestinations.map(x=>x.name),status,setDispatchSummary,setPaused,setGraphicsProfile,setInputProfile,saveWorld,restoreWorld,life,walker,car,scene,camera,renderer,getShift:()=>worldUpgrade?.shift(),getShiftJournal:()=>journal?{...journal.snapshot(),format:journal.format,summarize:journal.summarize}:null,reconcileShiftJournal:()=>journal?.reconcile(status()),recordDispatchEvent:event=>journal?.recordEvent(event)||false};
  return api;
 }
 root.LDOpenWorldRuntime=Object.freeze({create});

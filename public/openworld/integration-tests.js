@@ -212,10 +212,10 @@ async function run(){
  test("Geräteeinstellungen: Grafik- und Audioauswahl überlebt Neustart",()=>{
   const map=new Map(),storage={getItem:key=>map.get(key)||null,setItem:(key,val)=>map.set(key,val)};
   const prefs=root.LDFunkspruchPreferences;
-  if(prefs.load(storage).graphics!=="auto")throw Error("Standardprofil nicht geladen");
-  prefs.save({graphics:"low",ambient:false,voice:false},storage);
+  if(prefs.load(storage).graphics!=="auto"||prefs.load(storage).fov!==70||prefs.load(storage).sensitivity!==1)throw Error("Standardeinstellungen nicht geladen");
+  prefs.save({graphics:"low",ambient:false,voice:false,fov:85,sensitivity:1.25},storage);
   const restored=prefs.load(storage);
-  if(restored.graphics!=="low"||restored.ambient||restored.voice)throw Error("Einstellungen nicht wiederhergestellt");
+  if(restored.graphics!=="low"||restored.ambient||restored.voice||restored.fov!==85||restored.sensitivity!==1.25)throw Error("Einstellungen nicht wiederhergestellt");
   map.set(prefs.key,'{"version":1,"graphics":"ultra","ambient":55,"voice":null}');
   if(prefs.load(storage).graphics!=="auto"||prefs.load(storage).ambient!==true)throw Error("Defekte Einstellungen übernommen");
  });
