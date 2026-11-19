@@ -57,3 +57,14 @@ Verifizierter Entwicklungsstand: `f798dbeb8337387e578b8730e745870390ea8db7`.
 - Automatische Browser-, Tablet-, Einsatzleitstellen- und Windows-Installations-/Starttests erfolgreich: https://github.com/HanniballGaming/ATC/actions/runs/44561214575
 
 Release-Qualität der gesamten Simulation ist damit noch nicht bewiesen; die Abnahme belegt die getesteten Kernpfade.
+
+## Stabilitätsaktualisierung (19.11.2026)
+
+Geprüfter Entwicklungsstand: `8b672e381dab64233108955c9e7c9eb18ef405e2`.
+
+- Beim Wiederaufnehmen wird ein noch aktives Journal einer bereits beendeten Schicht automatisch abgeschlossen; die nächste Schicht ist nicht blockiert.
+- Defekte aktive Journalstrukturen werden beim Laden verworfen; fehlerhafte abgeschlossene Einträge werden herausgefiltert.
+- Zusätzliche automatisierte Tests prüfen unterbrochene Schichten und beschädigte Journalstände.
+- Browser- und Windows-Testjobs erfolgreich: https://github.com/HanniballGaming/ATC/actions/runs/44627829504
+
+Diese Aktualisierung ist weiterhin eine Beta. Eine vollständige 1.0-Abnahme und Erweiterung aller ursprünglich geplanten Inhalte steht aus.
