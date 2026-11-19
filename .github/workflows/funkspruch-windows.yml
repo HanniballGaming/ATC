@@ -96,6 +96,9 @@ jobs:
         run: npm run prepare:web
       - name: Vorinstallierten Google Chrome prüfen
         run: google-chrome --version
+      - name: Offline-Einsatzleitsystem und Einsatzabläufe logisch prüfen
+        working-directory: desktop
+        run: node fallback-verify.mjs
       - name: Schicht und vollständigen Leitstellenmonitor im Browser prüfen
         working-directory: desktop
         run: node browser-smoke.mjs
