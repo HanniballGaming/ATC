@@ -15,7 +15,9 @@ function create(storage=root.localStorage){
  let state={version:VERSION,active:null,reports:[]};
  try{
   const raw=storage?.getItem(KEY),saved=raw?JSON.parse(raw):null;
-  if(saved?.version===VERSION&&Array.isArray(saved.reports)&&saved.reports.length<=LIMIT&&(!saved.active||finite(saved.active.startMinute)))state=saved;
+  const validActive=a=>a===null||(a&&typeof a==="object"&&finite(a.startMinute)&&a.startMinute>=0&&a.startMinute<=10000000&&finite(a.updatedMinute)&&a.updatedMinute>=a.startMinute&&a.updatedMinute<=10000000&&Array.isArray(a.events)&&a.events.length<=120);
+  if(saved?.version===VERSION&&Array.isArray(saved.reports)&&saved.reports.length<=LIMIT&&validActive(saved.active??null))
+   state={version:VERSION,active:saved.active??null,reports:saved.reports.filter(r=>r&&finite(r.startMinute)&&finite(r.endMinute)&&r.endMinute>=r.startMinute)};
  }catch(e){console.warn("Schichtjournal konnte nicht geladen werden",e);}
  function persist(){try{storage?.setItem(KEY,JSON.stringify(state));}catch(e){console.warn("Schichtjournal konnte nicht gespeichert werden",e);}}
  function begin(s){
@@ -79,6 +81,12 @@ function create(storage=root.localStorage){
  }
  function reconcile(current){
   if(current?.life?.onDuty===true&&!state.active)return begin(current);
+  // A crash or an imported save may leave a journal marked active although
+  // the player is no longer on duty. Never attach the next shift to that one.
+  if(current?.life?.onDuty===false&&state.active){
+   finish(current);
+   return true;
+  }
   return false;
  }
  function snapshot(){return JSON.parse(JSON.stringify(state));}
