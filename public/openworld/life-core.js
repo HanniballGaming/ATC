@@ -53,7 +53,19 @@ function create(initial={}){
  function load(storage=root.localStorage){
   const raw=storage.getItem(KEY);if(!raw)return snapshot();
   const data=JSON.parse(raw);
-  for(const key of Object.keys(defaults))if(Object.prototype.hasOwnProperty.call(data,key)&&typeof data[key]===typeof defaults[key])s[key]=data[key];
+  if(!data||typeof data!=="object"||Array.isArray(data))throw Error("Ungültiger Dienst-Spielstand");
+  const bounds={minutes:[0,10000000],money:[0,100000000],hunger:[0,100],thirst:[0,100],fatigue:[0,100],hygiene:[0,100],shiftStart:[0,1439],shiftEnd:[0,1439]};
+  const places=["wohnung","leitstelle","restaurant","stadt"];
+  const next={...s};
+  for(const key of Object.keys(defaults)){
+   if(!Object.prototype.hasOwnProperty.call(data,key))continue;
+   const value=data[key];
+   if(typeof value!==typeof defaults[key])continue;
+   if(bounds[key]&&(!Number.isFinite(value)||value<bounds[key][0]||value>bounds[key][1]))continue;
+   if(key==="location"&&!places.includes(value))continue;
+   next[key]=value;
+  }
+  s=next;
   return snapshot();
  }
  return {snapshot,advance,syncClock,action,moveTo,save,load};
