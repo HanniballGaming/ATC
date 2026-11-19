@@ -137,6 +137,13 @@ async function run(){
   life.syncClock(6*60+3);
   if(life.snapshot().minutes!==before)throw Error("Clock went backwards");
  });
+ test("Speicherstand: beschädigte Schichtwerte werden abgefangen",()=>{
+  const life=root.LDOpenWorldLife.create();
+  const storage={getItem:()=>JSON.stringify({minutes:Infinity,hunger:900,thirst:-1,money:-500,location:"unbekannt",onDuty:true,shiftStart:9000})};
+  const loaded=life.load(storage);
+  if(loaded.hunger!==15||loaded.thirst!==10||loaded.money!==1500||loaded.location!=="wohnung"||loaded.shiftStart!==420)throw Error("Ungültige Werte übernommen");
+  if(loaded.onDuty!==true)throw Error("Gültiger Dienststatus verloren");
+ });
  test("Nachtschicht: Dienstbericht und Funkereignisse über Mitternacht",()=>{
   const data=new Map();
   const storage={getItem:key=>data.get(key)||null,setItem:(key,value)=>data.set(key,value)};
