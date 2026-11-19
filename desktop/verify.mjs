@@ -59,6 +59,29 @@ const context={console,Math,Date,JSON,Map,Set,Array,Object,Number,String,Boolean
 context.window=context;vm.createContext(context);
 for(const file of ["geo-core.js","three-city.js","collision-core.js","indoor-collision.js","vehicle-core.js","vehicle-interaction.js","walker-core.js","life-core.js","road-graph.js","osm-loader.js","city-region.js","geodata-session.js","integration-tests.js","world-upgrades.js","traffic-ai.js","save-manager.js","shift-journal.js","ambient.js"])
  vm.runInContext(read("openworld/"+file),context,{filename:file,timeout:3000});
+// Regressionstest mit den tatsächlich abgefragten Augsburger OSM-Ways:
+const authenticTiles=mapTiles.map(([name])=>{
+ const file=path.join(base,"openworld","data","augsburg-"+name+".geojson");
+ return fs.existsSync(file)?JSON.parse(fs.readFileSync(file,"utf8")):null;
+}).filter(Boolean);
+if(authenticTiles.length){
+ const merged=context.LDFunkspruchMap.mergeGeoJSON(authenticTiles);
+ const modeled=context.LDOpenWorldGeo.loadGeoJSON(merged,{lon:10.8985,lat:48.3705});
+ const driving=context.LDOpenWorldRoadGraph.create(modeled,{mode:"car"});
+ const walking=context.LDOpenWorldRoadGraph.create(modeled,{mode:"walk"});
+ assert.ok(modeled.roads.length>80&&modeled.buildings.length>80,"Echte Augsburg-Karte zu unvollständig");
+ assert.ok(driving.nodeCount>100&&walking.nodeCount>100,"OSM-Navigation erzeugt kein Straßennetz");
+ const sample=modeled.roads.find(road=>road.points.length>=2&&
+  context.LDOpenWorldRoadGraph.canTravel(road.properties,"car")&&
+  !["yes","1","true","-1"].includes(String(road.properties?.oneway)));
+ if(sample){
+  const route=driving.route(sample.points[0],sample.points[1]);
+  assert.ok(route&&route.meters>0&&Number.isFinite(route.secondsEstimated),
+   "Erste echte Augsburger Straßenverbindung nicht routbar");
+ }
+ console.log("Augsburg OSM-Routing:",driving.nodeCount,"Knoten für Fahrzeuge,",
+  walking.nodeCount,"Fußwegknoten,",modeled.roads.length,"echte Straßenobjekte");
+}
 const result=await context.LDOpenWorldIntegrationTests.run();
 if(result.passed!==result.total)throw Error("Open-World-Tests fehlgeschlagen: "+JSON.stringify(result.results.filter(x=>!x.ok)));
 assert.equal(context.LDFunkspruchWorld.daylight(0),0);
