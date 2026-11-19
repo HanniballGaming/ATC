@@ -144,6 +144,18 @@ async function run(){
   if(loaded.hunger!==15||loaded.thirst!==10||loaded.money!==1500||loaded.location!=="wohnung"||loaded.shiftStart!==420)throw Error("Ungültige Werte übernommen");
   if(loaded.onDuty!==true)throw Error("Gültiger Dienststatus verloren");
  });
+ test("Beschädigter Lebens-Spielstand: Dienstbeginn bleibt möglich",()=>{
+  const life=root.LDOpenWorldLife.create();
+  const before=life.snapshot();
+  const bad={getItem:()=>"{unvollständige-json"};
+  const after=life.load(bad);
+  if(JSON.stringify(after)!==JSON.stringify(before))throw Error("Defekter Spielstand hat Werte verändert");
+  life.moveTo("leitstelle");
+  if(life.action("dienstbeginn").onDuty!==true)throw Error("Nach defektem Speicherstand kein Dienstbeginn");
+  const invalid={getItem:()=>JSON.stringify(["falsches","format"])};
+  const again=root.LDOpenWorldLife.create();
+  if(again.load(invalid).onDuty!==false)throw Error("Ungültiges Format wurde übernommen");
+ });
  test("Nachtschicht: Dienstbericht und Funkereignisse über Mitternacht",()=>{
   const data=new Map();
   const storage={getItem:key=>data.get(key)||null,setItem:(key,value)=>data.set(key,value)};
