@@ -297,6 +297,7 @@ try{
  const restored=await page.evaluate(()=>window.FunkspruchGame.status());
  assert.equal(restored.indoor,true,"Gespeicherter Innenraum wurde nicht wiederhergestellt");
  assert.equal(restored.life.onDuty,true,"Gespeicherter Dienststatus wurde nicht wiederhergestellt");
+  assert.equal(restored.life.location,"leitstelle","Dienstort passt nach Wiederherstellung nicht zum Innenraum");
  console.log("Spielstand: Innenraum und Dienststatus nach Neuladen wiederhergestellt.");
  console.log("Browsertest: First Person, Dienstbeginn, Arbeitsplatz, ELS und gesperrter Modus geprüft.");
  const tablet=await browser.newPage({viewport:{width:820,height:1180},isMobile:true,hasTouch:true,deviceScaleFactor:2});
