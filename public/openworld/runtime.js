@@ -10,7 +10,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
  const required=["LDOpenWorldGeo","LDOpenWorldRenderer","LDOpenWorldVehicle","LDOpenWorldInteraction","LDOpenWorldCollision","LDOpenWorldWalker","LDOpenWorldLife","LDOpenWorldRoadGraph"];
  for(const key of required)if(!root[key])throw Error("Missing module: "+key);
  if(!origin||!Number.isFinite(origin.lon)||!Number.isFinite(origin.lat))throw Error("WGS84 origin required");
- let model=null,view=null,graph=null,interaction=null,disposed=false,raf=0,last=0,accumulator=0,paused=true;
+ let model=null,view=null,graph=null,walkingGraph=null,interaction=null,disposed=false,raf=0,last=0,accumulator=0,paused=true;
  let touch=null,keyboard=null,lookInput={x:0,y:0},worldUpgrade=null,traffic=null;
  let indoor=false,entryPoint=null,doorPoint=null,chipPoint=null,office=null,officePieces=[],exterior=null,deskPoint={x:1,z:-1.3},atDesk=false,screenTexture=null,screenCanvas=null,screenContext=null,screenMaterialRef=null;
  const life=root.LDOpenWorldLife.create();
@@ -207,7 +207,8 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   if(disposed)throw Error("Runtime disposed");
   model=root.LDOpenWorldGeo.loadGeoJSON(geojson,origin);
   if(root.LDFunkspruchTraffic)traffic=root.LDFunkspruchTraffic.create({THREE,scene,model,low:graphics.renderRadius===1});
-  graph=root.LDOpenWorldRoadGraph.create(model);
+  graph=root.LDOpenWorldRoadGraph.create(model,{mode:"car"});
+  walkingGraph=root.LDOpenWorldRoadGraph.create(model,{mode:"walk"});
   view=root.LDOpenWorldRenderer.create(THREE,scene,{radius:graphics.renderRadius===1?1:2});
   view.setModel(model);
   const firstRoad=model.roads[0]?.points[0];
@@ -334,7 +335,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
  function routeTo(x,z){
   if(!graph)throw Error("World not loaded");
   const p=interaction.driving?car.snapshot():walker.snapshot();
-  return graph.route(p,{x,z});
+  return (interaction.driving?graph:walkingGraph||graph).route(p,{x,z});
  }
  function requestPointerLock(){
   if(!interaction?.driving&&renderer.domElement.requestPointerLock)renderer.domElement.requestPointerLock();

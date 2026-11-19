@@ -140,6 +140,34 @@ async function run(){
   i.enter();if(!i.driving)throw Error("Entry failed");
   i.exit();if(i.driving)throw Error("Exit failed");
  });
+ test("Autonavigation: nur öffentliche befahrbare OSM-Wege",()=>{
+  const roads=[
+   {points:[{x:0,z:0},{x:25,z:0}],properties:{highway:"residential",maxspeed:"30"}},
+   {points:[{x:25,z:0},{x:50,z:0}],properties:{highway:"footway"}},
+   {points:[{x:25,z:0},{x:25,z:25}],properties:{highway:"cycleway"}}
+  ];
+  const g=root.LDOpenWorldRoadGraph.create({roads},{mode:"car"});
+  if(g.edgeCount!==2)throw Error("Nichtbefahrbare Wege für Autos geroutet");
+  if(!root.LDOpenWorldRoadGraph.canTravel({highway:"footway"},"walk"))throw Error("Gehweg für Fußgänger fehlt");
+  if(root.LDOpenWorldRoadGraph.canTravel({highway:"residential",motor_vehicle:"no"},"car"))throw Error("OSM-Fahrverbot ignoriert");
+ });
+ test("Autonavigation: Einbahnstraßen inklusive OSM-Rückwärtsrichtung",()=>{
+  const roads=[
+   {points:[{x:0,z:0},{x:20,z:0}],properties:{highway:"residential",oneway:"yes"}},
+   {points:[{x:20,z:0},{x:20,z:30}],properties:{highway:"residential",oneway:"-1"}}
+  ];
+  const g=root.LDOpenWorldRoadGraph.create({roads},{mode:"car"});
+  if(!g.route({x:0,z:0},{x:20,z:0}))throw Error("Erlaubte Einbahnstraße nicht routbar");
+  if(g.route({x:20,z:0},{x:0,z:0}))throw Error("Unzulässige Gegenrichtung geroutet");
+  if(!g.route({x:20,z:30},{x:20,z:0}))throw Error("Rückwärts-Einbahnstraße nicht berücksichtigt");
+  if(g.route({x:20,z:0},{x:20,z:30}))throw Error("Gegenrichtung bei -1 erlaubt");
+ });
+ test("Routing: Fahrtstreckenlänge und geschätzte Dauer",()=>{
+  const roads=[{points:[{x:0,z:0},{x:100,z:0},{x:150,z:0}],properties:{highway:"residential",maxspeed:"30"}}];
+  const g=root.LDOpenWorldRoadGraph.create({roads},{mode:"car"}),route=g.route({x:0,z:0},{x:150,z:0});
+  if(!route||Math.abs(route.meters-150)>1||!(route.secondsEstimated>0&&route.secondsEstimated<100))
+    throw Error("Routenberechnung unplausibel");
+ });
  test("Routen: vorhandenes Straßennetz",()=>{
   const graph=root.LDOpenWorldRoadGraph.create(model);
   const path=graph.route(model.roads[0].points[0],model.roads[0].points[1]);
