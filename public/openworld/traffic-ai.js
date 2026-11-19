@@ -140,6 +140,36 @@ function generate(model,{cars=6,walkers=8,range=650}={}){
  }
  return result;
 }
+function leadClearance(agent,agents){
+ if(agent?.kind!=="car"||!agent.edge)return Infinity;
+ let gap=Infinity;
+ const edge=agent.edge,dx=(edge.b.x-edge.a.x)/edge.length,dz=(edge.b.z-edge.a.z)/edge.length;
+ for(const other of agents){
+  if(other===agent||other.kind!=="car"||!other.edge)continue;
+  if(other.edge===edge){
+   if(other.progress>=agent.progress)gap=Math.min(gap,other.progress-agent.progress);
+  }else if(other.edge.from===edge.to){
+   const next=other.edge,nx=(next.b.x-next.a.x)/next.length,nz=(next.b.z-next.a.z)/next.length;
+   if(dx*nx+dz*nz>.75)gap=Math.min(gap,edge.length-agent.progress+other.progress);
+  }
+ }
+ return gap;
+}
+function stepAgents(agents,dt){
+ const delta=Math.max(0,Math.min(.12,finite(dt)?dt:0));
+ for(const a of agents){
+  const remain=a.edge.length-a.progress;
+  const slow=a.kind==="car"&&remain<9 ? .62 : 1;
+  const desired=delta*a.speed*slow;
+  const gap=leadClearance(a,agents);
+  // Abstand zu vorausfahrenden Fahrzeugen: kein Durchfahren von KI-Verkehr.
+  const meters=a.kind==="car"?Math.max(0,Math.min(desired,gap-5.5)):desired;
+  advance(a,meters,a.graph);
+  a.speed=a.edge.speed;
+  a.lane=laneOffset(a.edge,a.seed,a.kind);
+ }
+ return agents;
+}
 function create({THREE,scene,model,low=false}={}){
  if(!THREE||!scene||!model)throw Error("Three.js, Szene und reale Straßen erforderlich");
  const agents=generate(model,{cars:low?3:6,walkers:low?4:8}),group=new THREE.Group();
@@ -168,14 +198,8 @@ function create({THREE,scene,model,low=false}={}){
  });
  function update(dt,indoor=false){
   group.visible=!indoor;if(indoor)return;
-  const delta=Math.max(0,Math.min(.12,finite(dt)?dt:0));
+  stepAgents(agents,dt);
   for(const a of agents){
-   // Einfahrten und Knoten vorsichtiger passieren; ohne erfundene Ampelphasen.
-   const remain=a.edge.length-a.progress;
-   const slow=a.kind==="car"&&remain<9 ? 0.62 : 1;
-   advance(a,delta*a.speed*slow,a.graph);
-   a.speed=a.edge.speed;
-   a.lane=laneOffset(a.edge,a.seed,a.kind);
    const p=position(a.edge.points,a.progress);
    a.object.position.set(p.x+p.nx*a.lane,0,p.z+p.nz*a.lane);
    a.object.rotation.y=-p.yaw;
@@ -187,5 +211,5 @@ function create({THREE,scene,model,low=false}={}){
   geos.forEach(g=>g.dispose());[...paints,tires,skin].forEach(m=>m.dispose());
  }};
 }
-root.LDFunkspruchTraffic=Object.freeze({distance,position,speedFor,allowed,buildNetwork,chooseNext,advance,generate,create});
+root.LDFunkspruchTraffic=Object.freeze({distance,position,speedFor,allowed,buildNetwork,chooseNext,advance,leadClearance,stepAgents,generate,create});
 })(typeof window!=="undefined"?window:globalThis);
