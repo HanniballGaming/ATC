@@ -230,7 +230,7 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   entryPoint={...pedestrianSpawn};doorPoint={x:entryPoint.x,z:entryPoint.z-1.7};
   exterior=makeStationExterior(entryPoint);
   office=new THREE.Group();scene.add(office);office.visible=false;
-  if(root.LDFunkspruchWorld){worldUpgrade=root.LDFunkspruchWorld.install({THREE,scene,camera,life,onMessage:message=>onStatus({...status(),message})});worldUpgrade.addIndoor(office);}
+  if(root.LDFunkspruchWorld){worldUpgrade=root.LDFunkspruchWorld.install({THREE,scene,camera,life,model,stationPosition:entryPoint,onMessage:message=>onStatus({...status(),message})});worldUpgrade.addIndoor(office);}
   const addBox=(w,h,d,x,y,z,color)=>{const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color}));mesh.position.set(x,y,z);office.add(mesh);officePieces.push(mesh);return mesh;};
   addBox(16,.2,12,0,-.1,0,0x56606b);
   addBox(16,.16,12,0,3.55,0,0xe5e9ec);
