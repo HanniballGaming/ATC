@@ -30,10 +30,14 @@ try{
  const url="http://127.0.0.1:"+server.address().port+"/openworld/";
  await page.goto(url,{waitUntil:"domcontentloaded",timeout:30000});
  await page.waitForFunction(()=>!!window.FunkspruchGame,{timeout:30000});
- await page.waitForFunction(async()=>{
-  if(!navigator.serviceWorker?.controller)return false;
-  return (await caches.keys()).some(key=>key.startsWith("funkspruch-pwa-"));
- },null,{timeout:40000});
+ try{
+  await page.waitForFunction(()=>!!navigator.serviceWorker?.controller,null,{timeout:40000});
+ }catch(error){
+  const diagnostic=await page.evaluate(async()=>({worker:!!navigator.serviceWorker,controller:!!navigator.serviceWorker?.controller,registrations:await navigator.serviceWorker?.getRegistrations?.().then(rs=>rs.map(r=>({scope:r.scope,active:r.active?.state,installing:r.installing?.state}))),cacheNames:await caches.keys()}));
+  throw Error("PWA nicht aktiv: "+JSON.stringify(diagnostic)+"; "+error.message);
+ }
+ const cacheNames=await page.evaluate(()=>caches.keys());
+ assert.ok(cacheNames.some(name=>name.startsWith("funkspruch-pwa-")),"Versionierter PWA-Offlinecache fehlt");
  const before=await page.evaluate(()=>({
   worker:!!navigator.serviceWorker.controller,
   cache:location.origin,
