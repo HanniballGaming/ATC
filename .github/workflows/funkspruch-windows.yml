@@ -105,3 +105,6 @@ jobs:
       - name: Mobile First-Person-Touchsteuerung im Browser prüfen
         working-directory: desktop
         run: node tablet-smoke.mjs
+      - name: Installierte Browser-PWA und Einsatzleitsystem offline prüfen
+        working-directory: desktop
+        run: node offline-smoke.mjs
