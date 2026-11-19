@@ -12,6 +12,8 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
  if(!origin||!Number.isFinite(origin.lon)||!Number.isFinite(origin.lat))throw Error("WGS84 origin required");
  let model=null,view=null,graph=null,walkingGraph=null,interaction=null,disposed=false,raf=0,last=0,accumulator=0,paused=true;
  let touch=null,keyboard=null,lookInput={x:0,y:0},worldUpgrade=null,traffic=null;
+ const performance=root.LDFunkspruchPerformance?.create?.()||null;
+ let adaptiveGraphics=false,lowGraphics=graphics.renderRadius===1;
  let indoor=false,entryPoint=null,doorPoint=null,chipPoint=null,office=null,officePieces=[],exterior=null,deskPoint={x:1,z:-1.3},atDesk=false,screenTexture=null,screenCanvas=null,screenContext=null,screenMaterialRef=null;
  const life=root.LDOpenWorldLife.create();
  const journal=root.LDFunkspruchShiftJournal?.create?.()||null;
@@ -171,7 +173,10 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
  function frame(time){
   if(disposed)return;
   if(paused){last=time;raf=root.requestAnimationFrame(frame);return;}
-  const dt=last?Math.min((time-last)/1000,0.1):0;last=time;
+  const rawDt=last?Math.max(0,Math.min((time-last)/1000,.6)):0;
+  const dt=Math.min(rawDt,.1);last=time;
+  const requested=performance?.sample(rawDt,adaptiveGraphics&&!atDesk);
+  if(requested!==null&&requested!==undefined)setGraphicsProfile(requested,true);
   accumulator=Math.min(accumulator+dt,0.2);
   while(accumulator>=1/60){fixedStep(1/60);accumulator-=1/60;}
   if(!dispatchSummary&&!atDesk){
@@ -360,9 +365,12 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
   if(needsPosition)host.style.position=oldPosition;
  }
  function setPaused(value){paused=!!value;return paused;}
- function setGraphicsProfile(low){
-  renderer.setPixelRatio(Math.min(root.devicePixelRatio||1,low?1:1.5));
-  view?.setRadius?.(low?1:2);resize();return low;
+ function setGraphicsProfile(low,adaptive=false){
+  lowGraphics=!!low;adaptiveGraphics=!!adaptive;
+  renderer.setPixelRatio(Math.min(root.devicePixelRatio||1,lowGraphics?1:1.5));
+  view?.setRadius?.(lowGraphics?1:2);
+  performance?.reset(lowGraphics);
+  resize();return lowGraphics;
  }
  function setDispatchSummary(raw){
   if(!raw||!["open","waiting","free","total"].every(k=>Number.isSafeInteger(raw[k])&&raw[k]>=0&&raw[k]<=100000))return false;
