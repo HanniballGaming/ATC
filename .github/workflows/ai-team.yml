@@ -1,0 +1,159 @@
+name: FUNKSPRUCH AI Team (draft PR only)
+on:
+  workflow_dispatch:
+    inputs:
+      role:
+        type: choice
+        required: true
+        options: [engineering, planning]
+        default: engineering
+      task:
+        type: string
+        required: false
+        description: Optional development task
+  schedule:
+    - cron: '24 3 * * 2,4'
+    - cron: '44 3 * * 2'
+permissions:
+  contents: write
+  pull-requests: write
+concurrency:
+  group: funkspruch-ai-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  engineering:
+    if: ${{ vars.AI_TEAM_ENABLED == 'true' && (github.event.schedule == '24 3 * * 2,4' || (github.event_name == 'workflow_dispatch' && inputs.role == 'engineering')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    outputs:
+      pr: ${{ steps.cpr.outputs.pull-request-number }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: funkspruch-v1-integration
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare real app and test tools
+        run: |
+          python release_v23.py
+          cd desktop
+          npm install --no-audit --no-fund
+          npm run prepare:web
+      - name: Codex writes code, tests, repairs once, documents remaining risks
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          allow-bots: true
+          permission-profile: ':workspace'
+          prompt: |
+            Use AGENTS.md and docs/AI_BACKLOG.md. Work on ONE scoped task for existing FUNKSPRUCH.
+            Owner task (if supplied): ${{ inputs.task }}.
+            Implement, run tests, repair the root cause on failures, and re-run tests
+            (maximum two repair attempts). Never modify workflows, AGENTS.md, secrets,
+            publishing scripts or release branches. Record status in docs/AI_REPORT.md.
+            Do not claim real device game tests unless actually performed.
+      - name: Mandatory acceptance tests
+        run: |
+          cd desktop
+          npm run verify
+          node fallback-verify.mjs
+          node browser-smoke.mjs
+          node city-switch-smoke.mjs
+          node tablet-smoke.mjs
+          node offline-smoke.mjs
+      - name: Block protected file edits
+        run: |
+          python - <<'PY'
+          import subprocess
+          files=[x[3:] for x in subprocess.check_output(['git','status','--porcelain'],text=True).splitlines()]
+          bad=[x for x in files if x.startswith(('.github/', 'AGENTS.md','release_v')) or x.endswith(('.pem','.key'))]
+          if bad: raise SystemExit(str(bad))
+          PY
+      - name: Draft PR, never merge or deploy
+        id: cpr
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: funkspruch-v1-integration
+          branch: ai/funkspruch-${{ github.run_id }}
+          draft: true
+          title: 'AI FUNKSPRUCH: verified coding suggestion'
+          body: 'Automated tests passed. Independent AI QA and human release approval still needed.'
+          add-paths: |
+            public/openworld/**
+            desktop/*.mjs
+            desktop/*.cjs
+            desktop/package.json
+            firstperson_v22.js
+            ai_dispatch_v23.js
+            funkspruch_embed.js
+            docs/AI_BACKLOG.md
+            docs/AI_REPORT.md
+  independent_qa:
+    needs: engineering
+    if: ${{ needs.engineering.outputs.pr != '' && needs.engineering.outputs.pr != '0' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ai/funkspruch-${{ github.run_id }}
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Independent QA agent read only
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          allow-bots: true
+          permission-profile: ':read-only'
+          output-file: ai-review.md
+          prompt: |
+            Examine this branch against origin/funkspruch-v1-integration.
+            Review regressions, untested claims, security, realism and test coverage.
+            Write critical issues and limitations. Do not change source code.
+      - name: Post QA on the draft PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ needs.engineering.outputs.pr }}
+        run: gh pr comment "$PR" --body-file ai-review.md
+  planning:
+    if: ${{ vars.AI_TEAM_ENABLED == 'true' && (github.event.schedule == '44 3 * * 2' || (github.event_name == 'workflow_dispatch' && inputs.role == 'planning')) }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: funkspruch-v1-integration
+          persist-credentials: false
+      - name: Codex story and roadmap team
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          allow-bots: true
+          permission-profile: ':workspace'
+          prompt: |
+            Read AGENTS.md and docs/AI_BACKLOG.md. Edit docs/AI_STORY.md and
+            docs/AI_ROADMAP.md ONLY, proposing realistic new scenarios and next features.
+            Never modify existing gameplay or release policy. Separate ideas from implemented features.
+      - name: Enforce planning-only edits
+        run: |
+          python - <<'PY'
+          import subprocess
+          files=[x[3:] for x in subprocess.check_output(['git','status','--porcelain'],text=True).splitlines()]
+          if any(x not in ('docs/AI_STORY.md','docs/AI_ROADMAP.md') for x in files):
+            raise SystemExit('Other files were modified: '+str(files))
+          PY
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: funkspruch-v1-integration
+          branch: ai/funkspruch-planning-${{ github.run_id }}
+          draft: true
+          title: 'AI FUNKSPRUCH: story & roadmap proposal'
+          body: 'Design only; human review required.'
+          add-paths: |
+            docs/AI_STORY.md
+            docs/AI_ROADMAP.md
