@@ -4,6 +4,7 @@ on:
     branches: [leitstelle-deutschland-release]
     paths:
       - 'ai_dispatch_v23.js'
+      - 'funkspruch_embed.js'
       - 'release_v23.py'
       - '.github/workflows/leitstelle-v23.yml'
   workflow_dispatch:

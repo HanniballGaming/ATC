@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>FUNKSPRUCH – Offline-Einsatzleitsystem</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,"Segoe UI",sans-serif;background:#06111e;color:#e0edf5}
+*{box-sizing:border-box}body{margin:0;min-height:100dvh}button,select,input{font:inherit}button,select,input{background:#112b40;color:#edf7fc;border:1px solid #52768e;border-radius:7px;padding:9px}button{cursor:pointer}button:hover:not(:disabled){background:#20516a}button:disabled{opacity:.45;cursor:not-allowed}button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid #8ee1f3;outline-offset:2px}
+header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:#103047;border-bottom:1px solid #3e6a84;flex-wrap:wrap}header h1{font-size:16px;letter-spacing:.04em;margin:0;color:#94d9ee}header p{font-size:12px;color:#c5d8e2;margin:0}#duty{margin-left:auto;font-size:12px;padding:5px 9px;background:#173e4e;border-radius:20px}#notice{margin:10px 14px 0;padding:9px 12px;background:#143044;border-left:3px solid #4da0b8;min-height:38px;font-size:13px}
+#workspace{display:grid;grid-template-columns:minmax(270px,1.1fr) minmax(270px,1fr);gap:12px;padding:13px}section{background:#0f2637;border:1px solid #33546a;border-radius:11px;padding:14px;min-width:0}section h2{font-size:16px;margin:0 0 10px;color:#b2e7f0}section h3{font-size:13px;margin:13px 0 6px}p{line-height:1.5}label{display:block;font-size:12px;color:#bcd3e0;margin:8px 0 4px}select,input{display:block;width:100%;margin-top:5px;min-width:0}.actions{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0}.call{background:#091b2a;border:1px solid #315366;padding:10px;border-radius:8px;white-space:pre-wrap;min-height:66px;font-size:13px}#reply{color:#c3e9e6}.small{color:#a6bfce;font-size:12px}#units{display:grid;gap:6px}#units .unit{display:flex;gap:10px;align-items:center;justify-content:space-between;border-bottom:1px solid #29465a;padding:7px 0;font-size:12px}#units button{font-size:12px;padding:6px}#history,#radioLog{white-space:pre-wrap;max-height:220px;overflow:auto;font-size:12px;line-height:1.7;background:#091c29;border-radius:7px;padding:10px}.wide{grid-column:1 / -1}#instructions{font-size:12px;color:#b9cfda;line-height:1.6}.sr-only{position:absolute;width:1px;height:1px;clip:rect(0,0,0,0);overflow:hidden}
+@media(max-width:720px){#workspace{grid-template-columns:1fr}header{gap:7px}#duty{margin-left:0}section{padding:11px}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style></head><body>
+<header><h1>FUNKSPRUCH · Offline-Leitplatz</h1><p>Funktionierende Ersatzansicht für den Ausbildungsbetrieb · ausschließlich fiktive Übungsfälle</p><div id="duty" role="status">Dienststatus wird geladen</div></header>
+<div id="notice" role="status" aria-live="polite">Bereit für den simulierten Leitstellenbetrieb.</div>
+<main id="workspace">
+<section aria-labelledby="callHeading"><h2 id="callHeading">Notrufannahme</h2>
+<label for="scenario">Übungsszenario auswählen<select id="scenario"></select></label>
+<div class="actions"><button type="button" id="call">Übungsnotruf auslösen</button><button type="button" id="answer">Anruf annehmen</button></div>
+<div class="call" id="activeCall" aria-live="polite">Noch kein eingehender Notruf.</div>
+<label for="question">Rückfrage an den KI-Anrufer<input id="question" autocomplete="off" maxlength="200" placeholder="Zum Beispiel: Atmet die Person?"></label>
+<div class="actions"><button type="button" id="ask">Nachfragen</button><button type="button" id="register">Einsatzakte eröffnen</button></div>
+<div class="call" id="reply" aria-live="polite">Gesprächsangaben werden nach Rückfragen angezeigt.</div>
+</section>
+<section aria-labelledby="dispatchHeading"><h2 id="dispatchHeading">Disposition und Fahrzeugstatus</h2>
+<label for="incident">Einsatzakte<select id="incident"></select></label>
+<label for="unit">Einsatzmittel<select id="unit"></select></label>
+<div class="actions"><button type="button" id="dispatch">Fahrzeug alarmieren</button><button type="button" id="close">Einsatz abschließen</button></div>
+<p class="small" id="need">Bedarfsanzeige nach Übungsszenario, keine automatische echte Disposition.</p>
+<h3>Einsatzmittel</h3><div id="units" aria-label="Fahrzeugübersicht"></div>
+<p class="small">Statusfolge: Alarmiert → Anfahrt → Einsatzstelle → Rückfahrt → Frei. Statusmeldungen werden manuell ausgelöst.</p>
+</section>
+<section class="wide" aria-labelledby="logHeading"><h2 id="logHeading">Funk- und Einsatzchronik</h2>
+<p class="small" id="situation">Keine offenen Vorgänge</p>
+<div id="radioLog" role="log" aria-label="Funkchronik">Keine Meldungen</div>
+<h3>Einsatzjournal</h3><div id="history" role="log">Noch keine Einsätze</div></section>
+<section class="wide" aria-label="Spielhilfe"><h2>Bedienung und Ausbildung</h2>
+<p id="instructions">1. In der 3D-Leitstelle einstempeln. 2. Übungsnotruf auslösen und annehmen. 3. Einsatzort, Geschehen, Atmung, Bewusstsein, Gefahren und Zugang erfragen. 4. Einsatzakte eröffnen, verfügbare Fahrzeuge alarmieren, deren Statusmeldungen bearbeiten und den Einsatz abschließen.</p>
+<p class="small">Dieses Ersatz-ELS verarbeitet keine echten Notrufe, leitet keinen BOS-Funk weiter und verwendet ausdrücklich fiktive Trainingsadressen. Spielstände werden ausschließlich lokal gespeichert.</p></section>
+</main>
+<script src="./fallback-els-core.js"></script><script src="./fallback-els-ui.js"></script>
+</body></html>

@@ -3,7 +3,7 @@
  * Mounted explicitly by the open-world runtime; no global handlers.
  */
 (function(root){"use strict";
-function mount(host,{onInteract=()=>{},onRun=()=>{}}={}){
+function mount(host,{onInteract=()=>{},onRun=()=>{},onMenu=()=>{}}={}){
  if(!host||!host.appendChild)throw Error("Container erforderlich");
  const doc=host.ownerDocument,container=doc.createElement("div");
  container.setAttribute("aria-label","FUNKSPRUCH – Touchsteuerung");
@@ -54,6 +54,9 @@ function mount(host,{onInteract=()=>{},onRun=()=>{}}={}){
   el.addEventListener("click",handler);container.appendChild(el);return el;
  }
  pad("left","Bewegungsstick");pad("right","Blickstick");
+ const menuButton=button("Menü","auto",onMenu);
+ Object.assign(menuButton.style,{top:"max(14px, env(safe-area-inset-top))",
+  bottom:"auto",right:"max(18px, env(safe-area-inset-right))",zIndex:"2"});
  button("Interagieren","calc(max(20px, env(safe-area-inset-bottom)) + min(29vw, 136px) + 16px)",onInteract);
  const runButton=button("Sprinten: Aus","calc(max(20px, env(safe-area-inset-bottom)) + min(29vw, 136px) + 70px)",()=>{
   state.run=!state.run;runButton.textContent=state.run?"Sprinten: An":"Sprinten: Aus";runButton.setAttribute("aria-pressed",String(state.run));onRun(state.run);

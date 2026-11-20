@@ -1,62 +1,315 @@
 <!doctype html>
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>FUNKSPRUCH – Stimmen im Rauschen</title>
+<meta name="theme-color" content="#164b66">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="../manifest.webmanifest">
 <style>html,body{margin:0;width:100%;height:100%;font-family:system-ui;background:#101820;color:white}
 #world{position:absolute;inset:0}#panel{position:absolute;top:12px;left:12px;z-index:40;background:#10202de8;border-radius:12px;padding:12px;max-width:340px;font-size:13px}
 button{padding:8px;margin:3px;background:#204f71;color:white;border:1px solid #7a9db3;border-radius:6px}
-#info{white-space:pre-wrap;max-height:110px;overflow:auto}#panel{max-width:290px}#clock{font-size:12px;color:#d8eac6}#eat,#sleep{display:none}#monitor{display:none;position:absolute;left:18%;top:12%;width:64%;height:65%;z-index:80;background:#0d1924;border:8px solid #263746;border-radius:12px;box-shadow:0 10px 25px #0008;overflow:hidden}#monitor.active{display:flex;flex-direction:column}#monitor header{display:flex;justify-content:space-between;align-items:center;background:#182f43;padding:5px 12px}#monitor iframe{flex:1;border:0;width:100%;background:#101820}#panel{pointer-events:auto}#mainMenu{position:fixed;inset:0;z-index:200;background:radial-gradient(ellipse at 28% 15%,#164b66,#06121e 72%);display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;overflow:auto}#mainMenu[hidden]{display:none}#menuContent{width:min(880px,100%)}#menuContent h1{font-size:clamp(32px,6vw,66px);letter-spacing:.09em;margin:0;color:#e6f8ff}#menuContent>p{color:#a5c4d5;font-size:17px;margin:3px 0 28px}#modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.mode{background:#102a3bbd;border:1px solid #43839c;border-radius:16px;padding:24px;min-height:230px;box-sizing:border-box}.mode h2{font-size:22px}.mode p{color:#b7c9d6;line-height:1.6}.mode button{font-size:16px;padding:12px 18px}.mode.locked{background:#27151bd9;border-color:#804652}.mode.locked button{opacity:.6;cursor:not-allowed}.mode.locked strong{color:#f1a4a4}#menuHint{color:#a6bbc9;margin-top:20px}@media(max-width:650px){#modes{grid-template-columns:1fr}.mode{min-height:unset;padding:17px}} </style></head><body>
-<div id="mainMenu" role="dialog" aria-modal="true" aria-labelledby="gameTitle"><div id="menuContent"><h1 id="gameTitle">FUNKSPRUCH</h1><p>Stimmen im Rauschen</p><div id="modes"><section class="mode"><h2>Leitstellenbetrieb</h2><p>Beginne deine Schicht, betrete die Leitstelle und bearbeite Notrufe, Einsätze und Funkverkehr in der Ego-Perspektive.</p><button id="startNormal" type="button">Leitstellenmodus starten</button></section><section class="mode locked"><strong>IN ENTWICKLUNG</strong><h2>Apokalypse &amp; Überleben</h2><p>Katastrophen, Zusammenbruch der Versorgung und Überleben in der Leitstelle. Dieser Modus wird später freigeschaltet.</p><button type="button" disabled aria-disabled="true" title="Noch in Entwicklung">Noch nicht verfügbar</button></section></div><p id="menuHint">Aktuell ist ausschließlich der normale Leitstellenmodus spielbar.</p></div></div>
-<div id="world"></div><section id="monitor" aria-label="Disponentenarbeitsplatz"><header><strong>FUNKSPRUCH · Arbeitsplatzmonitor</strong><button id="stand">Aufstehen</button></header><iframe title="Leitstellen-Einsatzleitsystem" loading="lazy" data-src="./arbeitsplatz.html" id="dispatchMonitor"></iframe></section><div id="panel"><strong>FUNKSPRUCH · Leitstellenbetrieb</strong>
+#info{white-space:pre-wrap;max-height:110px;overflow:auto}#panel{max-width:290px}#clock{font-size:12px;color:#d8eac6}#eat,#sleep{display:none}#monitor{display:none;position:absolute;left:18%;top:12%;width:64%;height:65%;z-index:80;background:#0d1924;border:8px solid #263746;border-radius:12px;box-shadow:0 10px 25px #0008;overflow:hidden}#monitor.active{display:flex;flex-direction:column}#monitor header{display:flex;justify-content:space-between;align-items:center;background:#182f43;padding:5px 12px}#monitor iframe{flex:1;border:0;width:100%;background:#101820}#shiftReport{display:none;flex:1;padding:20px;overflow:auto;background:#081d2c;color:#e7f3f8;white-space:pre-wrap;font:15px/1.65 system-ui}#monitor.reportVisible iframe{display:none}#monitor.reportVisible #shiftReport{display:block}
+@media (pointer:coarse),(max-width:900px){
+ #monitor{left:0;top:0;width:100%;height:100dvh;border:3px solid #263746;border-radius:0}
+ #monitor header{min-height:52px;flex-shrink:0;gap:7px;flex-wrap:wrap}#monitor header strong{margin-right:auto;font-size:13px}
+ #monitor header button{min-height:42px;font-weight:bold}
+}#firstPersonPrompt{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);z-index:38;max-width:82vw;background:#071a29bd;border:1px solid #3d667b;border-radius:9px;padding:8px 14px;text-align:center;font-size:13px;pointer-events:none;display:none}
+body.playing #firstPersonPrompt{display:block}body.playing #firstPersonPrompt:empty{display:none}
+#crosshair{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:32;opacity:.7;color:#e8f5f9;font-size:18px;pointer-events:none;display:none}
+body.playing:not(.fatal) #crosshair{display:block}body.playing #monitor.active~#crosshair{display:none}
+@media(pointer:coarse){#firstPersonPrompt{bottom:175px;font-size:12px}#crosshair{opacity:.4}}
+#mapCredit{position:fixed;bottom:5px;left:7px;color:#e0ecf3;background:#102333b8;font:10px system-ui;z-index:35;padding:2px 5px;border-radius:4px}#mapCredit[hidden]{display:none}#panel{pointer-events:auto}body.started #panel{display:none}body.fatal #panel{display:block}#mainMenu{position:fixed;inset:0;z-index:200;background:radial-gradient(ellipse at 28% 15%,#164b66,#06121e 72%);display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;overflow:auto}#mainMenu[hidden]{display:none}#menuContent{width:min(880px,100%)}#menuContent h1{font-size:clamp(32px,6vw,66px);letter-spacing:.09em;margin:0;color:#e6f8ff}#menuContent>p{color:#a5c4d5;font-size:17px;margin:3px 0 28px}#modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.mode{background:#102a3bbd;border:1px solid #43839c;border-radius:16px;padding:24px;min-height:230px;box-sizing:border-box}.mode h2{font-size:22px}.mode p{color:#b7c9d6;line-height:1.6}.mode button{font-size:16px;padding:12px 18px}.mode.locked{background:#27151bd9;border-color:#804652}.mode.locked button{opacity:.6;cursor:not-allowed}.mode.locked strong{color:#f1a4a4}#menuHint{color:#a6bbc9;margin-top:20px}#saveControls{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}#saveControls button{font-size:13px}#ambientRow,#voiceRow{display:block;color:#c1dfeb;margin-top:12px;font-size:13px}#graphicsRow{display:block;color:#c1dfeb;margin-top:8px;font-size:13px}#graphicsQuality{background:#112c40;color:white;border:1px solid #426882;border-radius:5px;padding:6px}#ambientEnabled,#voiceEnabled{accent-color:#48b2bd}#betaHelp{margin:12px 0;padding:12px;border:1px solid #426882;border-radius:10px;background:#0c2534}#betaHelp summary{cursor:pointer;font-weight:650}#betaHelp p{font-size:13px;line-height:1.5;color:#c5dce7}#betaHelp button{min-height:42px}#saveState{color:#c5dce7;font-size:12px;min-height:1.2em}@media(max-width:650px){#modes{grid-template-columns:1fr}.mode{min-height:unset;padding:17px}} #shiftStatus{background:#0e2a3b;border:1px solid #35576a;border-radius:9px;margin:12px 0;padding:10px 12px;color:#cde9f2;font-size:13px;line-height:1.6;white-space:pre-line}
+#fovRow,#sensitivityRow{display:block;color:#c1dfeb;margin-top:10px;font-size:13px}#cameraFov,#lookSensitivity{display:block;accent-color:#61c5d6;width:min(260px,85%);margin-top:5px}
+#regionSelection{margin:12px 0;padding:12px;background:#0d2839;border:1px solid #416c83;border-radius:10px;color:#d5eaf5;font-size:13px}#regionSelection strong,#regionSelection label{display:block;margin-bottom:6px}#regionSelection select{background:#113044;color:#fff;padding:9px;border:1px solid #537a93;border-radius:6px;width:min(420px,100%)}#regionSelection p{line-height:1.45;margin:9px 0}#regionSelection small{line-height:1.4;color:#aecbd9}
+#streetNavigation{margin:12px 0;background:#0d283b;border:1px solid #396379;border-radius:10px;padding:12px;color:#d0e9f3;font-size:13px}#streetNavigation strong{display:block;margin-bottom:8px}#streetNavigation label{display:block;margin-bottom:5px}#streetNavigation select{background:#102d40;color:white;border:1px solid #52788e;border-radius:6px;padding:8px;width:min(440px,100%);margin-right:6px}#streetNavigation button{margin:4px;padding:8px;border-radius:6px}#routeInfo{color:#c7dce6;margin-top:8px;font-size:12px;line-height:1.5}#routeHud{position:fixed;z-index:40;top:14px;left:14px;background:#082638e8;border:1px solid #4c9eac;border-radius:9px;padding:10px 14px;color:#ddf8f8;max-width:min(330px,70vw);font:13px system-ui;pointer-events:none;white-space:pre-line;line-height:1.55}#routeHud[hidden]{display:none}
+</style></head><body>
+<div id="mainMenu" role="dialog" aria-modal="true" aria-labelledby="gameTitle"><div id="menuContent"><h1 id="gameTitle">FUNKSPRUCH</h1><p>Stimmen im Rauschen</p><div id="modes"><section class="mode"><h2>Leitstellenbetrieb</h2><p>Beginne deine Schicht, betrete die Leitstelle und bearbeite Notrufe, Einsätze und Funkverkehr in der Ego-Perspektive.</p><button id="startNormal" type="button">Leitstellenmodus starten</button></section><section class="mode locked"><strong>IN ENTWICKLUNG</strong><h2>Apokalypse &amp; Überleben</h2><p>Katastrophen, Zusammenbruch der Versorgung und Überleben in der Leitstelle. Dieser Modus wird später freigeschaltet.</p><button type="button" disabled aria-disabled="true" title="Noch in Entwicklung">Noch nicht verfügbar</button></section></div><section id="regionSelection" aria-label="ILS-Stadt und Spielwelt"><strong>Stadt der Leitstelle auswählen</strong><label for="ilsCity">ILS-Stadt</label><select id="ilsCity" aria-label="Stadt der Leitstelle auswählen"></select><p id="worldScopeStatus" role="status" aria-live="polite">Kartenmodus wird geprüft …</p><small>Außerhalb der geladenen 3D-Stadt läuft die Einsatzsimulation weiter. Der Standort des Trainingsgebäudes ist fiktiv; die Auswahl bezeichnet keine nachgewiesene Leitstellenadresse.</small></section><label id="ambientRow"><input type="checkbox" id="ambientEnabled" checked> Umgebungsgeräusche aktivieren</label><label id="voiceRow"><input type="checkbox" id="voiceEnabled" checked> Gesprochene Antworten der KI-Kollegen (Systemstimme)</label><label id="graphicsRow">Grafikqualität: <select id="graphicsQuality"><option value="auto">Automatisch</option><option value="low">Niedrig (ältere Laptops und iPads)</option><option value="medium">Mittel</option></select></label><label id="fovRow" for="cameraFov">Sichtfeld der Ego-Kamera: <output id="cameraFovValue">70°</output><input type="range" id="cameraFov" min="60" max="95" step="5" value="70"></label><label id="sensitivityRow" for="lookSensitivity">Blickempfindlichkeit für Maus und Touch: <output id="lookSensitivityValue">1,0×</output><input type="range" id="lookSensitivity" min="0.5" max="2" step="0.25" value="1"></label><section id="streetNavigation" aria-label="Navigation auf echten Straßen"><strong>OSM-Straßennavigation</strong><label for="streetSelect">Zielstraße im geladenen Stadtgebiet</label><select id="streetSelect" aria-label="Zielstraße auswählen"></select><button type="button" id="planStreetRoute">Route planen</button><button type="button" id="clearStreetRoute">Route löschen</button><div id="routeInfo" role="status" aria-live="polite">Die Navigation verwendet ausschließlich kartierte OSM-Straßen.</div></section><div id="shiftStatus" role="status" aria-live="polite">Schichtinformationen werden geladen …</div><div id="saveControls"><button id="exportSave" type="button">Spielstand exportieren</button><button id="importSave" type="button">Spielstand importieren</button><input id="saveImportFile" type="file" accept=".json,application/json" hidden></div><div id="saveState" role="status" aria-live="polite">Lokale Speicherung wird geprüft …</div><details id="betaHelp"><summary>Beta-Hilfe · Steuerung, Fehlerbericht und Neustart</summary><p>1. Leitstellenmodus starten und zur Leitstelle gehen. 2. Mit E oder der Touch-Schaltfläche eintreten und an der Stechuhr Dienst beginnen. 3. Am Disponentenplatz E drücken, Leitstelle auswählen und die Einweisung abschließen. 4. Notrufe annehmen, Rückfragen stellen, passende Fahrzeuge alarmieren und den Funk bedienen. ESC öffnet das Pausenmenü. Der zweite Spielmodus ist noch gesperrt.</p><p>Speicherstände bleiben auf diesem Gerät. Bei Problemen zuerst den Spielstand exportieren. Ein Fehlerbericht enthält nur technische Informationen und wird nicht automatisch versendet.</p><button id="downloadDiagnostics" type="button">Technischen Fehlerbericht speichern</button><button id="resetSave" type="button">Lokalen Spielstand zurücksetzen</button></details><p id="menuHint">Aktuell ist ausschließlich der normale Leitstellenmodus spielbar. Stadtgebiet: die ausgewählte ILS-Stadt. Für den ersten Start muss ein echter OSM-Kartenausschnitt verfügbar sein. Steuerung: WASD, Maus, E; auf Mobilgeräten Touchsteuerung.</p></div></div>
+<div id="world"></div><div id="crosshair" aria-hidden="true">+</div><div id="firstPersonPrompt" role="status" aria-live="polite"></div><div id="routeHud" role="status" aria-live="polite" hidden></div><div id="mapCredit" hidden>Geodaten © OpenStreetMap-Mitwirkende (ODbL 1.0)</div><section id="monitor" aria-label="Disponentenarbeitsplatz"><header><strong>FUNKSPRUCH · ELS</strong><button id="viewShiftReport" type="button">Dienstbericht</button><button id="exportShiftReport" type="button">Journal exportieren</button><button id="dispatchMenu" type="button">Menü</button><button id="stand" type="button">Aufstehen</button></header><iframe title="Leitstellen-Einsatzleitsystem" loading="lazy" data-src="./arbeitsplatz.html" id="dispatchMonitor"></iframe><div id="shiftReport" role="region" aria-label="Schichtjournal"></div></section><div id="panel"><strong>FUNKSPRUCH · Leitstellenbetrieb</strong>
 <p>Immer in Ego-Perspektive · WASD bewegen · E: Tür, Stechuhr oder Fahrzeug · Auf Mobilgeräten: Touchsteuerung · Am Schreibtisch E drücken</p><div id="clock">Dienstfrei · Zur Leitstelle gehen und einstempeln</div>
 <button id="interact">Interagieren (E)</button><button id="eat">Essen</button>
 <button id="sleep">Schlafen</button><div id="info">Initialisierung …</div>
-<small>Geodaten: © OpenStreetMap contributors (ODbL). Für den Integrationstest werden synthetische Geometrien verwendet.</small></div>
+<small>Reale Geodaten: © OpenStreetMap-Mitwirkende (ODbL 1.0). Ungeprüfte Details werden nicht als echt ausgegeben.</small></div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
-<script src="./geo-core.js"></script><script src="./collision-core.js"></script>
+<script>
+if("serviceWorker" in navigator&&(location.protocol==="https:"||["localhost","127.0.0.1"].includes(location.hostname))){
+ window.addEventListener("load",()=>navigator.serviceWorker.register("../sw.js").catch(error=>console.warn("Offline-Dienst nicht verfügbar",error)));
+}
+</script>
+<script src="./geo-core.js"></script><script src="./collision-core.js"></script><script src="./indoor-collision.js"></script>
 <script src="./three-city.js"></script><script src="./vehicle-core.js"></script>
 <script src="./vehicle-interaction.js"></script><script src="./walker-core.js"></script>
 <script src="./life-core.js"></script><script src="./road-graph.js"></script>
-<script src="./osm-loader.js"></script><script src="./touch-controls.js"></script>
-<script src="./world-upgrades.js"></script>
+<script src="./osm-loader.js"></script><script src="./world-scope.js"></script><script src="./city-region.js"></script><script src="./geodata-session.js"></script><script src="./touch-controls.js"></script>
+<script src="./world-upgrades.js"></script><script src="./traffic-ai.js"></script><script src="./save-manager.js"></script><script src="./shift-journal.js"></script><script src="./ambient.js"></script><script src="./preferences.js"></script><script src="./checkpoints.js"></script><script src="./performance-budget.js"></script><script src="./navigation-core.js"></script>
 <script src="./runtime.js"></script><script src="./integration-tests.js"></script>
 <script>
 (async()=>{
 const info=document.getElementById("info");
 const mainMenu=document.getElementById("mainMenu");
-document.getElementById("startNormal").addEventListener("click",()=>{mainMenu.hidden=true;window.dispatchEvent(new Event("resize"));});
+ const cityCatalog=LDFunkspruchRegion;
+ const region=cityCatalog.selected();
+ const platform=await LDFunkspruchWorldScope.detect();
+ const scope=LDFunkspruchWorldScope.policy(platform);
+ const currentWorldKey=LDFunkspruchCheckpoints.scopedKeys(region.id).key;
+ let loadedTileBounds=[];
+ let switchingCity=false;
+ let persistCurrentCity=()=>true;
+ const citySelector=document.getElementById("ilsCity");
+ for(const city of cityCatalog.list()){
+  const option=document.createElement("option");option.value=city.id;
+  option.textContent=city.label+" – "+city.city+(city.offline?" (Offline-Karte verfügbar)":" (OSM-Verbindung nötig)");
+  citySelector.append(option);
+ }
+ citySelector.value=region.id;
+ document.getElementById("worldScopeStatus").textContent=
+  LDFunkspruchWorldScope.areaText(platform,region)+" Auswahl: "+region.city+". Der derzeitige OSM-Ausschnitt deckt noch nicht die gesamte Stadt ab.";
+ citySelector.addEventListener("change",()=>{
+  const next=citySelector.value;
+  if(next===region.id)return;
+  if(gameInstance?.status()?.life?.onDuty&&!confirm("Stadt während eines aktiven Dienstes wechseln? Fortschritt wird zuvor gesichert.")){
+   citySelector.value=region.id;return;
+  }
+  if(gameInstance&&!persistCurrentCity()){
+   citySelector.value=region.id;
+   document.getElementById("worldScopeStatus").textContent="Stadtwechsel abgebrochen: Spielstand konnte nicht gesichert werden.";
+   return;
+  }
+  try{
+   cityCatalog.setSelected(next);
+   switchingCity=true;
+   localStorage.removeItem("ld-openworld-life-v1");
+   location.reload();
+  }catch(error){
+   switchingCity=false;citySelector.value=region.id;
+   document.getElementById("worldScopeStatus").textContent="Stadtwechsel fehlgeschlagen: "+error.message;
+  }
+ });
+ window.FunkspruchWorldMode=Object.freeze({platform,regionId:region.id,drivingTarget:scope.drivingTarget,classify:(lon,lat)=>LDFunkspruchWorldScope.pointMode({platform,region,point:{lon,lat},loadedBounds:loadedTileBounds})});
+
+try{if(localStorage.getItem(currentWorldKey))document.getElementById("startNormal").textContent="Spielstand fortsetzen";}catch{}
+const startButton=document.getElementById("startNormal");
+const initialResume=(()=>{try{return !!localStorage.getItem(currentWorldKey)}catch{return false}})();
+startButton.disabled=true;startButton.textContent="Spielwelt wird vorbereitet …";
+const audio=LDFunkspruchAmbient.create();
+ const settingsControls={graphics:document.getElementById("graphicsQuality"),ambient:document.getElementById("ambientEnabled"),voice:document.getElementById("voiceEnabled"),fov:document.getElementById("cameraFov"),sensitivity:document.getElementById("lookSensitivity")};
+ const userSettings=LDFunkspruchPreferences.load();
+ settingsControls.graphics.value=userSettings.graphics;
+ settingsControls.ambient.checked=userSettings.ambient;
+ settingsControls.voice.checked=userSettings.voice;
+ settingsControls.fov.value=userSettings.fov;
+ settingsControls.sensitivity.value=userSettings.sensitivity;
+ function showInputSettings(){
+  document.getElementById("cameraFovValue").textContent=settingsControls.fov.value+"°";
+  document.getElementById("lookSensitivityValue").textContent=Number(settingsControls.sensitivity.value).toLocaleString("de-DE",{minimumFractionDigits:1})+"×";
+ }
+ showInputSettings();
+ function savePreferences(){
+  try{LDFunkspruchPreferences.save({graphics:settingsControls.graphics.value,ambient:settingsControls.ambient.checked,voice:settingsControls.voice.checked,fov:Number(settingsControls.fov.value),sensitivity:Number(settingsControls.sensitivity.value)});}
+  catch(error){console.warn("Einstellungen konnten nicht gespeichert werden",error);}
+  audio.setEnabled(settingsControls.ambient.checked);
+  showInputSettings();
+  gameInstance?.setInputProfile(Number(settingsControls.sensitivity.value),Number(settingsControls.fov.value));
+ }
+ Object.values(settingsControls).forEach(control=>control.addEventListener("change",savePreferences));
+const betaErrors=[];
+function betaRecord(message){betaErrors.push({at:new Date().toISOString(),message:String(message).slice(0,600)});if(betaErrors.length>15)betaErrors.shift();}
+window.addEventListener("error",event=>betaRecord(event.message||"Unbekannter Laufzeitfehler"));
+window.addEventListener("unhandledrejection",event=>betaRecord(event.reason?.message||event.reason||"Unbehandelte Promise-Ablehnung"));
+const saveState=document.getElementById("saveState");
+function saveFeedback(message){saveState.textContent=message;}
+function localSaveExists(){try{return !!localStorage.getItem(currentWorldKey)}catch{return false}}
+saveFeedback(localSaveExists()?"Lokaler Spielstand vorhanden. Automatische Speicherung aktiv.":"Noch kein Spielstand vorhanden. Automatische Speicherung beginnt beim Spielstart.");
+let gameInstance=null,started=false;
+function lowerGraphics(){
+ const quality=document.getElementById("graphicsQuality").value;
+ return quality==="low"||(quality==="auto"&&(matchMedia("(max-width: 1100px), (pointer: coarse)").matches||(navigator.deviceMemory&&navigator.deviceMemory<=8)));
+}
+function resumeGame(){
+ started=true;document.body.classList.add("started","playing");
+ audio.setEnabled(document.getElementById("ambientEnabled").checked);audio.start();
+ gameInstance?.setGraphicsProfile(lowerGraphics(),settingsControls.graphics.value==="auto");
+ gameInstance?.setInputProfile(Number(settingsControls.sensitivity.value),Number(settingsControls.fov.value));
+ gameInstance?.setPaused(false);
+ mainMenu.hidden=true;startButton.textContent="Spiel fortsetzen";
+ const canvas=gameInstance?.renderer?.domElement;
+ if(canvas){canvas.tabIndex=0;canvas.focus({preventScroll:true});}
+ window.dispatchEvent(new Event("resize"));
+}
+function togglePause(){
+ if(!started||!gameInstance||document.getElementById("monitor").classList.contains("active"))return;
+ if(mainMenu.hidden){
+  gameInstance.setPaused(true);mainMenu.hidden=false;document.body.classList.remove("playing");
+  startButton.textContent="Spiel fortsetzen";
+ }else resumeGame();
+}
+window.addEventListener("keydown",event=>{
+ if(event.code==="Escape"&&!event.repeat){togglePause();event.preventDefault();}
+});
+window.addEventListener("funkspruch:toggle-menu",togglePause);
+const prompt=document.getElementById("firstPersonPrompt");let lastEventText="",lastEventTime=0;
+startButton.addEventListener("click",resumeGame);
 const tests=await LDOpenWorldIntegrationTests.run();
 info.textContent="Modultests: "+tests.passed+"/"+tests.total+" bestanden\n"+tests.results.filter(r=>!r.ok).map(r=>r.name+": "+r.error).join("\n");
-const origin={lon:10.8985,lat:48.3705};
+const origin=region.origin;
 // Dynamic resolution for tablets and low-powered devices.
-const reducedGraphics=matchMedia("(max-width: 900px)").matches || (navigator.deviceMemory&&navigator.deviceMemory<=4);
-const geojson={type:"FeatureCollection",features:[
- {type:"Feature",properties:{highway:"residential"},geometry:{type:"LineString",coordinates:[[10.8983,48.3705],[10.901,48.3705]]}},
- {type:"Feature",properties:{building:"yes","building:levels":"3"},geometry:{type:"Polygon",coordinates:[[[10.899,48.3708],[10.8993,48.3708],[10.8993,48.3706],[10.899,48.3706],[10.899,48.3708]]]}},
- {type:"Feature",properties:{building:"yes","building:levels":"2"},geometry:{type:"Polygon",coordinates:[[[10.900,48.3708],[10.9002,48.3708],[10.9002,48.3706],[10.900,48.3706],[10.900,48.3708]]]}}
-]};
+const reducedGraphics=lowerGraphics();
+let map;
+try{
+ map=await LDFunkspruchMap.loadRegion({regions:region.tiles,regionId:region.id});
+}catch(error){
+ info.textContent="Kartendaten nicht verfügbar: "+(error.message||error);
+ document.getElementById("menuHint").textContent=error.message||String(error);
+ startButton.disabled=false;startButton.textContent="Echte Kartendaten erneut laden";
+ startButton.replaceWith(startButton.cloneNode(true));
+ document.getElementById("startNormal").onclick=()=>location.reload();
+ return;
+}
+loadedTileBounds=region.tiles.filter(t=>!map.missing.includes(t.id)).map(t=>t.bounds);
+const geojson=map.geojson;
+document.getElementById("mapCredit").hidden=false;
+document.getElementById("menuHint").textContent+=" "+region.city+": "+map.tilesLoaded+" von "+map.tilesTotal+" echten OSM-Kacheln geladen."+(map.partial?" Einzelne Stadtteile sind noch nicht verfügbar.":"");
 try{
 if(tests.passed!==tests.total)throw Error("Modultests fehlgeschlagen: "+JSON.stringify(tests.results.filter(t=>!t.ok)));
 if(typeof THREE==="undefined")throw Error("Three.js konnte nicht geladen werden");
 const monitor=document.getElementById("monitor"),dispatchMonitor=document.getElementById("dispatchMonitor");
-const game=LDOpenWorldRuntime.create({THREE,host:document.getElementById("world"),geojson,origin,onStatus:s=>{
+const game=LDOpenWorldRuntime.create({THREE,host:document.getElementById("world"),geojson,origin,regionId:region.id,worldBounds:loadedTileBounds,graphics:{antialias:!reducedGraphics,pixelRatio:reducedGraphics?1:1.5,renderRadius:reducedGraphics?1:2,powerPreference:reducedGraphics?"low-power":"high-performance"},onStatus:s=>{
+ audio.update(s);
+ if(s.message){lastEventText=s.message;lastEventTime=Date.now();}
  info.textContent=s.message||"Bewege dich zur Tür, Stechuhr oder zum Schreibtisch";
  document.getElementById("clock").textContent=(s.life.onDuty?"Im Dienst":"Dienstfrei")+(s.indoor?" · Im Leitstellengebäude":" · Draußen")+(s.nearChip?" · E: Stempeln":s.nearDesk?" · E: Arbeitsplatz":"");
  monitor.classList.toggle("active",!!s.atDesk);
  if(s.atDesk&&!dispatchMonitor.getAttribute("src"))dispatchMonitor.src=dispatchMonitor.dataset.src;
 }});
 await game.start();
+gameInstance=game;game.setPaused(!started);
+ game.setInputProfile(Number(settingsControls.sensitivity.value),Number(settingsControls.fov.value));
+startButton.disabled=false;startButton.textContent=initialResume?"Spielstand fortsetzen":"Leitstellenmodus starten";
+window.addEventListener("message",event=>{
+ if(event.origin!==location.origin||event.source!==dispatchMonitor.contentWindow)return;
+ if(event.data?.type==="funkspruch:dispatch-summary"&&game.setDispatchSummary(event.data))audio.update(game.status());
+ if(event.data?.type==="funkspruch:dispatch-activity")game.recordDispatchEvent?.(event.data);
+});
+window.FunkspruchGame=game; // Laufzeitdiagnose und Browser-Abnahmetests
+ const streets=game.listStreets();
+ const streetSelect=document.getElementById("streetSelect");
+ for(const name of streets){const option=document.createElement("option");option.value=name;option.textContent=name;streetSelect.append(option);}
+ document.getElementById("planStreetRoute").disabled=streets.length===0;
+ document.getElementById("planStreetRoute").onclick=()=>{
+  try{
+   const result=game.planStreetRoute(streetSelect.value);
+   document.getElementById("routeInfo").textContent=result.name+" – "+result.meters+" Meter auf OSM-Straßen · ca. "+result.minutes+" Minuten ("+result.mode+").";
+  }catch(error){document.getElementById("routeInfo").textContent="Keine Route: "+error.message;}
+ };
+ document.getElementById("clearStreetRoute").onclick=()=>{game.clearRoute();document.getElementById("routeInfo").textContent="Navigation beendet.";};
+ setInterval(()=>{
+  const route=game.routeStatus(),hud=document.getElementById("routeHud");
+  hud.hidden=!route||!mainMenu.hidden||game.status().atDesk;
+  if(route)hud.textContent="Navigation: "+route.name+"\\nOSM-Strecke: "+route.meters+" m · ca. "+route.minutes+" Min. ("+route.mode+")\\nZiel: "+route.airMeters+" m Luftlinie";
+ },800);
 // The scene can initialize behind the menu, but only normal mode can be entered.
 if(reducedGraphics){game.renderer.setPixelRatio(Math.min(devicePixelRatio||1,1));game.renderer.setSize(document.getElementById("world").clientWidth,document.getElementById("world").clientHeight,false);}
 try{game.life.load()}catch(e){console.warn("Life save could not be loaded",e)}
-const persistLife=()=>{game.life.save();if(window.parent!==window)window.parent.postMessage({type:"ld-life-updated"},location.origin)};
+const worldKey=currentWorldKey;
+function shiftOverview(){
+ const s=game.status(),j=game.getShiftJournal?.(),stats=j?.summarize(j.active||j.reports?.[0]);
+ const next=!s.indoor?"Zum Eingang der Trainingsleitstelle gehen":!s.life.onDuty?"An der Stechuhr einstempeln":!s.atDesk?"Am Disponentenarbeitsplatz Platz nehmen":"Im ELS Notrufe, Einsatzakten und Funk bearbeiten";
+ document.getElementById("shiftStatus").textContent=
+  "Nächster Schritt: "+next+"\n"+
+  (s.life.onDuty?"Aktiver Schichtdienst":"Dienstfrei")+" · "+
+  "Annahmen: "+(stats?.annahme??0)+" · Alarmierungen: "+(stats?.alarmierung??0)+" · Abschlüsse: "+(stats?.abschluss??0);
+}
+shiftOverview();
+const betaDiagnostics=()=>({product:"FUNKSPRUCH",channel:"Browser-Beta",timestamp:new Date().toISOString(),url:location.origin+location.pathname,userAgent:navigator.userAgent,viewport:{width:innerWidth,height:innerHeight},graphics:document.getElementById("graphicsQuality").value,world:{regionId:region.id,platform,loadedTiles:map.tilesLoaded,totalTiles:map.tilesTotal,partial:!!map.partial},game:{initialized:!!gameInstance,started,paused:!mainMenu.hidden,atDesk:!!gameInstance?.status()?.atDesk,onDuty:!!gameInstance?.status()?.life?.onDuty},hasLocalSave:localSaveExists(),errors:betaErrors.slice()});
+window.FunkspruchBeta={diagnostics:betaDiagnostics};
+document.getElementById("downloadDiagnostics").onclick=()=>{const blob=new Blob([JSON.stringify(betaDiagnostics(),null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),link=document.createElement("a");link.href=url;link.download="FUNKSPRUCH-Beta-Fehlerbericht.json";link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+document.getElementById("resetSave").onclick=()=>{if(!confirm("Wirklich alle lokalen FUNKSPRUCH-Spielstände und Dienstberichte dieses Geräts zurücksetzen? Vorher möglichst exportieren."))return;try{const keys=[];for(let j=0;j<localStorage.length;j++){const key=localStorage.key(j);if(key&&(/^(funkspruch-|ld-openworld-|ld-operations|ld21-|ld22-)/.test(key))&&!key.startsWith("funkspruch-osm-cache-"))keys.push(key);}for(const key of keys)localStorage.removeItem(key);location.reload();}catch(error){betaRecord(error);alert("Zurücksetzen fehlgeschlagen: "+error.message);}};
+try{
+ const saved=LDFunkspruchCheckpoints.candidates(localStorage,region.id);
+ let restored=false;
+ for(const item of saved){
+  if(game.restoreWorld(item.world)){
+   restored=true;
+   if(item.source==="backup")saveFeedback("Beschädigten Spielstand aus der vorherigen Sicherung wiederhergestellt.");
+   break;
+  }
+ }
+ if(!restored&&(saved.length||localStorage.getItem(worldKey)))throw Error("Beide Welt-Sicherungen sind ungültig");
+ game.reconcileShiftJournal?.();
+}catch(error){betaRecord(error);saveFeedback("Gespeicherter Spielstand konnte nicht geladen werden. Bitte Sicherung exportieren oder zurücksetzen.");console.warn("Gespeicherter Open-World-Spielstand nicht lesbar",error);}
+let importingSave=false;
+const persistLife=()=>{
+ if(importingSave)return false;
+ try{
+  const world=game.saveWorld();if(world)LDFunkspruchCheckpoints.save(world,localStorage,region.id);
+  game.life.save();
+  if(window.parent!==window)window.parent.postMessage({type:"ld-life-updated"},location.origin);
+  saveFeedback("Automatisch gespeichert: "+new Date().toLocaleTimeString("de-DE"));
+  return true;
+ }catch(error){betaRecord(error);saveFeedback("Speichern fehlgeschlagen – bitte Speicherplatz und Browserrechte prüfen.");console.warn("Speichern fehlgeschlagen",error);return false;}
+};
+persistCurrentCity=persistLife;
 window.addEventListener("message",e=>{if(e.origin===location.origin&&e.data?.type==="ld-life-reload"){try{game.life.load()}catch(err){console.warn(err)}}});
-window.addEventListener("pagehide",persistLife);
+document.getElementById("exportSave").onclick=()=>{
+ try{if(!persistLife())throw Error("Aktueller Fortschritt konnte nicht gespeichert werden");LDFunkspruchSave.download(LDFunkspruchSave.capture());}
+ catch(error){alert("Export fehlgeschlagen: "+(error.message||error));}
+};
+const importFile=document.getElementById("saveImportFile");
+document.getElementById("importSave").onclick=()=>importFile.click();
+importFile.onchange=async()=>{
+ const file=importFile.files?.[0];if(!file)return;
+ try{
+  if(file.size>5_000_000)throw Error("Die Datei ist zu groß.");
+  const data=JSON.parse(await file.text());
+  const entries=LDFunkspruchSave.validate(data);
+  if(!confirm("Spielstand mit "+entries.length+" Speichereinträgen importieren? Bestehende Fortschritte werden überschrieben."))return;
+  importingSave=true;
+  LDFunkspruchSave.restore(data);
+  location.reload();
+ }catch(error){importingSave=false;alert("Import fehlgeschlagen: "+(error.message||error));}
+ finally{importFile.value="";}
+};
+window.addEventListener("pagehide",()=>{if(!switchingCity)persistLife();audio.dispose();});
+document.addEventListener("visibilitychange",()=>{
+ if(document.hidden){if(!switchingCity)persistLife();game.setPaused(true);}
+ else if(started&&mainMenu.hidden)game.setPaused(false);
+});
+setInterval(persistLife,10000);
+setInterval(()=>{if(!mainMenu.hidden)shiftOverview();},1500);
 document.getElementById("interact").onclick=()=>game.interact();
-document.getElementById("stand").onclick=()=>game.leaveDesk();
+document.getElementById("stand").onclick=()=>{monitor.classList.remove("reportVisible");game.leaveDesk();};
+ document.getElementById("dispatchMenu").onclick=()=>{
+  monitor.classList.remove("reportVisible");game.leaveDesk();togglePause();
+ };
+document.getElementById("exportShiftReport").onclick=()=>{
+ const journal=game.getShiftJournal?.();
+ if(!journal?.reports?.length&&!journal?.active){saveFeedback("Noch keine Schichtdaten für den Export vorhanden.");return;}
+ const finished=journal.reports?.[0]?journal.format(journal.reports[0]):"Noch kein abgeschlossener Dienst.";
+ const ongoing=journal.active?"\n\nLaufende Schicht: "+journal.active.events.length+" protokollierte Ereignisse\n"+journal.active.events.map(e=>e.text).join("\n"):"";
+ const content="FUNKSPRUCH – Lokales Dienstjournal\nErstellt: "+new Date().toLocaleString("de-DE")+"\n\n"+finished+ongoing;
+ const url=URL.createObjectURL(new Blob([content],{type:"text/plain;charset=utf-8"}));
+ const a=document.createElement("a");a.href=url;a.download="FUNKSPRUCH-Dienstjournal.txt";a.click();
+ setTimeout(()=>URL.revokeObjectURL(url),2000);
+};
+document.getElementById("viewShiftReport").onclick=()=>{
+ const visible=monitor.classList.toggle("reportVisible");
+ document.getElementById("viewShiftReport").textContent=visible?"Einsatzleitsystem":"Dienstbericht";
+ if(visible){
+  const journal=game.getShiftJournal?.();
+  const text=journal?.reports?.[0]?journal.format(journal.reports[0]):"Schichtjournal\n\nNoch keine abgeschlossene Schicht vorhanden.";
+  const current=journal?.active?"\n\nLaufende Schicht seit "+String(Math.floor(journal.active.startMinute/60)%24).padStart(2,"0")+":"+String(journal.active.startMinute%60).padStart(2,"0")+" Uhr.":"";
+  const currentEvents=journal?.active?.events?.length?"\n\nBisherige Funk- und Einsatzereignisse:\n"+journal.active.events.slice(-15).map(e=>e.text).join("\n"):"";
+  document.getElementById("shiftReport").textContent="FUNKSPRUCH · Dienstbericht\n\n"+text+current+currentEvents;
+ }
+};
 document.getElementById("eat").onclick=()=>{try{game.life.action("essen");persistLife()}catch(e){alert(e.message)}info.textContent=JSON.stringify(game.status(),null,2)};
 document.getElementById("sleep").onclick=()=>{try{game.life.action("schlafen");persistLife()}catch(e){alert(e.message)}info.textContent=JSON.stringify(game.status(),null,2)};
 window.addEventListener("keydown",e=>{if(e.code==="KeyE"&&!e.repeat)game.interact()});
-setInterval(()=>{const s=game.status();document.getElementById("clock").textContent=(s.life.onDuty?"Im Dienst":"Dienstfrei")+(s.indoor?" · Im Leitstellengebäude":" · Draußen")+(s.nearChip?" · E: Stempeln":s.nearDesk?" · E: Arbeitsplatz":"")},500);
-}catch(e){info.textContent="Fehler: "+e.stack;console.error(e)}
+setInterval(()=>{
+ const s=game.status();
+ const context=s.atDesk?"":s.nearChip?"E · An der Stechuhr einstempeln oder ausstempeln":s.nearDesk?"E · Am Disponentenarbeitsplatz Platz nehmen":s.indoor?"Schichtdienst · Stechuhr links hinten / Arbeitsplatz mittig":s.driving?"WASD · Fahrzeug steuern · E zum Aussteigen":s.nearDoor?"E · Trainingsleitstelle betreten":"WASD · Zum Eingang der Trainingsleitstelle gehen";
+ prompt.textContent=Date.now()-lastEventTime<3000?lastEventText:context;
+ prompt.style.display=s.atDesk?"none":"";
+ document.getElementById("clock").textContent=(s.life.onDuty?"Im Dienst":"Dienstfrei")+(s.indoor?" · Im Leitstellengebäude":" · Draußen")+(s.nearChip?" · E: Stempeln":s.nearDesk?" · E: Arbeitsplatz":"")},500);
+}catch(e){document.body.classList.add("fatal");betaRecord(e);info.textContent="Startfehler: "+e.message+". Bitte Seite neu laden. Falls der Fehler bleibt: Browsercache prüfen oder den technischen Fehlerbericht speichern.";document.getElementById("menuHint").textContent="Die Spielwelt konnte nicht gestartet werden. Bitte Fehlerbericht sichern und neu laden.";document.getElementById("downloadDiagnostics").onclick=()=>{const report={product:"FUNKSPRUCH",timestamp:new Date().toISOString(),error:String(e.stack||e),userAgent:navigator.userAgent};const blob=new Blob([JSON.stringify(report,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),link=document.createElement("a");link.href=url;link.download="FUNKSPRUCH-Startfehler.json";link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};console.error(e)}
 })();
 </script></body></html>
