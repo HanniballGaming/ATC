@@ -5,7 +5,7 @@
  * Explicit mount only: no changes to the existing dispatcher interface.
  */
 (function(root){"use strict";
-function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},onStatus=()=>{}}={}){
+function create({THREE,host,geojson,origin,regionId="augsburg",worldBounds=null,osmBounds,fetchOSM=false,graphics={},onStatus=()=>{}}={}){
  if(!THREE||!host||!host.appendChild)throw Error("THREE and host required");
  const required=["LDOpenWorldGeo","LDOpenWorldRenderer","LDOpenWorldVehicle","LDOpenWorldInteraction","LDOpenWorldCollision","LDOpenWorldWalker","LDOpenWorldLife","LDOpenWorldRoadGraph"];
  for(const key of required)if(!root[key])throw Error("Missing module: "+key);
@@ -21,6 +21,17 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
  const walker=root.LDOpenWorldWalker.create();
  const indoorCollisions=root.LDFunkspruchIndoor?.model?.()||{buildings:[]};
  const car=root.LDOpenWorldVehicle.create();
+ let boundaryNoticeTime=0;
+ function withinLoadedWorld(point){
+  if(!worldBounds)return true;
+  const gps=root.LDOpenWorldGeo.unproject(point.x,point.z,origin);
+  return root.LDFunkspruchWorldScope?.inBounds?.(gps,worldBounds)??true;
+ }
+ function boundaryWarning(){
+  if(Date.now()-boundaryNoticeTime<3500)return;
+  boundaryNoticeTime=Date.now();
+  onStatus({...status(),message:"Ende des geladenen 3D-Stadtgebiets – außerhalb läuft die Einsatzsimulation weiter. Weitere OSM-Kacheln sind noch nicht verfügbar."});
+ }
  const scene=new THREE.Scene();scene.background=new THREE.Color(0x9cc9e7);
  // Fiktives Trainingsgebäude: keine Behauptung über reale Rettungsleitstellenstandorte.
  function makeStationExterior(position){
@@ -160,12 +171,20 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
    const previous=car.snapshot();
    interaction.update(dt,{throttle:Math.max(0,input.forward),brake:Math.max(0,-input.forward),steer:input.strafe,handbrake:false});
    const current=car.snapshot();
-   if(root.LDOpenWorldCollision.collides(current,model,1.1)){
+   if(!withinLoadedWorld(current)||root.LDOpenWorldCollision.collides(current,model,1.1)){
+     if(!withinLoadedWorld(current))boundaryWarning();
      car.reset({...previous,speed:0,handbrake:true});
    }
   }else{
    if(indoor){walker.update(dt,input,indoorCollisions);const p=walker.snapshot();walker.teleport(Math.max(-7.1,Math.min(7.1,p.x)),Math.max(-5.1,Math.min(5.1,p.z)));}
-   else walker.update(dt,input,model);
+   else{
+    const previous=walker.snapshot();
+    walker.update(dt,input,model);
+    if(!withinLoadedWorld(walker.snapshot())){
+     walker.teleport(previous.x,previous.z,previous.heading,previous.pitch);
+     boundaryWarning();
+    }
+   }
    const p=walker.snapshot();interactionPlayer.x=p.x;interactionPlayer.z=p.z;interactionPlayer.heading=p.heading;
   }
   lookInput.x=0;lookInput.y=0;
@@ -430,13 +449,14 @@ function create({THREE,host,geojson,origin,osmBounds,fetchOSM=false,graphics={},
  }
  function saveWorld(){
   if(!model)return null;
-  return {version:2,indoor,player:walker.snapshot(),vehicle:car.snapshot(),onDuty:!!life.snapshot().onDuty,life:life.snapshot(),destinationStreet:activeRoute?.name||null};
+  return {version:2,regionId,indoor,player:walker.snapshot(),vehicle:car.snapshot(),onDuty:!!life.snapshot().onDuty,life:life.snapshot(),destinationStreet:activeRoute?.name||null};
  }
  function restoreWorld(saved){
   if(!model||!entryPoint||!saved||![1,2].includes(saved.version)||!saved.player)return false;
+  if((saved.regionId||"augsburg")!==regionId)return false;
   const p=saved.player,c=saved.vehicle;
   if(![p.x,p.z,p.heading,p.pitch].every(Number.isFinite))return false;
-  if(Math.abs(p.x)>100000||Math.abs(p.z)>100000)return false;
+  if(Math.abs(p.x)>100000||Math.abs(p.z)>100000||!withinLoadedWorld(p))return false;
   // World and life snapshots from version 2 must match before restoring either.
   if(saved.version===2){
    const l=saved.life,limits={minutes:[0,10000000],money:[0,100000000],hunger:[0,100],thirst:[0,100],fatigue:[0,100],hygiene:[0,100],shiftStart:[0,1439],shiftEnd:[0,1439]};
