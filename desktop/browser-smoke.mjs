@@ -33,6 +33,14 @@ try{
  await page.locator("#startNormal").waitFor();
  await page.locator("#betaHelp summary").click();
  assert.equal(await page.locator("#streetNavigation").count(),1,"Straßennavigation nicht im Menü");
+ assert.equal(await page.locator("#regionSelection").count(),1,"Leitstellenstadt-Auswahl fehlt");
+ assert.ok(await page.locator("#ilsCity option").count()>=20,"Deutschlandweite Stadtauswahl fehlt");
+ const scope=await page.evaluate(()=>({
+  platform:window.FunkspruchWorldMode?.platform,
+  regionId:window.FunkspruchWorldMode?.regionId,
+  outside:window.FunkspruchWorldMode?.classify(13.405,52.52)?.mode
+ }));
+ assert.deepEqual(scope,{platform:"browser",regionId:"augsburg",outside:"simulated"},"Browser muss außerhalb der 3D-Stadt nur simulieren");
  assert.equal(await page.locator("#routeHud").count(),1,"Navigationsanzeige in First Person fehlt");
  assert.equal(await page.locator("#downloadDiagnostics").isVisible(),true,"Beta-Fehlerbericht nicht zugänglich");
  assert.equal(await page.locator("#resetSave").isVisible(),true,"Spielstand-Reset nicht zugänglich");

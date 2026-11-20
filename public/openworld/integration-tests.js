@@ -22,6 +22,37 @@ async function run(){
   if(!r.every(t=>t.bounds.north>t.bounds.south&&t.bounds.east>t.bounds.west&&t.bundledUrl?.endsWith(".geojson")))throw Error("Ungültige Geodatenkacheln");
   if(r[0].bounds.east!==r[1].bounds.west||r[0].bounds.north!==r[2].bounds.south)throw Error("Lücken im Straßennetz-Bereich");
  });
+ test("Deutschland: Browser zeigt nur geladene Leitstellenstädte als 3D-Welt",()=>{
+  const catalog=root.LDFunkspruchRegion,scope=root.LDFunkspruchWorldScope;
+  if(catalog.list().length<20)throw Error("Standorte nicht deutschlandweit verteilt");
+  const ids=catalog.list().map(c=>c.id);
+  if(new Set(ids).size!==ids.length)throw Error("Doppelte Stadtschlüssel");
+  const data=new Map(),storage={getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,String(v))};
+  catalog.setSelected("berlin",storage);
+  if(catalog.selected(storage).city!=="Berlin")throw Error("Stadtauswahl wird nicht gespeichert");
+  if(scope.policy("browser").national3d||scope.policy("browser").outside!=="simulation")throw Error("Browser lädt bundesweite 3D-Welt");
+  if(scope.policy("windows").drivingTarget!=="germany")throw Error("Deutsches App-Spielweltziel fehlt");
+  const tiles=catalog.get("augsburg").tiles.map(t=>t.bounds);
+  if(!scope.inBounds({lat:48.365,lon:10.89},tiles)||scope.inBounds({lat:52.52,lon:13.405},tiles))throw Error("Geo-Grenzen falsch");
+  const near=scope.pointMode({region:catalog.get("augsburg"),loadedBounds:tiles,point:{lon:10.8985,lat:48.3705}});
+  const away=scope.pointMode({region:catalog.get("augsburg"),loadedBounds:tiles,point:{lon:13.405,lat:52.52}});
+  if(near.mode!=="driveable"||away.mode!=="simulated")throw Error("3D- und Simulationsgebiet sind nicht getrennt");
+  if(scope.pointMode({platform:"windows"}).ready!==false)throw Error("Deutschlandweite 3D-Welt fälschlich als fertig ausgegeben");
+ });
+ test("Regionale Speicherstände: Augsburg und Berlin sind voneinander getrennt",()=>{
+  const manager=root.LDFunkspruchCheckpoints,data=new Map();
+  const storage={getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,String(v))};
+  const old={version:2,regionId:"augsburg",player:{x:1,z:2,heading:0,pitch:0}};
+  const city={version:2,regionId:"berlin",player:{x:3,z:4,heading:0,pitch:0}};
+  manager.save(old,storage,"augsburg");
+  manager.save(city,storage,"berlin");
+  if(manager.candidates(storage,"augsburg")[0].world.player.x!==1)throw Error("Augsburger Stand überschrieben");
+  if(manager.candidates(storage,"berlin")[0].world.player.x!==3)throw Error("Berliner Stand überschrieben");
+  if(manager.scopedKeys("augsburg").key===manager.scopedKeys("berlin").key)throw Error("Schlüssel der Städte überlagern sich");
+  let threw=false;
+  try{manager.save(old,storage,"berlin");}catch{threw=true;}
+  if(!threw)throw Error("Speicherstand falscher Stadt akzeptiert");
+ });
  test("OSM-Kacheln: identische Way-IDs ohne doppelte Straßen oder Gebäude",()=>{
   const elements=[];
   for(let i=0;i<10;i++){
