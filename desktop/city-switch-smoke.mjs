@@ -25,8 +25,10 @@ let browser=null;
 try{
  browser=await chromium.launch({headless:true,...(process.env.CI?{channel:"chrome"}:{}),args:["--enable-webgl","--use-gl=angle","--use-angle=swiftshader"]});
  const page=await browser.newPage({viewport:{width:1365,height:860}});
- const errors=[];
+ const errors=[],networkErrors=[],consoleErrors=[];
  page.on("pageerror",error=>errors.push(error.message));
+ page.on("console",message=>{if(message.type()==="error")consoleErrors.push(message.text());});
+ page.on("requestfailed",request=>networkErrors.push(request.url()+" "+request.failure()?.errorText));
  page.on("dialog",dialog=>dialog.accept());
  await page.route(/^https?:\/\/(?!127\.0\.0\.1[:\/])[^/]+/i,mockCityOsmRoute);
  const base="http://127.0.0.1:"+server.address().port+"/openworld/";
@@ -41,9 +43,22 @@ try{
  });
  assert.equal(await page.evaluate(()=>window.FunkspruchGame.status().indoor),true);
  await page.locator("#ilsCity").selectOption("berlin");
- await page.waitForFunction(()=>
-  window.FunkspruchWorldMode?.regionId==="berlin"&&!!window.FunkspruchGame&&
-  document.getElementById("startNormal")?.disabled===false,null,{timeout:65000});
+ try{
+  await page.waitForFunction(()=>
+   window.FunkspruchWorldMode?.regionId==="berlin"&&!!window.FunkspruchGame&&
+   document.getElementById("startNormal")?.disabled===false,null,{timeout:30000});
+ }catch(error){
+  const state=await page.evaluate(()=>({
+   storedCity:localStorage.getItem("funkspruch-ils-city-v1"),
+   current:document.getElementById("ilsCity")?.value,
+   runtime:window.FunkspruchWorldMode?.regionId,
+   available:!!window.FunkspruchGame,
+   startDisabled:document.getElementById("startNormal")?.disabled,
+   info:document.getElementById("info")?.textContent?.slice(0,1000),
+   hint:document.getElementById("menuHint")?.textContent?.slice(0,1000)
+  }));
+  throw Error("ILS-Stadtwechsel schlägt fehl: "+JSON.stringify({state,errors,networkErrors:networkErrors.slice(-8),consoleErrors:consoleErrors.slice(-10)})+"; "+error.message);
+ }
  const berlin=await page.evaluate(()=>({
   region:window.FunkspruchWorldMode.regionId,
   near:window.FunkspruchWorldMode.classify(13.405,52.52).mode,
