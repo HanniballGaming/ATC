@@ -20,9 +20,10 @@ body.playing:not(.fatal) #crosshair{display:block}body.playing #monitor.active~#
 @media(pointer:coarse){#firstPersonPrompt{bottom:175px;font-size:12px}#crosshair{opacity:.4}}
 #mapCredit{position:fixed;bottom:5px;left:7px;color:#e0ecf3;background:#102333b8;font:10px system-ui;z-index:35;padding:2px 5px;border-radius:4px}#mapCredit[hidden]{display:none}#panel{pointer-events:auto}body.started #panel{display:none}body.fatal #panel{display:block}#mainMenu{position:fixed;inset:0;z-index:200;background:radial-gradient(ellipse at 28% 15%,#164b66,#06121e 72%);display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;overflow:auto}#mainMenu[hidden]{display:none}#menuContent{width:min(880px,100%)}#menuContent h1{font-size:clamp(32px,6vw,66px);letter-spacing:.09em;margin:0;color:#e6f8ff}#menuContent>p{color:#a5c4d5;font-size:17px;margin:3px 0 28px}#modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.mode{background:#102a3bbd;border:1px solid #43839c;border-radius:16px;padding:24px;min-height:230px;box-sizing:border-box}.mode h2{font-size:22px}.mode p{color:#b7c9d6;line-height:1.6}.mode button{font-size:16px;padding:12px 18px}.mode.locked{background:#27151bd9;border-color:#804652}.mode.locked button{opacity:.6;cursor:not-allowed}.mode.locked strong{color:#f1a4a4}#menuHint{color:#a6bbc9;margin-top:20px}#saveControls{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}#saveControls button{font-size:13px}#ambientRow,#voiceRow{display:block;color:#c1dfeb;margin-top:12px;font-size:13px}#graphicsRow{display:block;color:#c1dfeb;margin-top:8px;font-size:13px}#graphicsQuality{background:#112c40;color:white;border:1px solid #426882;border-radius:5px;padding:6px}#ambientEnabled,#voiceEnabled{accent-color:#48b2bd}#betaHelp{margin:12px 0;padding:12px;border:1px solid #426882;border-radius:10px;background:#0c2534}#betaHelp summary{cursor:pointer;font-weight:650}#betaHelp p{font-size:13px;line-height:1.5;color:#c5dce7}#betaHelp button{min-height:42px}#saveState{color:#c5dce7;font-size:12px;min-height:1.2em}@media(max-width:650px){#modes{grid-template-columns:1fr}.mode{min-height:unset;padding:17px}} #shiftStatus{background:#0e2a3b;border:1px solid #35576a;border-radius:9px;margin:12px 0;padding:10px 12px;color:#cde9f2;font-size:13px;line-height:1.6;white-space:pre-line}
 #fovRow,#sensitivityRow{display:block;color:#c1dfeb;margin-top:10px;font-size:13px}#cameraFov,#lookSensitivity{display:block;accent-color:#61c5d6;width:min(260px,85%);margin-top:5px}
+#regionSelection{margin:12px 0;padding:12px;background:#0d2839;border:1px solid #416c83;border-radius:10px;color:#d5eaf5;font-size:13px}#regionSelection strong,#regionSelection label{display:block;margin-bottom:6px}#regionSelection select{background:#113044;color:#fff;padding:9px;border:1px solid #537a93;border-radius:6px;width:min(420px,100%)}#regionSelection p{line-height:1.45;margin:9px 0}#regionSelection small{line-height:1.4;color:#aecbd9}
 #streetNavigation{margin:12px 0;background:#0d283b;border:1px solid #396379;border-radius:10px;padding:12px;color:#d0e9f3;font-size:13px}#streetNavigation strong{display:block;margin-bottom:8px}#streetNavigation label{display:block;margin-bottom:5px}#streetNavigation select{background:#102d40;color:white;border:1px solid #52788e;border-radius:6px;padding:8px;width:min(440px,100%);margin-right:6px}#streetNavigation button{margin:4px;padding:8px;border-radius:6px}#routeInfo{color:#c7dce6;margin-top:8px;font-size:12px;line-height:1.5}#routeHud{position:fixed;z-index:40;top:14px;left:14px;background:#082638e8;border:1px solid #4c9eac;border-radius:9px;padding:10px 14px;color:#ddf8f8;max-width:min(330px,70vw);font:13px system-ui;pointer-events:none;white-space:pre-line;line-height:1.55}#routeHud[hidden]{display:none}
 </style></head><body>
-<div id="mainMenu" role="dialog" aria-modal="true" aria-labelledby="gameTitle"><div id="menuContent"><h1 id="gameTitle">FUNKSPRUCH</h1><p>Stimmen im Rauschen</p><div id="modes"><section class="mode"><h2>Leitstellenbetrieb</h2><p>Beginne deine Schicht, betrete die Leitstelle und bearbeite Notrufe, Einsätze und Funkverkehr in der Ego-Perspektive.</p><button id="startNormal" type="button">Leitstellenmodus starten</button></section><section class="mode locked"><strong>IN ENTWICKLUNG</strong><h2>Apokalypse &amp; Überleben</h2><p>Katastrophen, Zusammenbruch der Versorgung und Überleben in der Leitstelle. Dieser Modus wird später freigeschaltet.</p><button type="button" disabled aria-disabled="true" title="Noch in Entwicklung">Noch nicht verfügbar</button></section></div><label id="ambientRow"><input type="checkbox" id="ambientEnabled" checked> Umgebungsgeräusche aktivieren</label><label id="voiceRow"><input type="checkbox" id="voiceEnabled" checked> Gesprochene Antworten der KI-Kollegen (Systemstimme)</label><label id="graphicsRow">Grafikqualität: <select id="graphicsQuality"><option value="auto">Automatisch</option><option value="low">Niedrig (ältere Laptops und iPads)</option><option value="medium">Mittel</option></select></label><label id="fovRow" for="cameraFov">Sichtfeld der Ego-Kamera: <output id="cameraFovValue">70°</output><input type="range" id="cameraFov" min="60" max="95" step="5" value="70"></label><label id="sensitivityRow" for="lookSensitivity">Blickempfindlichkeit für Maus und Touch: <output id="lookSensitivityValue">1,0×</output><input type="range" id="lookSensitivity" min="0.5" max="2" step="0.25" value="1"></label><section id="streetNavigation" aria-label="Navigation auf echten Straßen"><strong>OSM-Straßennavigation</strong><label for="streetSelect">Zielstraße in Augsburg</label><select id="streetSelect" aria-label="Zielstraße auswählen"></select><button type="button" id="planStreetRoute">Route planen</button><button type="button" id="clearStreetRoute">Route löschen</button><div id="routeInfo" role="status" aria-live="polite">Die Navigation verwendet ausschließlich kartierte OSM-Straßen.</div></section><div id="shiftStatus" role="status" aria-live="polite">Schichtinformationen werden geladen …</div><div id="saveControls"><button id="exportSave" type="button">Spielstand exportieren</button><button id="importSave" type="button">Spielstand importieren</button><input id="saveImportFile" type="file" accept=".json,application/json" hidden></div><div id="saveState" role="status" aria-live="polite">Lokale Speicherung wird geprüft …</div><details id="betaHelp"><summary>Beta-Hilfe · Steuerung, Fehlerbericht und Neustart</summary><p>1. Leitstellenmodus starten und zur Leitstelle gehen. 2. Mit E oder der Touch-Schaltfläche eintreten und an der Stechuhr Dienst beginnen. 3. Am Disponentenplatz E drücken, Leitstelle auswählen und die Einweisung abschließen. 4. Notrufe annehmen, Rückfragen stellen, passende Fahrzeuge alarmieren und den Funk bedienen. ESC öffnet das Pausenmenü. Der zweite Spielmodus ist noch gesperrt.</p><p>Speicherstände bleiben auf diesem Gerät. Bei Problemen zuerst den Spielstand exportieren. Ein Fehlerbericht enthält nur technische Informationen und wird nicht automatisch versendet.</p><button id="downloadDiagnostics" type="button">Technischen Fehlerbericht speichern</button><button id="resetSave" type="button">Lokalen Spielstand zurücksetzen</button></details><p id="menuHint">Aktuell ist ausschließlich der normale Leitstellenmodus spielbar. Stadtgebiet: Augsburg. Für den ersten Start muss ein echter OSM-Kartenausschnitt verfügbar sein. Steuerung: WASD, Maus, E; auf Mobilgeräten Touchsteuerung.</p></div></div>
+<div id="mainMenu" role="dialog" aria-modal="true" aria-labelledby="gameTitle"><div id="menuContent"><h1 id="gameTitle">FUNKSPRUCH</h1><p>Stimmen im Rauschen</p><div id="modes"><section class="mode"><h2>Leitstellenbetrieb</h2><p>Beginne deine Schicht, betrete die Leitstelle und bearbeite Notrufe, Einsätze und Funkverkehr in der Ego-Perspektive.</p><button id="startNormal" type="button">Leitstellenmodus starten</button></section><section class="mode locked"><strong>IN ENTWICKLUNG</strong><h2>Apokalypse &amp; Überleben</h2><p>Katastrophen, Zusammenbruch der Versorgung und Überleben in der Leitstelle. Dieser Modus wird später freigeschaltet.</p><button type="button" disabled aria-disabled="true" title="Noch in Entwicklung">Noch nicht verfügbar</button></section></div><section id="regionSelection" aria-label="ILS-Stadt und Spielwelt"><strong>Stadt der Leitstelle auswählen</strong><label for="ilsCity">ILS-Stadt</label><select id="ilsCity" aria-label="Stadt der Leitstelle auswählen"></select><p id="worldScopeStatus" role="status" aria-live="polite">Kartenmodus wird geprüft …</p><small>Außerhalb der geladenen 3D-Stadt läuft die Einsatzsimulation weiter. Der Standort des Trainingsgebäudes ist fiktiv; die Auswahl bezeichnet keine nachgewiesene Leitstellenadresse.</small></section><label id="ambientRow"><input type="checkbox" id="ambientEnabled" checked> Umgebungsgeräusche aktivieren</label><label id="voiceRow"><input type="checkbox" id="voiceEnabled" checked> Gesprochene Antworten der KI-Kollegen (Systemstimme)</label><label id="graphicsRow">Grafikqualität: <select id="graphicsQuality"><option value="auto">Automatisch</option><option value="low">Niedrig (ältere Laptops und iPads)</option><option value="medium">Mittel</option></select></label><label id="fovRow" for="cameraFov">Sichtfeld der Ego-Kamera: <output id="cameraFovValue">70°</output><input type="range" id="cameraFov" min="60" max="95" step="5" value="70"></label><label id="sensitivityRow" for="lookSensitivity">Blickempfindlichkeit für Maus und Touch: <output id="lookSensitivityValue">1,0×</output><input type="range" id="lookSensitivity" min="0.5" max="2" step="0.25" value="1"></label><section id="streetNavigation" aria-label="Navigation auf echten Straßen"><strong>OSM-Straßennavigation</strong><label for="streetSelect">Zielstraße im geladenen Stadtgebiet</label><select id="streetSelect" aria-label="Zielstraße auswählen"></select><button type="button" id="planStreetRoute">Route planen</button><button type="button" id="clearStreetRoute">Route löschen</button><div id="routeInfo" role="status" aria-live="polite">Die Navigation verwendet ausschließlich kartierte OSM-Straßen.</div></section><div id="shiftStatus" role="status" aria-live="polite">Schichtinformationen werden geladen …</div><div id="saveControls"><button id="exportSave" type="button">Spielstand exportieren</button><button id="importSave" type="button">Spielstand importieren</button><input id="saveImportFile" type="file" accept=".json,application/json" hidden></div><div id="saveState" role="status" aria-live="polite">Lokale Speicherung wird geprüft …</div><details id="betaHelp"><summary>Beta-Hilfe · Steuerung, Fehlerbericht und Neustart</summary><p>1. Leitstellenmodus starten und zur Leitstelle gehen. 2. Mit E oder der Touch-Schaltfläche eintreten und an der Stechuhr Dienst beginnen. 3. Am Disponentenplatz E drücken, Leitstelle auswählen und die Einweisung abschließen. 4. Notrufe annehmen, Rückfragen stellen, passende Fahrzeuge alarmieren und den Funk bedienen. ESC öffnet das Pausenmenü. Der zweite Spielmodus ist noch gesperrt.</p><p>Speicherstände bleiben auf diesem Gerät. Bei Problemen zuerst den Spielstand exportieren. Ein Fehlerbericht enthält nur technische Informationen und wird nicht automatisch versendet.</p><button id="downloadDiagnostics" type="button">Technischen Fehlerbericht speichern</button><button id="resetSave" type="button">Lokalen Spielstand zurücksetzen</button></details><p id="menuHint">Aktuell ist ausschließlich der normale Leitstellenmodus spielbar. Stadtgebiet: die ausgewählte ILS-Stadt. Für den ersten Start muss ein echter OSM-Kartenausschnitt verfügbar sein. Steuerung: WASD, Maus, E; auf Mobilgeräten Touchsteuerung.</p></div></div>
 <div id="world"></div><div id="crosshair" aria-hidden="true">+</div><div id="firstPersonPrompt" role="status" aria-live="polite"></div><div id="routeHud" role="status" aria-live="polite" hidden></div><div id="mapCredit" hidden>Geodaten © OpenStreetMap-Mitwirkende (ODbL 1.0)</div><section id="monitor" aria-label="Disponentenarbeitsplatz"><header><strong>FUNKSPRUCH · ELS</strong><button id="viewShiftReport" type="button">Dienstbericht</button><button id="exportShiftReport" type="button">Journal exportieren</button><button id="dispatchMenu" type="button">Menü</button><button id="stand" type="button">Aufstehen</button></header><iframe title="Leitstellen-Einsatzleitsystem" loading="lazy" data-src="./arbeitsplatz.html" id="dispatchMonitor"></iframe><div id="shiftReport" role="region" aria-label="Schichtjournal"></div></section><div id="panel"><strong>FUNKSPRUCH · Leitstellenbetrieb</strong>
 <p>Immer in Ego-Perspektive · WASD bewegen · E: Tür, Stechuhr oder Fahrzeug · Auf Mobilgeräten: Touchsteuerung · Am Schreibtisch E drücken</p><div id="clock">Dienstfrei · Zur Leitstelle gehen und einstempeln</div>
 <button id="interact">Interagieren (E)</button><button id="eat">Essen</button>
@@ -38,16 +39,54 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||["localhost","12
 <script src="./three-city.js"></script><script src="./vehicle-core.js"></script>
 <script src="./vehicle-interaction.js"></script><script src="./walker-core.js"></script>
 <script src="./life-core.js"></script><script src="./road-graph.js"></script>
-<script src="./osm-loader.js"></script><script src="./city-region.js"></script><script src="./geodata-session.js"></script><script src="./touch-controls.js"></script>
+<script src="./osm-loader.js"></script><script src="./world-scope.js"></script><script src="./city-region.js"></script><script src="./geodata-session.js"></script><script src="./touch-controls.js"></script>
 <script src="./world-upgrades.js"></script><script src="./traffic-ai.js"></script><script src="./save-manager.js"></script><script src="./shift-journal.js"></script><script src="./ambient.js"></script><script src="./preferences.js"></script><script src="./checkpoints.js"></script><script src="./performance-budget.js"></script><script src="./navigation-core.js"></script>
 <script src="./runtime.js"></script><script src="./integration-tests.js"></script>
 <script>
 (async()=>{
 const info=document.getElementById("info");
 const mainMenu=document.getElementById("mainMenu");
-try{if(localStorage.getItem("funkspruch-openworld-save-v1"))document.getElementById("startNormal").textContent="Spielstand fortsetzen";}catch{}
+ const cityCatalog=LDFunkspruchRegion;
+ const region=cityCatalog.selected();
+ const platform=await LDFunkspruchWorldScope.detect();
+ const scope=LDFunkspruchWorldScope.policy(platform);
+ const currentWorldKey=LDFunkspruchCheckpoints.scopedKeys(region.id).key;
+ let switchingCity=false;
+ const citySelector=document.getElementById("ilsCity");
+ for(const city of cityCatalog.list()){
+  const option=document.createElement("option");option.value=city.id;
+  option.textContent=city.label+" – "+city.city+(city.offline?" (Offline-Karte verfügbar)":" (OSM-Verbindung nötig)");
+  citySelector.append(option);
+ }
+ citySelector.value=region.id;
+ document.getElementById("worldScopeStatus").textContent=
+  LDFunkspruchWorldScope.areaText(platform,region)+" Auswahl: "+region.city+". Der derzeitige OSM-Ausschnitt deckt noch nicht die gesamte Stadt ab.";
+ citySelector.addEventListener("change",()=>{
+  const next=citySelector.value;
+  if(next===region.id)return;
+  if(gameInstance?.status()?.life?.onDuty&&!confirm("Stadt während eines aktiven Dienstes wechseln? Fortschritt wird zuvor gesichert.")){
+   citySelector.value=region.id;return;
+  }
+  if(gameInstance&&!persistLife()){
+   citySelector.value=region.id;
+   document.getElementById("worldScopeStatus").textContent="Stadtwechsel abgebrochen: Spielstand konnte nicht gesichert werden.";
+   return;
+  }
+  try{
+   cityCatalog.setSelected(next);
+   switchingCity=true;
+   localStorage.removeItem("ld-openworld-life-v1");
+   location.reload();
+  }catch(error){
+   switchingCity=false;citySelector.value=region.id;
+   document.getElementById("worldScopeStatus").textContent="Stadtwechsel fehlgeschlagen: "+error.message;
+  }
+ });
+ window.FunkspruchWorldMode=Object.freeze({platform,regionId:region.id,drivingTarget:scope.drivingTarget,classify:(lon,lat)=>LDFunkspruchWorldScope.pointMode({platform,region,point:{lon,lat}})});
+
+try{if(localStorage.getItem(currentWorldKey))document.getElementById("startNormal").textContent="Spielstand fortsetzen";}catch{}
 const startButton=document.getElementById("startNormal");
-const initialResume=(()=>{try{return !!localStorage.getItem("funkspruch-openworld-save-v1")}catch{return false}})();
+const initialResume=(()=>{try{return !!localStorage.getItem(currentWorldKey)}catch{return false}})();
 startButton.disabled=true;startButton.textContent="Spielwelt wird vorbereitet …";
 const audio=LDFunkspruchAmbient.create();
  const settingsControls={graphics:document.getElementById("graphicsQuality"),ambient:document.getElementById("ambientEnabled"),voice:document.getElementById("voiceEnabled"),fov:document.getElementById("cameraFov"),sensitivity:document.getElementById("lookSensitivity")};
@@ -109,12 +148,12 @@ const prompt=document.getElementById("firstPersonPrompt");let lastEventText="",l
 startButton.addEventListener("click",resumeGame);
 const tests=await LDOpenWorldIntegrationTests.run();
 info.textContent="Modultests: "+tests.passed+"/"+tests.total+" bestanden\n"+tests.results.filter(r=>!r.ok).map(r=>r.name+": "+r.error).join("\n");
-const origin=LDFunkspruchRegion.origin;
+const origin=region.origin;
 // Dynamic resolution for tablets and low-powered devices.
 const reducedGraphics=lowerGraphics();
 let map;
 try{
- map=await LDFunkspruchMap.loadRegion({regions:LDFunkspruchRegion.tiles});
+ map=await LDFunkspruchMap.loadRegion({regions:region.tiles,regionId:region.id});
 }catch(error){
  info.textContent="Kartendaten nicht verfügbar: "+(error.message||error);
  document.getElementById("menuHint").textContent=error.message||String(error);
@@ -125,12 +164,12 @@ try{
 }
 const geojson=map.geojson;
 document.getElementById("mapCredit").hidden=false;
-document.getElementById("menuHint").textContent+=" Augsburg: "+map.tilesLoaded+" von "+map.tilesTotal+" echten OSM-Kacheln geladen."+(map.partial?" Einzelne Stadtteile sind noch nicht verfügbar.":"");
+document.getElementById("menuHint").textContent+=" "+region.city+": "+map.tilesLoaded+" von "+map.tilesTotal+" echten OSM-Kacheln geladen."+(map.partial?" Einzelne Stadtteile sind noch nicht verfügbar.":"");
 try{
 if(tests.passed!==tests.total)throw Error("Modultests fehlgeschlagen: "+JSON.stringify(tests.results.filter(t=>!t.ok)));
 if(typeof THREE==="undefined")throw Error("Three.js konnte nicht geladen werden");
 const monitor=document.getElementById("monitor"),dispatchMonitor=document.getElementById("dispatchMonitor");
-const game=LDOpenWorldRuntime.create({THREE,host:document.getElementById("world"),geojson,origin,graphics:{antialias:!reducedGraphics,pixelRatio:reducedGraphics?1:1.5,renderRadius:reducedGraphics?1:2,powerPreference:reducedGraphics?"low-power":"high-performance"},onStatus:s=>{
+const game=LDOpenWorldRuntime.create({THREE,host:document.getElementById("world"),geojson,origin,regionId:region.id,worldBounds:region.tiles.filter(t=>!map.missing.includes(t.id)).map(t=>t.bounds),graphics:{antialias:!reducedGraphics,pixelRatio:reducedGraphics?1:1.5,renderRadius:reducedGraphics?1:2,powerPreference:reducedGraphics?"low-power":"high-performance"},onStatus:s=>{
  audio.update(s);
  if(s.message){lastEventText=s.message;lastEventTime=Date.now();}
  info.textContent=s.message||"Bewege dich zur Tür, Stechuhr oder zum Schreibtisch";
@@ -167,7 +206,7 @@ window.FunkspruchGame=game; // Laufzeitdiagnose und Browser-Abnahmetests
 // The scene can initialize behind the menu, but only normal mode can be entered.
 if(reducedGraphics){game.renderer.setPixelRatio(Math.min(devicePixelRatio||1,1));game.renderer.setSize(document.getElementById("world").clientWidth,document.getElementById("world").clientHeight,false);}
 try{game.life.load()}catch(e){console.warn("Life save could not be loaded",e)}
-const worldKey="funkspruch-openworld-save-v1";
+const worldKey=currentWorldKey;
 function shiftOverview(){
  const s=game.status(),j=game.getShiftJournal?.(),stats=j?.summarize(j.active||j.reports?.[0]);
  const next=!s.indoor?"Zum Eingang der Trainingsleitstelle gehen":!s.life.onDuty?"An der Stechuhr einstempeln":!s.atDesk?"Am Disponentenarbeitsplatz Platz nehmen":"Im ELS Notrufe, Einsatzakten und Funk bearbeiten";
@@ -177,12 +216,12 @@ function shiftOverview(){
   "Annahmen: "+(stats?.annahme??0)+" · Alarmierungen: "+(stats?.alarmierung??0)+" · Abschlüsse: "+(stats?.abschluss??0);
 }
 shiftOverview();
-const betaDiagnostics=()=>({product:"FUNKSPRUCH",channel:"Browser-Beta",timestamp:new Date().toISOString(),url:location.origin+location.pathname,userAgent:navigator.userAgent,viewport:{width:innerWidth,height:innerHeight},graphics:document.getElementById("graphicsQuality").value,world:{loadedTiles:map.tilesLoaded,totalTiles:map.tilesTotal,partial:!!map.partial},game:{initialized:!!gameInstance,started,paused:!mainMenu.hidden,atDesk:!!gameInstance?.status()?.atDesk,onDuty:!!gameInstance?.status()?.life?.onDuty},hasLocalSave:localSaveExists(),errors:betaErrors.slice()});
+const betaDiagnostics=()=>({product:"FUNKSPRUCH",channel:"Browser-Beta",timestamp:new Date().toISOString(),url:location.origin+location.pathname,userAgent:navigator.userAgent,viewport:{width:innerWidth,height:innerHeight},graphics:document.getElementById("graphicsQuality").value,world:{regionId:region.id,platform,loadedTiles:map.tilesLoaded,totalTiles:map.tilesTotal,partial:!!map.partial},game:{initialized:!!gameInstance,started,paused:!mainMenu.hidden,atDesk:!!gameInstance?.status()?.atDesk,onDuty:!!gameInstance?.status()?.life?.onDuty},hasLocalSave:localSaveExists(),errors:betaErrors.slice()});
 window.FunkspruchBeta={diagnostics:betaDiagnostics};
 document.getElementById("downloadDiagnostics").onclick=()=>{const blob=new Blob([JSON.stringify(betaDiagnostics(),null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),link=document.createElement("a");link.href=url;link.download="FUNKSPRUCH-Beta-Fehlerbericht.json";link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
 document.getElementById("resetSave").onclick=()=>{if(!confirm("Wirklich alle lokalen FUNKSPRUCH-Spielstände und Dienstberichte dieses Geräts zurücksetzen? Vorher möglichst exportieren."))return;try{const keys=[];for(let j=0;j<localStorage.length;j++){const key=localStorage.key(j);if(key&&(/^(funkspruch-|ld-openworld-|ld-operations|ld21-|ld22-)/.test(key))&&!key.startsWith("funkspruch-osm-cache-"))keys.push(key);}for(const key of keys)localStorage.removeItem(key);location.reload();}catch(error){betaRecord(error);alert("Zurücksetzen fehlgeschlagen: "+error.message);}};
 try{
- const saved=LDFunkspruchCheckpoints.candidates();
+ const saved=LDFunkspruchCheckpoints.candidates(localStorage,region.id);
  let restored=false;
  for(const item of saved){
   if(game.restoreWorld(item.world)){
@@ -198,7 +237,7 @@ let importingSave=false;
 const persistLife=()=>{
  if(importingSave)return false;
  try{
-  const world=game.saveWorld();if(world)LDFunkspruchCheckpoints.save(world);
+  const world=game.saveWorld();if(world)LDFunkspruchCheckpoints.save(world,localStorage,region.id);
   game.life.save();
   if(window.parent!==window)window.parent.postMessage({type:"ld-life-updated"},location.origin);
   saveFeedback("Automatisch gespeichert: "+new Date().toLocaleTimeString("de-DE"));
@@ -225,7 +264,7 @@ importFile.onchange=async()=>{
  }catch(error){importingSave=false;alert("Import fehlgeschlagen: "+(error.message||error));}
  finally{importFile.value="";}
 };
-window.addEventListener("pagehide",()=>{persistLife();audio.dispose();});
+window.addEventListener("pagehide",()=>{if(!switchingCity)persistLife();audio.dispose();});
 document.addEventListener("visibilitychange",()=>{
  if(document.hidden){persistLife();game.setPaused(true);}
  else if(started&&mainMenu.hidden)game.setPaused(false);
