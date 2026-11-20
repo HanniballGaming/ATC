@@ -1,7 +1,6 @@
+# FUNKSPRUCH-Veröffentlichungen nur nach ausdrücklicher manueller Freigabe.
 name: FUNKSPRUCH – öffentliche iPad-Browser-Version
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
