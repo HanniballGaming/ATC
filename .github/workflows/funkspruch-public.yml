@@ -48,6 +48,9 @@ jobs:
       - name: Leitstellenbetrieb, Notrufe und Funk vollständig testen
         working-directory: funkspruch-source/desktop
         run: node browser-smoke.mjs
+      - name: Browserwechsel zwischen deutschen ILS-Städten testen
+        working-directory: funkspruch-source/desktop
+        run: node city-switch-smoke.mjs
       - name: Vollständiges Offline-ELS als Singleplayer-Ablauf prüfen
         working-directory: funkspruch-source/desktop
         run: node fallback-verify.mjs

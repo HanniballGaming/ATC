@@ -101,3 +101,15 @@ Diese Aktualisierung ist weiterhin eine Beta. Eine vollständige 1.0-Abnahme und
 **Testnachweis:** https://github.com/HanniballGaming/ATC/actions/runs/44636014481 – Browser erfolgreich, Windows auf Wunsch nicht ausgeführt. Die öffentliche Pages-Pipeline prüft bei jeder Veröffentlichung zusätzlich die Offline-Funktion.
 
 **Freigabegrenze:** Dies ist eine erweiterte öffentliche Browser-Beta, keine vollständige Version 1.0. Die deutschlandweite Karte, vollständig verifizierte Leitstellen-/Fahrzeugdaten, produktionsreife Grafikinhalte und die reale Geräte- und Langzeitabnahme fehlen weiterhin. Es gibt keine Verbindung zu echten Notrufdiensten.
+
+## Plattformgebundene Spielwelt – verbindlicher Ausbau (20.11.2026)
+
+**Browser-Version:** 3D-Spielwelt nur in den jeweils ausgewählten Leitstellenstädten. Einsatzlagen außerhalb der aktuell geladenen Stadt werden im Einsatzleitsystem deutschlandweit simuliert und nicht als befahrbare 3D-Umgebung ausgegeben. Die Browser-Stadtauswahl enthält aktuell 29 Regionen aus allen 16 Bundesländern. Augsburg besitzt mitgelieferte OSM-Kacheln; andere Städte erfordern für den ersten Besuch einen OSM-Datenabruf. Die jeweils vier geladenen Kacheln sind ausdrücklich **noch keine vollständige Stadtkarte**.
+
+**Windows-App – verbindliches Ziel:** ein komplett zusammenhängendes, befahrbares Deutschland einschließlich ländlicher Gebiete und überregionalem Straßennetz. Dieser deutschlandweite Streaming-/3D-Kartenausbau ist noch **nicht fertig** und wird nicht als bereits spielbar bezeichnet. Es werden aktuell keine Windows-Spieltests durchgeführt.
+
+**Bereits implementiert:** Plattformprüfung über einen exklusiven lokalen Electron-Endpunkt, Browser-Grenze entlang tatsächlich geladener OSM-Kacheln, Stadtauswahl, getrennte lokale Welt-Spielstände pro ILS-Stadt sowie sichere Fortsetzung beim Wechsel zwischen Augsburg und Berlin. Die Stadtmittelpunkte sind nur Näherungen zur OSM-Kartenauswahl, keine nachgewiesenen Dienstgebäude oder amtlichen Zuständigkeitsgrenzen.
+
+**Erfolgreiche Browserabnahme:** https://github.com/HanniballGaming/ATC/actions/runs/44731233626 – einschließlich echtem Wechsel Augsburg → Berlin → Augsburg, Speicherung in beiden Städten, ELS, Touchsteuerung und PWA-Offlinebetrieb. Windows-Job auf Wunsch übersprungen.
+
+Die NORDTAL-ATC-Website bleibt am Repository-Stamm unverändert.
