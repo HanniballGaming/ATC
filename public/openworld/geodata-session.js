@@ -63,9 +63,9 @@ async function load({bounds,storage=root.localStorage,fetchImpl=root.fetch,timeo
   }
  }
  if(cached)return {geojson:cached.geojson,source:"OpenStreetMap",real:true,cache:true,stale:true};
- throw Error("Für Augsburg konnten keine echten OpenStreetMap-Straßen und Gebäude geladen werden. Bitte die Internetverbindung prüfen und neu laden. Eine fiktive Ersatzstadt wird nicht verwendet.");
+ throw Error("Für dieses Stadtgebiet konnten keine echten OpenStreetMap-Straßen und Gebäude geladen werden. Bitte die Internetverbindung prüfen und neu laden. Eine fiktive Ersatzstadt wird nicht verwendet.");
 }
-function mergeGeoJSON(items){
+function mergeGeoJSON(items,{regionId="augsburg"}={}){
  if(!Array.isArray(items)||items.length===0)throw Error("Keine echten OSM-Kacheln");
  const features=[],seen=new Set();
  for(const item of items){
@@ -77,11 +77,11 @@ function mergeGeoJSON(items){
    features.push(f);
   }
  }
- const merged={type:"FeatureCollection",features,metadata:{source:"OpenStreetMap",real:true,license:"ODbL 1.0",attribution:"© OpenStreetMap-Mitwirkende",region:"Augsburg",tileCount:items.length}};
+ const merged={type:"FeatureCollection",features,metadata:{source:"OpenStreetMap",real:true,license:"ODbL 1.0",attribution:"© OpenStreetMap-Mitwirkende",region:regionId,tileCount:items.length}};
  if(!validData(merged))throw Error("Zusammengeführtes OSM-Gebiet ungültig");
  return merged;
 }
-async function loadRegion({regions=root.LDFunkspruchRegion?.tiles,storage=root.localStorage,fetchImpl=root.fetch,online=root.navigator?.onLine!==false,timeoutMs=14500}={}){
+async function loadRegion({regions=root.LDFunkspruchRegion?.tiles,regionId="augsburg",storage=root.localStorage,fetchImpl=root.fetch,online=root.navigator?.onLine!==false,timeoutMs=14500}={}){
  if(!Array.isArray(regions)||regions.length<1||regions.length>9)throw Error("Ungültige Kartenregion");
  const list=regions.map(tile=>({tile})),found=new Array(list.length),missing=[];
  // Maximal zwei externe Kachelabrufe gleichzeitig.
@@ -97,8 +97,8 @@ async function loadRegion({regions=root.LDFunkspruchRegion?.tiles,storage=root.l
  }
  await Promise.all([worker(),worker()]);
  const ready=found.filter(Boolean);
- if(!ready.length)throw Error("Für Augsburg sind keine echten OpenStreetMap-Karten verfügbar. Internetverbindung prüfen oder die Windows-Version mit Offline-Kartendaten verwenden.");
- return {geojson:mergeGeoJSON(ready),source:"OpenStreetMap",real:true,
+ if(!ready.length)throw Error("Für die ausgewählte ILS-Stadt sind keine echten OpenStreetMap-Karten verfügbar. Internetverbindung prüfen oder die Windows-Version mit Offline-Kartendaten verwenden.");
+ return {geojson:mergeGeoJSON(ready,{regionId}),source:"OpenStreetMap",real:true,
   tilesLoaded:ready.length,tilesTotal:regions.length,partial:ready.length!==regions.length,missing,cache:ready.every(x=>x.cache)};
 }
 root.LDFunkspruchMap=Object.freeze({load,key,validData,mergeGeoJSON,loadRegion});
