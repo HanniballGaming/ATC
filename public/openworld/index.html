@@ -53,6 +53,7 @@ const mainMenu=document.getElementById("mainMenu");
  const currentWorldKey=LDFunkspruchCheckpoints.scopedKeys(region.id).key;
  let loadedTileBounds=[];
  let switchingCity=false;
+ let persistCurrentCity=()=>true;
  const citySelector=document.getElementById("ilsCity");
  for(const city of cityCatalog.list()){
   const option=document.createElement("option");option.value=city.id;
@@ -68,7 +69,7 @@ const mainMenu=document.getElementById("mainMenu");
   if(gameInstance?.status()?.life?.onDuty&&!confirm("Stadt während eines aktiven Dienstes wechseln? Fortschritt wird zuvor gesichert.")){
    citySelector.value=region.id;return;
   }
-  if(gameInstance&&!persistLife()){
+  if(gameInstance&&!persistCurrentCity()){
    citySelector.value=region.id;
    document.getElementById("worldScopeStatus").textContent="Stadtwechsel abgebrochen: Spielstand konnte nicht gesichert werden.";
    return;
@@ -246,6 +247,7 @@ const persistLife=()=>{
   return true;
  }catch(error){betaRecord(error);saveFeedback("Speichern fehlgeschlagen – bitte Speicherplatz und Browserrechte prüfen.");console.warn("Speichern fehlgeschlagen",error);return false;}
 };
+persistCurrentCity=persistLife;
 window.addEventListener("message",e=>{if(e.origin===location.origin&&e.data?.type==="ld-life-reload"){try{game.life.load()}catch(err){console.warn(err)}}});
 document.getElementById("exportSave").onclick=()=>{
  try{if(!persistLife())throw Error("Aktueller Fortschritt konnte nicht gespeichert werden");LDFunkspruchSave.download(LDFunkspruchSave.capture());}
