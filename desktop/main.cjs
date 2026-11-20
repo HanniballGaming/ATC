@@ -42,6 +42,14 @@ function serve(req,res){
  try{
   if(req.method!=="GET"&&req.method!=="HEAD"){res.writeHead(405);res.end();return;}
   const u=new URL(req.url,ORIGIN),pathname=decodeURIComponent(u.pathname);
+  // Only the Electron loopback host exposes this capability, never GitHub Pages.
+  // Browser clients cannot claim the nationwide Windows world target via a URL flag.
+  if(pathname==="/__funkspruch/platform"){
+   const body=JSON.stringify({product:"FUNKSPRUCH",platform:"windows",protocol:1,nationwideStreamingReady:false});
+   res.writeHead(200,{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","Content-Length":Buffer.byteLength(body)});
+   if(req.method==="HEAD")res.end();else res.end(body);
+   return;
+  }
   if(pathname.includes("\0"))throw Error("Ungültiger Pfad");
   let target=path.resolve(ROOT,"."+pathname);
   if(target!==ROOT&&!target.startsWith(ROOT+path.sep))throw Error("Pfad außerhalb der App");
