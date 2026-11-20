@@ -34,6 +34,7 @@ function bounds(region){
  return box;
 }
 function inBounds(coordinates,area){
+ if(Array.isArray(area))return area.some(item=>inBounds(coordinates,item));
  return !!area&&Number.isFinite(coordinates?.lat)&&Number.isFinite(coordinates?.lon)&&
   coordinates.lat>=area.south&&coordinates.lat<=area.north&&
   coordinates.lon>=area.west&&coordinates.lon<=area.east;

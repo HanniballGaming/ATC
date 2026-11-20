@@ -51,6 +51,7 @@ const mainMenu=document.getElementById("mainMenu");
  const platform=await LDFunkspruchWorldScope.detect();
  const scope=LDFunkspruchWorldScope.policy(platform);
  const currentWorldKey=LDFunkspruchCheckpoints.scopedKeys(region.id).key;
+ let loadedTileBounds=[];
  let switchingCity=false;
  const citySelector=document.getElementById("ilsCity");
  for(const city of cityCatalog.list()){
@@ -82,7 +83,7 @@ const mainMenu=document.getElementById("mainMenu");
    document.getElementById("worldScopeStatus").textContent="Stadtwechsel fehlgeschlagen: "+error.message;
   }
  });
- window.FunkspruchWorldMode=Object.freeze({platform,regionId:region.id,drivingTarget:scope.drivingTarget,classify:(lon,lat)=>LDFunkspruchWorldScope.pointMode({platform,region,point:{lon,lat}})});
+ window.FunkspruchWorldMode=Object.freeze({platform,regionId:region.id,drivingTarget:scope.drivingTarget,classify:(lon,lat)=>LDFunkspruchWorldScope.pointMode({platform,region,point:{lon,lat},loadedBounds:loadedTileBounds})});
 
 try{if(localStorage.getItem(currentWorldKey))document.getElementById("startNormal").textContent="Spielstand fortsetzen";}catch{}
 const startButton=document.getElementById("startNormal");
@@ -115,7 +116,7 @@ window.addEventListener("error",event=>betaRecord(event.message||"Unbekannter La
 window.addEventListener("unhandledrejection",event=>betaRecord(event.reason?.message||event.reason||"Unbehandelte Promise-Ablehnung"));
 const saveState=document.getElementById("saveState");
 function saveFeedback(message){saveState.textContent=message;}
-function localSaveExists(){try{return !!localStorage.getItem("funkspruch-openworld-save-v1")}catch{return false}}
+function localSaveExists(){try{return !!localStorage.getItem(currentWorldKey)}catch{return false}}
 saveFeedback(localSaveExists()?"Lokaler Spielstand vorhanden. Automatische Speicherung aktiv.":"Noch kein Spielstand vorhanden. Automatische Speicherung beginnt beim Spielstart.");
 let gameInstance=null,started=false;
 function lowerGraphics(){
@@ -162,6 +163,7 @@ try{
  document.getElementById("startNormal").onclick=()=>location.reload();
  return;
 }
+loadedTileBounds=region.tiles.filter(t=>!map.missing.includes(t.id)).map(t=>t.bounds);
 const geojson=map.geojson;
 document.getElementById("mapCredit").hidden=false;
 document.getElementById("menuHint").textContent+=" "+region.city+": "+map.tilesLoaded+" von "+map.tilesTotal+" echten OSM-Kacheln geladen."+(map.partial?" Einzelne Stadtteile sind noch nicht verfügbar.":"");
@@ -169,7 +171,7 @@ try{
 if(tests.passed!==tests.total)throw Error("Modultests fehlgeschlagen: "+JSON.stringify(tests.results.filter(t=>!t.ok)));
 if(typeof THREE==="undefined")throw Error("Three.js konnte nicht geladen werden");
 const monitor=document.getElementById("monitor"),dispatchMonitor=document.getElementById("dispatchMonitor");
-const game=LDOpenWorldRuntime.create({THREE,host:document.getElementById("world"),geojson,origin,regionId:region.id,worldBounds:region.tiles.filter(t=>!map.missing.includes(t.id)).map(t=>t.bounds),graphics:{antialias:!reducedGraphics,pixelRatio:reducedGraphics?1:1.5,renderRadius:reducedGraphics?1:2,powerPreference:reducedGraphics?"low-power":"high-performance"},onStatus:s=>{
+const game=LDOpenWorldRuntime.create({THREE,host:document.getElementById("world"),geojson,origin,regionId:region.id,worldBounds:loadedTileBounds,graphics:{antialias:!reducedGraphics,pixelRatio:reducedGraphics?1:1.5,renderRadius:reducedGraphics?1:2,powerPreference:reducedGraphics?"low-power":"high-performance"},onStatus:s=>{
  audio.update(s);
  if(s.message){lastEventText=s.message;lastEventTime=Date.now();}
  info.textContent=s.message||"Bewege dich zur Tür, Stechuhr oder zum Schreibtisch";
@@ -266,7 +268,7 @@ importFile.onchange=async()=>{
 };
 window.addEventListener("pagehide",()=>{if(!switchingCity)persistLife();audio.dispose();});
 document.addEventListener("visibilitychange",()=>{
- if(document.hidden){persistLife();game.setPaused(true);}
+ if(document.hidden){if(!switchingCity)persistLife();game.setPaused(true);}
  else if(started&&mainMenu.hidden)game.setPaused(false);
 });
 setInterval(persistLife,10000);
