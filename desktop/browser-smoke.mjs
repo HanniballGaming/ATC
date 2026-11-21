@@ -306,6 +306,11 @@ try{
     // Ein kompletter Notruf vom Telefon bis zum Einsatzabschluss im Ersatz-ELS.
     await outer.locator("#backup").click();
     const fallback=outer.frameLocator("#els");
+    const reloadFallback=async()=>{
+      await fallback.locator("body").evaluate(el=>{el.dataset.beforeReload="true";});
+      await outer.locator("#reload").click();
+      await fallback.locator("body:not([data-before-reload]) #call").waitFor({state:"visible",timeout:20000});
+    };
     await fallback.locator("#call").waitFor({state:"visible",timeout:20000});
     await fallback.locator("#scenario").selectOption("0");
     await fallback.locator("#call").click();
@@ -315,17 +320,25 @@ try{
     await fallback.locator("#ask").click();
     assert.match(await fallback.locator("#reply").innerText(),/Augsburg/);
     await fallback.locator("#register").click();
+    assert.match(await fallback.locator("#incident option:checked").innerText(), /Priorität hoch/);
+    assert.match(await fallback.locator('#unit option[value="RTW 1"]').innerText(), /Vorschlag/);
     await fallback.locator("#unit").selectOption("RTW 1");
     await fallback.locator("#dispatch").click();
     assert.ok((await fallback.locator("#situation").innerText()).includes("Freie Fahrzeuge: 6/7"),"Disposition spiegelt Fahrzeugstatus nicht wider");
-    for(let step=0;step<4;step++)
+    assert.match(await fallback.locator("#radioLog").innerText(), /Leitstelle an RTW 1/);
+    await fallback.locator('#units button[data-unit="RTW 1"]').click();
+    assert.match(await fallback.locator("#radioLog").innerText(), /RTW 1: Auf Anfahrt/);
+    await reloadFallback();
+    assert.match(await fallback.locator("#units").innerText(), /RTW 1 · Auf Anfahrt/);
+    assert.match(await fallback.locator("#radioLog").innerText(), /RTW 1: Auf Anfahrt/);
+    assert.equal(await fallback.locator('#unit option[value="RTW 1"]').count(),0);
+    for(let step=0;step<3;step++)
       await fallback.locator('#units button[data-unit="RTW 1"]').click();
     await fallback.locator("#close").click();
     const fallbackState=await fallback.locator("body").evaluate(()=>window.FunkspruchFallbackApp.engine.snapshot());
     assert.equal(fallbackState.incidents[0].phase,"abgeschlossen","Ersatz-ELS kann Einsatz nicht abschließen");
     assert.equal(fallbackState.vehicles[0].status,"frei","Fahrzeug nach Einsatz nicht wieder verfügbar");
-    await outer.locator("#reload").click();
-    await fallback.locator("#call").waitFor({state:"visible",timeout:20000});
+    await reloadFallback();
     const restoredFallback=await fallback.locator("body").evaluate(()=>window.FunkspruchFallbackApp.engine.snapshot());
     assert.equal(restoredFallback.incidents[0].phase,"abgeschlossen","Ersatz-ELS-Spielstand nach Neuladen verloren");
     await page.waitForFunction(()=>window.FunkspruchGame?.getShiftJournal?.()?.active?.events?.some(e=>e.kind==="abschluss"),null,{timeout:10000});

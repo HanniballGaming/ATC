@@ -82,4 +82,57 @@ for(let i=0;i<E.scenarios.length;i++){
  sim.close(true,name);
  assert.equal(sim.summary().open,0,"Szenario kann nicht abgeschlossen werden: "+E.scenarios[i].type);
 }
+// Preserve an older open case and its assigned vehicle when the archive fills.
+mem.clear();
+const volume = E.create(storage);
+const open = volume.call(true, 0);
+volume.accept(true);
+volume.register(true);
+volume.dispatch(true, open, "RTW 1");
+let newest;
+for (let i = 0; i < 80; i++) {
+ newest = volume.call(true, 4);
+ volume.accept(true);
+ volume.register(true);
+ assert.throws(() => volume.dispatch(true, newest, "RTW 1"), /nicht verfügbar/);
+ volume.dispatch(true, newest, "RTW 2");
+ for (let step = 0; step < 4; step++) volume.advanceUnit(true, "RTW 2");
+ volume.close(true, newest);
+}
+const restoredVolume = E.create(storage);
+assert.equal(restoredVolume.snapshot().incidents.length, 80);
+assert.equal(restoredVolume.snapshot().incidents[0].id, newest);
+assert.equal(restoredVolume.snapshot().vehicles[0].incidentId, open);
+assert.equal(restoredVolume.summary().open, 1);
+for (let step = 0; step < 4; step++) restoredVolume.advanceUnit(true, "RTW 1");
+assert.equal(restoredVolume.close(true, open), open);
+
+mem.clear();
+const busy = E.create(storage);
+for (let i = 0; i < 80; i++) {
+ busy.call(true, 4);
+ busy.accept(true);
+ busy.register(true);
+}
+assert.throws(() => busy.call(true, 4), /80 offene Einsätze/);
+assert.equal(busy.summary().open, 80);
+
+// Version 2 allowed a call to be accepted even with 80 open cases.
+const legacy = busy.snapshot();
+legacy.seq++;
+const legacyCall = {id:"E-00081",template:4,accepted:true,questions:[]};
+legacy.active = legacyCall;
+mem.set(E.key, JSON.stringify(legacy));
+const restoredBusy = E.create(storage);
+assert.throws(() => restoredBusy.register(true), /80 offene Einsätze/);
+assert.equal(E.create(storage).snapshot().active.id, legacyCall.id);
+const oldest = legacy.incidents.at(-1).id;
+restoredBusy.dispatch(true, oldest, "RTW 1");
+for (let step = 0; step < 4; step++) restoredBusy.advanceUnit(true, "RTW 1");
+restoredBusy.close(true, oldest);
+assert.equal(restoredBusy.register(true), legacyCall.id);
+assert.equal(E.create(storage).summary().open, 80);
+assert.equal(E.create(storage).snapshot().incidents[0].id, legacyCall.id);
+
+assert.equal(E.classify("Wie lautet der Straßenname?"), "address");
 console.log("OK: Offline-ELS – 8 Übungsszenarien, Notrufannahme, KI-Rückfragen, Disposition, Statusfolge, Funk, Abschluss, Speicherfehler, Neustart, Ereignisbrücke.");
