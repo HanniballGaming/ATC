@@ -43,11 +43,17 @@ function render(){
  $("ask").disabled=!duty||!active?.accepted;
  $("register").disabled=!duty||!active?.accepted;
  const selected=$("incident").value;
- fill($("incident"),live.map(i=>[i.id,i.id+" · "+i.type]),selected);
+ fill($("incident"),live.map(i=>[i.id,i.id+" · "+i.type+" · Priorität "+i.priority]),selected);
  const selectedCase=live.find(i=>i.id===$("incident").value)||live[0]||null;
- fill($("unit"),state.vehicles.map(v=>[v.id,v.id+" · "+engine.labels[v.status]]),$("unit").value);
- text("need",selectedCase?"Einsatzmittelbedarf: "+selectedCase.need.join(", ")+" · Alarmiert: "+(selectedCase.assigned.join(", ")||"noch keine"):"Noch keine offene Einsatzakte.");
- $("dispatch").disabled=!duty||!selectedCase;
+ const available=selectedCase?state.vehicles.filter(v=>v.status==="frei"&&!selectedCase.assigned.includes(v.id)):[];
+ const outstanding=selectedCase?.need.filter(type=>!state.vehicles.some(v=>v.type===type&&selectedCase.assigned.includes(v.id)))||[];
+ const suggestions=available.filter(v=>outstanding.includes(v.type));
+ const ordered=[...suggestions,...available.filter(v=>!suggestions.includes(v))];
+ fill($("unit"),ordered.map(v=>[v.id,v.id+(suggestions.includes(v)?" · Vorschlag":" · Frei")]),$("unit").value);
+ const unavailable=outstanding.filter(type=>!suggestions.some(v=>v.type===type));
+ text("need",selectedCase?"Einsatzmittelbedarf: "+selectedCase.need.join(", ")+" · Alarmiert: "+(selectedCase.assigned.join(", ")||"noch keine")+
+  (unavailable.length?" · Nicht verfügbar: "+unavailable.join(", "):""):"Noch keine offene Einsatzakte.");
+ $("dispatch").disabled=!duty||!available.length;
  $("close").disabled=!duty||!selectedCase;
  const units=$("units");units.replaceChildren();
  for(const v of state.vehicles){
@@ -82,6 +88,7 @@ $("ask").onclick=()=>{
 };
 $("question").addEventListener("keydown",e=>{if(e.key==="Enter"){$("ask").click();e.preventDefault();}});
 $("register").onclick=()=>action(()=>ops.register(onDuty()),id=>"Einsatzakte "+id+" eröffnet. Bitte Fahrzeuge alarmieren.");
+$("incident").onchange=render;
 $("dispatch").onclick=()=>action(()=>ops.dispatch(onDuty(),$("incident").value,$("unit").value),id=>id+" wurde alarmiert.");
 $("close").onclick=()=>action(()=>ops.close(onDuty(),$("incident").value),id=>"Einsatz "+id+" abgeschlossen und dokumentiert.");
 $("units").addEventListener("click",e=>{
