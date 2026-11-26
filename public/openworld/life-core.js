@@ -18,19 +18,30 @@ function create(initial={}){
   s.hygiene=clamp(s.hygiene-minutes*0.013,0,100);
   return snapshot();
  }
+ function syncClock(minute){
+  if(!Number.isFinite(minute)||minute<0)return snapshot();
+  const normalized=((Math.round(minute)%1440)+1440)%1440;
+  const current=((Math.round(s.minutes)%1440)+1440)%1440;
+  const advanceBy=(normalized-current+1440)%1440;
+  // Die Spielzeit darf nicht rückwärts springen und übernimmt nur plausible Schritte.
+  if(advanceBy>0&&advanceBy<=240)advance(advanceBy);
+  return snapshot();
+ }
  function action(name){
   const actions={
    essen:{place:["wohnung","restaurant"],duration:20,cost:5,apply:()=>{s.hunger=clamp(s.hunger-55,0,100);}},
    trinken:{place:["wohnung","restaurant","leitstelle"],duration:2,cost:1,apply:()=>{s.thirst=clamp(s.thirst-55,0,100);}},
    duschen:{place:["wohnung"],duration:12,cost:0.5,apply:()=>{s.hygiene=100;}},
    schlafen:{place:["wohnung"],duration:480,cost:0,apply:()=>{s.fatigue=0;}},
+   ruhepause:{place:["leitstelle"],duration:10,cost:0,apply:()=>{s.fatigue=clamp(s.fatigue-15,0,100);s.thirst=clamp(s.thirst-4,0,100);}},
    dienstbeginn:{place:["leitstelle"],duration:0,cost:0,apply:()=>{if(s.onDuty)throw Error("Already on duty");s.onDuty=true;}},
    dienstende:{place:["leitstelle"],duration:0,cost:0,apply:()=>{if(!s.onDuty)throw Error("Not on duty");s.onDuty=false;}}
   };
   const a=actions[name];if(!a)throw Error("Unknown action");
   if(!a.place.includes(s.location))throw Error("Action unavailable here");
   if(s.money<a.cost)throw Error("Insufficient money");
-  if(s.onDuty&&["schlafen","duschen","essen"].includes(name))throw Error("Not available during duty");
+  if(s.onDuty&&["schlafen","duschen","essen"].includes(name))throw Error("Während des Dienstes nicht verfügbar");
+  if(name==="ruhepause"&&!s.onDuty)throw Error("Für eine Dienstpause müssen Sie eingestempelt sein");
   // Validate first; mutate only after all preconditions pass.
   if(name==="dienstbeginn"&&s.onDuty)throw Error("Already on duty");
   if(name==="dienstende"&&!s.onDuty)throw Error("Not on duty");
@@ -41,11 +52,27 @@ function create(initial={}){
  function save(storage=root.localStorage){storage.setItem(KEY,JSON.stringify(s));return snapshot();}
  function load(storage=root.localStorage){
   const raw=storage.getItem(KEY);if(!raw)return snapshot();
-  const data=JSON.parse(raw);
-  for(const key of Object.keys(defaults))if(Object.prototype.hasOwnProperty.call(data,key)&&typeof data[key]===typeof defaults[key])s[key]=data[key];
+  let data;
+  try{data=JSON.parse(raw);}catch(e){console.warn("Beschädigter Dienst-Spielstand wird ignoriert",e);return snapshot();}
+  if(!data||typeof data!=="object"||Array.isArray(data)){
+   console.warn("Ungültiger Dienst-Spielstand wird ignoriert");
+   return snapshot();
+  }
+  const bounds={minutes:[0,10000000],money:[0,100000000],hunger:[0,100],thirst:[0,100],fatigue:[0,100],hygiene:[0,100],shiftStart:[0,1439],shiftEnd:[0,1439]};
+  const places=["wohnung","leitstelle","restaurant","stadt"];
+  const next={...s};
+  for(const key of Object.keys(defaults)){
+   if(!Object.prototype.hasOwnProperty.call(data,key))continue;
+   const value=data[key];
+   if(typeof value!==typeof defaults[key])continue;
+   if(bounds[key]&&(!Number.isFinite(value)||value<bounds[key][0]||value>bounds[key][1]))continue;
+   if(key==="location"&&!places.includes(value))continue;
+   next[key]=value;
+  }
+  s=next;
   return snapshot();
  }
- return {snapshot,advance,action,moveTo,save,load};
+ return {snapshot,advance,syncClock,action,moveTo,save,load};
 }
 root.LDOpenWorldLife=Object.freeze({create});
 })(typeof window!=="undefined"?window:globalThis);

@@ -8,7 +8,10 @@ function create(options={}){
  const speed=options.walkSpeed??1.45,runSpeed=options.runSpeed??3.5,radius=options.radius??0.35;
  let state={x:options.x??0,z:options.z??0,heading:options.heading??0,pitch:0};
  function snapshot(){return {...state};}
- function teleport(x,z){if(!Number.isFinite(x)||!Number.isFinite(z))throw Error("Invalid destination");state.x=x;state.z=z;return snapshot();}
+ function teleport(x,z,heading=state.heading,pitch=state.pitch){
+  if(![x,z,heading,pitch].every(Number.isFinite))throw Error("Invalid destination");
+  state.x=x;state.z=z;state.heading=Math.atan2(Math.sin(heading),Math.cos(heading));state.pitch=clamp(pitch,-Math.PI*.46,Math.PI*.46);return snapshot();
+ }
  function update(dt,input={},model){
   if(!Number.isFinite(dt)||dt<=0||dt>0.25)throw Error("Invalid timestep");
   const forward=clamp(Number(input.forward)||0,-1,1),strafe=clamp(Number(input.strafe)||0,-1,1);
